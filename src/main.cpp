@@ -54,12 +54,40 @@ void setup() {
   // Wait for 4.5 seconds to display the boot screen
   delay(4500);
 
-  // Smooth swipe/wipe transition to landscape
-  tft.setRotation(1); // Set to landscape (160x128)
-  for (int x = 0; x < 160; x += 4) {
-    tft.fillRect(x, 0, 4, 128, ST77XX_BLACK);
-    delay(15);
+  // Retro Dither Dissolve Fade-out Transition in 4 phases (remains in Rotation 2)
+  uint16_t step_delay = 100; // 100ms per phase (total 400ms transition)
+  
+  // Phase 1: Clear even X, even Y pixels
+  for (int y = 0; y < 160; y += 2) {
+    for (int x = 0; x < 128; x += 2) {
+      tft.drawPixel(x, y, ST77XX_BLACK);
+    }
   }
+  delay(step_delay);
+
+  // Phase 2: Clear odd X, odd Y pixels
+  for (int y = 1; y < 160; y += 2) {
+    for (int x = 1; x < 128; x += 2) {
+      tft.drawPixel(x, y, ST77XX_BLACK);
+    }
+  }
+  delay(step_delay);
+
+  // Phase 3: Clear odd X, even Y pixels
+  for (int y = 0; y < 160; y += 2) {
+    for (int x = 1; x < 128; x += 2) {
+      tft.drawPixel(x, y, ST77XX_BLACK);
+    }
+  }
+  delay(step_delay);
+
+  // Phase 4: Clear even X, odd Y pixels
+  for (int y = 1; y < 160; y += 2) {
+    for (int x = 0; x < 128; x += 2) {
+      tft.drawPixel(x, y, ST77XX_BLACK);
+    }
+  }
+  delay(step_delay);
 
   // Draw the Step 2 Home Screen UI
   drawHomeScreen(tft);
