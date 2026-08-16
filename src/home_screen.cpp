@@ -39,31 +39,24 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   tft.fillRect(0, 0, 128, 10, myOrange);
 
   // 2.1 Draw Wi-Fi Icon (White)
-  tft.drawBitmap(88, 2, wifi_bitmap, 6, 6, ST77XX_WHITE);
+  tft.drawBitmap(100, 2, wifi_bitmap, 6, 6, ST77XX_WHITE);
 
   // 2.2 Draw Battery Icon (White outline & tip, partial fill for 18%)
-  tft.drawRect(100, 2, 10, 6, ST77XX_WHITE);
-  tft.drawFastVLine(110, 3, 4, ST77XX_WHITE); // Tip
-  tft.fillRect(102, 4, 2, 2, ST77XX_WHITE);   // 18% charge indicator (low battery)
-
-  // 2.3 Draw Battery Percentage text
-  tft.setFont(&Dream_Orphans_Bd6pt7b);
-  tft.setTextColor(ST77XX_WHITE);
-  tft.setTextSize(1);
-  tft.setCursor(112, 8);
-  tft.print("18%");
+  tft.drawRect(112, 2, 10, 6, ST77XX_WHITE);
+  tft.drawFastVLine(122, 3, 4, ST77XX_WHITE); // Tip
+  tft.fillRect(114, 4, 2, 2, ST77XX_WHITE);   // 18% charge indicator (low battery)
 
   // 3. Draw Day Text ("thrusday" centered)
   drawCenteredText(tft, "thrusday", 22, myOrange, 1);
 
-  // 4. Draw Large Clock ("12:40" centered, size 3 for 128px screen width)
-  drawCenteredText(tft, "12:40", 62, myOrange, 3);
+  // 4. Draw Large Clock ("12:40" centered, size 3 for 128px screen width, moved upward)
+  drawCenteredText(tft, "12:40", 54, myOrange, 3);
 
   // 5. Draw Quote Card
-  // White rounded rectangle card (width 96, height 22, centered horizontally)
-  tft.fillRoundRect(16, 80, 96, 22, 4, ST77XX_WHITE);
+  // White rounded rectangle card (width 96, height 28, centered horizontally)
+  tft.fillRoundRect(16, 78, 96, 28, 4, ST77XX_WHITE);
   // Centered black text "random quote"
-  drawCenteredText(tft, "random quote", 95, ST77XX_BLACK, 1);
+  drawCenteredText(tft, "random quote", 96, ST77XX_BLACK, 1);
 
   // 6. Draw Bottom Application/Game Area (Orange background, starts at Y = 122, height 38)
   tft.fillRect(0, 122, 128, 38, myOrange);
