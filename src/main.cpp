@@ -3,6 +3,7 @@
 #include "mono.h"
 #include "MikodacsPCS8pt7b.h"
 #include "Dream_Orphans_Bd6pt7b.h"
+#include "home_screen.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -49,7 +50,21 @@ void setup() {
   tft.fillRect(13, 133, 30, 5, myOrange); // Main bar
   tft.fillRect(44, 133, 3, 5, myOrange);  // Second segment
   tft.fillRect(48, 133, 3, 5, myOrange);  // Third segment
+
+  // Wait for 4.5 seconds to display the boot screen
+  delay(4500);
+
+  // Smooth swipe/wipe transition to landscape
+  tft.setRotation(1); // Set to landscape (160x128)
+  for (int x = 0; x < 160; x += 4) {
+    tft.fillRect(x, 0, 4, 128, ST77XX_BLACK);
+    delay(15);
+  }
+
+  // Draw the Step 2 Home Screen UI
+  drawHomeScreen(tft);
 }
 
 void loop() {
-}
+  // Static screen for now, no navigation logic in Step 2
+}
