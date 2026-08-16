@@ -3,6 +3,13 @@
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
+#include "quote_library.h"
+
+// Selects a new random quote from the database
+void selectRandomQuote();
+
+// Returns the currently selected quote
+const Quote* getCurrentQuote();
 
 // Screen state definitions
 enum ScreenState {

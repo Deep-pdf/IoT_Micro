@@ -32,6 +32,9 @@ static int lastMon = -1;
 static int lastWday = -1;
 static bool wasTimeSynced = false;
 
+// Selected quote pointer stored in memory
+static const Quote* selectedQuote = nullptr;
+
 // 6x6 Wi-Fi icon bitmap (padded to 8 bits wide per row)
 const uint8_t wifi_bitmap[] PROGMEM = {
   0b11111100, // Row 0
@@ -53,6 +56,41 @@ static void drawCenteredText(Adafruit_ST7735 &tft, const char *text, int16_t y, 
   int16_t x = (128 - w) / 2 - x1;
   tft.setCursor(x, y);
   tft.print(text);
+}
+
+// Dynamically truncates string with "..." if it exceeds maxWidth (in pixels)
+static String getTruncatedQuote(const char* quote, int16_t maxWidth, Adafruit_ST7735 &tft) {
+  tft.setFont(&Dream_Orphans_Bd6pt7b);
+  tft.setTextSize(1);
+  String str = String(quote);
+
+  int16_t x1, y1;
+  uint16_t w, h;
+  tft.getTextBounds(str.c_str(), 0, 0, &x1, &y1, &w, &h);
+  if (w <= maxWidth) return str;
+
+  // Truncate character by character until it fits
+  String result = str;
+  while (result.length() > 0) {
+    result.remove(result.length() - 1);
+    String testStr = result + "...";
+    tft.getTextBounds(testStr.c_str(), 0, 0, &x1, &y1, &w, &h);
+    if (w <= maxWidth) {
+      return testStr;
+    }
+  }
+  return "...";
+}
+
+void selectRandomQuote() {
+  if (quotes_count > 0) {
+    int idx = random(quotes_count);
+    selectedQuote = &quotes_db[idx];
+  }
+}
+
+const Quote* getCurrentQuote() {
+  return selectedQuote;
 }
 
 void drawHomeScreen(Adafruit_ST7735 &tft) {
@@ -85,8 +123,15 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   // 5. Draw Quote Card
   // White rounded rectangle card (width 96, height 28, centered horizontally)
   tft.fillRoundRect(16, 78, 96, 28, 4, ST77XX_WHITE);
-  // Centered black text "Maan ki Baat"
-  drawCenteredText(tft, "Maan ki Baat", 96, ST77XX_BLACK, 1);
+  
+  // Display the selected quote (truncated) inside the white quote card.
+  // Falls back to "Maan ki Baat" if no quote is selected.
+  if (selectedQuote != nullptr) {
+    String disp = getTruncatedQuote(selectedQuote->text, 88, tft);
+    drawCenteredText(tft, disp.c_str(), 96, ST77XX_BLACK, 1);
+  } else {
+    drawCenteredText(tft, "Maan ki Baat", 96, ST77XX_BLACK, 1);
+  }
 
   // 6. Draw Bottom Application/Game Area (Orange background, starts at Y = 122, height 38)
   tft.fillRect(0, 122, 128, 38, myOrange);

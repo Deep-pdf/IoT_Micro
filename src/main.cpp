@@ -29,15 +29,6 @@ unsigned long lastUpdateTick = 0;
 bool joystickCentered = true;
 unsigned long lastBtnTime = 0;
 
-// Reusable quote collection for Step 5
-const char* const quotes[] = {
-  "Zindagi chhoti nahi thi, hum hi jaldi mein the.",
-  "Waqt sabko milta hai zindagi badalne ke liye, par zindagi dobara nahi milti waqt badalne ke liye.",
-  "Kuch toh log kahenge, logon ka kaam hai kehna.",
-  "Hum bhi dariya hain, humein apna hunar maloom hai."
-};
-const size_t numQuotes = sizeof(quotes) / sizeof(quotes[0]);
-
 enum JoyDirection {
   DIR_NONE,
   DIR_UP,
@@ -93,8 +84,9 @@ void handleButtonPress() {
     if (currentFocus == FOCUS_QUOTE_CARD) {
       currentScreen = STATE_QUOTE;
 
-      // Select random quote
-      const char *quote = quotes[random(numQuotes)];
+      // Get the EXACT SAME selected quote from memory
+      const Quote* q = getCurrentQuote();
+      const char *quote = q ? q->text : "No Quote Loaded";
 
       // Select random visual theme (0 = Black, 1 = Orange, 2 = White)
       int themeMode = random(3);
@@ -116,7 +108,7 @@ void handleButtonPress() {
     // Return back to Home Screen
     currentScreen = STATE_HOME;
 
-    // Restore original layout
+    // Restore original layout (draws the same quote card text)
     drawHomeScreen(tft);
 
     // Forces immediate clock / day/date redraw on next tick
@@ -222,6 +214,9 @@ void setup() {
     }
   }
   delay(step_delay);
+
+  // Select a random quote from the library
+  selectRandomQuote();
 
   // Draw the Initial Home Screen UI (Wi-Fi icon begins as White)
   drawHomeScreen(tft);
