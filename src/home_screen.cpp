@@ -2,6 +2,8 @@
 #include "Dream_Orphans_Bd6pt7b.h"
 #include "icons.h"
 #include <time.h>
+#include <vector>
+#include <string>
 
 // ==========================================
 // LAYOUT CONFIGURATION
@@ -18,9 +20,17 @@
 #define CLOCK_Y        58
 #define CLOCK_SIZE     3
 #define CLOCK_CLEAR_Y  30
-#define CLOCK_CLEAR_H  35
+#define CLOCK_CLEAR_H  42
 
 // ==========================================
+
+// Time tracking cache variables at file scope for cache invalidation
+static int lastHour = -1;
+static int lastMin = -1;
+static int lastMday = -1;
+static int lastMon = -1;
+static int lastWday = -1;
+static bool wasTimeSynced = false;
 
 // 6x6 Wi-Fi icon bitmap (padded to 8 bits wide per row)
 const uint8_t wifi_bitmap[] PROGMEM = {
@@ -75,8 +85,8 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   // 5. Draw Quote Card
   // White rounded rectangle card (width 96, height 28, centered horizontally)
   tft.fillRoundRect(16, 78, 96, 28, 4, ST77XX_WHITE);
-  // Centered black text "random quote"
-  drawCenteredText(tft, "random quote", 96, ST77XX_BLACK, 1);
+  // Centered black text "Maan ki Baat"
+  drawCenteredText(tft, "Maan ki Baat", 96, ST77XX_BLACK, 1);
 
   // 6. Draw Bottom Application/Game Area (Orange background, starts at Y = 122, height 38)
   tft.fillRect(0, 122, 128, 38, myOrange);
@@ -101,13 +111,6 @@ void updateWiFiIcon(Adafruit_ST7735 &tft, bool connected) {
 }
 
 void updateTimeAndDate(Adafruit_ST7735 &tft) {
-  static int lastHour = -1;
-  static int lastMin = -1;
-  static int lastMday = -1;
-  static int lastMon = -1;
-  static int lastWday = -1;
-  static bool wasTimeSynced = false;
-
   const char* const daysOfWeek[] = {
     "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
   };
@@ -156,4 +159,92 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
 
     wasTimeSynced = true;
   }
+}
+
+void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highlighted) {
+  uint16_t myOrange = tft.color565(255, 122, 0);
+
+  if (element == FOCUS_QUOTE_CARD) {
+    // Quote card highlight: draw/clear border slightly outside the card
+    uint16_t color = highlighted ? myOrange : ST77XX_BLACK;
+    tft.drawRoundRect(14, 76, 100, 32, 5, color);
+  } else {
+    // Bottom icons highlight: draw/clear border around the icon on the orange bar
+    int16_t x = 0;
+    if (element == FOCUS_PIXEL_WARS) x = 8;
+    else if (element == FOCUS_AI) x = 48;
+    else if (element == FOCUS_LOST_CROWN) x = 88;
+
+    uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
+    tft.drawRect(x - 2, 123, 36, 36, color);
+  }
+}
+
+void drawFullscreenQuote(Adafruit_ST7735 &tft, const char *quote, uint16_t bgColor, uint16_t textColor) {
+  tft.fillScreen(bgColor);
+  tft.setFont(&Dream_Orphans_Bd6pt7b);
+  tft.setTextColor(textColor);
+  tft.setTextSize(1);
+
+  int16_t screenW = tft.width();
+  int16_t screenH = tft.height();
+  int16_t margin = 10;
+  int16_t maxW = screenW - 2 * margin; // 108 pixels
+
+  // Word-wrapping logic using std::vector and std::string
+  std::vector<std::string> lines;
+  std::string currentLine = "";
+
+  const char *ptr = quote;
+  while (*ptr) {
+    // Skip spaces
+    while (*ptr == ' ') ptr++;
+    if (*ptr == '\0') break;
+
+    const char *wordStart = ptr;
+    while (*ptr && *ptr != ' ') ptr++;
+    std::string singleWord(wordStart, ptr - wordStart);
+
+    std::string testLine = currentLine.empty() ? singleWord : currentLine + " " + singleWord;
+    int16_t x1, y1;
+    uint16_t w, h;
+    tft.getTextBounds(testLine.c_str(), 0, 0, &x1, &y1, &w, &h);
+
+    if (w <= maxW) {
+      currentLine = testLine;
+    } else {
+      if (!currentLine.empty()) {
+        lines.push_back(currentLine);
+      }
+      currentLine = singleWord;
+    }
+  }
+  if (!currentLine.empty()) {
+    lines.push_back(currentLine);
+  }
+
+  int16_t lineHeight = 14;
+  int16_t totalH = lines.size() * lineHeight;
+
+  // Center vertical start position
+  // 8 is the vertical offset for GFX font baseline alignment
+  int16_t startY = (screenH - totalH) / 2 + 8;
+
+  for (size_t i = 0; i < lines.size(); i++) {
+    int16_t x1, y1;
+    uint16_t w, h;
+    tft.getTextBounds(lines[i].c_str(), 0, 0, &x1, &y1, &w, &h);
+    int16_t x = (screenW - w) / 2 - x1;
+    tft.setCursor(x, startY + i * lineHeight);
+    tft.print(lines[i].c_str());
+  }
+}
+
+void invalidateTimeCache() {
+  lastHour = -1;
+  lastMin = -1;
+  lastMday = -1;
+  lastMon = -1;
+  lastWday = -1;
+  wasTimeSynced = false;
 }
