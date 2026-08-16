@@ -1,9 +1,11 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
+#include <WiFi.h>
 #include "mono.h"
 #include "MikodacsPCS8pt7b.h"
 #include "Dream_Orphans_Bd6pt7b.h"
 #include "home_screen.h"
+#include "config.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -11,9 +13,18 @@
 
 Adafruit_ST7735 tft(TFT_CS, TFT_DC, TFT_RST);
 
+bool lastWiFiConnected = false;
+unsigned long lastUpdateTick = 0;
+
 void setup() {
   tft.initR(INITR_BLACKTAB);
   tft.setRotation(2);
+
+  // 1. Asynchronously initialize WiFi & NTP timezone (IST = GMT+5:30 = 19800 seconds)
+  // This starts connection in the background while the boot screen is displayed
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setAutoReconnect(true);
+  configTime(19800, 0, "pool.ntp.org", "time.nist.gov");
 
   // Exact orange color from the image (RGB: 255, 136, 0)
   uint16_t myOrange = tft.color565(251, 84, 43);
@@ -89,10 +100,29 @@ void setup() {
   }
   delay(step_delay);
 
-  // Draw the Step 2 Home Screen UI
+  // Draw the Initial Home Screen UI (Wi-Fi icon begins as White)
   drawHomeScreen(tft);
+  
+  // Cache initial connection status
+  lastWiFiConnected = (WiFi.status() == WL_CONNECTED);
+  updateWiFiIcon(tft, lastWiFiConnected);
 }
 
 void loop() {
-  // Static screen for now, no navigation logic in Step 2
-}
+  unsigned long now = millis();
+  // Update connection status and time every 500ms (non-blocking)
+  if (now - lastUpdateTick >= 500) {
+    lastUpdateTick = now;
+
+    // Check Wi-Fi state changes
+    bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+    if (currentWiFiConnected != lastWiFiConnected) {
+      lastWiFiConnected = currentWiFiConnected;
+      updateWiFiIcon(tft, lastWiFiConnected);
+    }
+
+    // Process background NTP clock updates
+    updateTimeAndDate(tft);
+  }
+}
+
