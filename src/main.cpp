@@ -6,6 +6,7 @@
 #include "Dream_Orphans_Bd6pt7b.h"
 #include "home_screen.h"
 #include "config.h"
+#include "button.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -14,7 +15,7 @@
 // Joystick Pins
 #define JOY_X  34
 #define JOY_Y  35
-#define JOY_SW 13 // Enter push button (formerly joystick switch on pin 32)
+#define JOY_SW 32 // Joystick switch pin (remains physically connected, action is disabled)
 
 Adafruit_ST7735 tft(TFT_CS, TFT_DC, TFT_RST);
 
@@ -28,7 +29,6 @@ unsigned long lastQuoteChangeTime = 0;
 
 // Joystick control state
 bool joystickCentered = true;
-unsigned long lastBtnTime = 0;
 
 enum JoyDirection {
   DIR_NONE,
@@ -78,54 +78,86 @@ void handleNavigation(JoyDirection dir) {
   }
 }
 
-// Handles joystick click (SW button pressed)
-void handleButtonPress() {
+// Shows the Shayari/quote screen (using the current quote)
+void enterMaanKiBaat() {
+  currentScreen = STATE_QUOTE;
+
+  // Get the EXACT SAME selected quote from memory
+  const Quote* q = getCurrentQuote();
+  const char *quote = q ? q->text : "No Quote Loaded";
+
+  // Select random visual theme (0 = Black, 1 = Orange, 2 = White)
+  int themeMode = random(3);
+  uint16_t bgColor = ST77XX_BLACK;
+  uint16_t textColor = ST77XX_WHITE;
+
+  if (themeMode == 1) {
+    bgColor = tft.color565(255, 122, 0); // Orange
+    textColor = ST77XX_BLACK;
+  } else if (themeMode == 2) {
+    bgColor = ST77XX_WHITE;
+    textColor = ST77XX_BLACK;
+  }
+
+  // Draw the fullscreen quote with proper wrapping and centering
+  drawFullscreenQuote(tft, quote, bgColor, textColor);
+}
+
+// Returns to the Home Screen
+void exitMaanKiBaat() {
+  currentScreen = STATE_HOME;
+
+  // Select a new random quote!
+  selectRandomQuote();
+  lastQuoteChangeTime = millis();
+
+  // Restore original layout (draws the new quote card text)
+  drawHomeScreen(tft);
+
+  // Forces immediate clock / day/date redraw on next tick
+  invalidateTimeCache();
+
+  // Redraw highlight state
+  drawFocusHighlight(tft, currentFocus, true);
+
+  // Redraw connection status
+  bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+  updateWiFiIcon(tft, currentWiFiConnected);
+  lastWiFiConnected = currentWiFiConnected;
+}
+
+// Reusable placeholder actions for future apps/games
+void enterPixelWarsPlaceholder() {
+  Serial.println("Placeholder Action: Enter Pixel Wars Game");
+}
+
+void enterAIPlaceholder() {
+  Serial.println("Placeholder Action: Open AI Application");
+}
+
+void enterLostCrownPlaceholder() {
+  Serial.println("Placeholder Action: Enter Lost Crown Game");
+}
+
+// Dispatches action based on the current focused menu item
+void handleCurrentSelection() {
   if (currentScreen == STATE_HOME) {
-    // Click only triggers if "Maan ki Baat" is focused
-    if (currentFocus == FOCUS_QUOTE_CARD) {
-      currentScreen = STATE_QUOTE;
-
-      // Get the EXACT SAME selected quote from memory
-      const Quote* q = getCurrentQuote();
-      const char *quote = q ? q->text : "No Quote Loaded";
-
-      // Select random visual theme (0 = Black, 1 = Orange, 2 = White)
-      int themeMode = random(3);
-      uint16_t bgColor = ST77XX_BLACK;
-      uint16_t textColor = ST77XX_WHITE;
-
-      if (themeMode == 1) {
-        bgColor = tft.color565(255, 122, 0); // Orange
-        textColor = ST77XX_BLACK;
-      } else if (themeMode == 2) {
-        bgColor = ST77XX_WHITE;
-        textColor = ST77XX_BLACK;
-      }
-
-      // Draw the fullscreen quote with proper wrapping and centering
-      drawFullscreenQuote(tft, quote, bgColor, textColor);
+    switch (currentFocus) {
+      case FOCUS_QUOTE_CARD:
+        enterMaanKiBaat();
+        break;
+      case FOCUS_PIXEL_WARS:
+        enterPixelWarsPlaceholder();
+        break;
+      case FOCUS_AI:
+        enterAIPlaceholder();
+        break;
+      case FOCUS_LOST_CROWN:
+        enterLostCrownPlaceholder();
+        break;
     }
   } else if (currentScreen == STATE_QUOTE) {
-    // Return back to Home Screen
-    currentScreen = STATE_HOME;
-
-    // Select a new random quote!
-    selectRandomQuote();
-    lastQuoteChangeTime = millis();
-
-    // Restore original layout (draws the new quote card text)
-    drawHomeScreen(tft);
-
-    // Forces immediate clock / day/date redraw on next tick
-    invalidateTimeCache();
-
-    // Redraw highlight state
-    drawFocusHighlight(tft, currentFocus, true);
-
-    // Redraw connection status
-    bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
-    updateWiFiIcon(tft, currentWiFiConnected);
-    lastWiFiConnected = currentWiFiConnected;
+    exitMaanKiBaat();
   }
 }
 
@@ -134,6 +166,9 @@ void setup() {
   pinMode(JOY_X, INPUT);
   pinMode(JOY_Y, INPUT);
   pinMode(JOY_SW, INPUT_PULLUP);
+
+  // Initialize Enter Push Button (GPIO 13)
+  setupButton();
 
   // Seed random generator using float read on empty analog pin
   randomSeed(analogRead(36));
@@ -236,11 +271,12 @@ void setup() {
 }
 
 void loop() {
-  // 1. Process Button Clicks (Non-blocking debouncer)
-  bool currentBtnState = (digitalRead(JOY_SW) == LOW);
-  if (currentBtnState && (millis() - lastBtnTime > 300)) {
-    lastBtnTime = millis();
-    handleButtonPress();
+  // Update enter button state
+  updateButton();
+
+  // 1. Process Enter Button Click (Non-blocking debounced edge detection)
+  if (isEnterPressed()) {
+    handleCurrentSelection();
   }
 
   // 2. Process joystick movements (Only active on Home Screen)
