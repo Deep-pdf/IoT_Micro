@@ -14,7 +14,7 @@
 // Joystick Pins
 #define JOY_X  34
 #define JOY_Y  35
-#define JOY_SW 32
+#define JOY_SW 13 // Enter push button (formerly joystick switch on pin 32)
 
 Adafruit_ST7735 tft(TFT_CS, TFT_DC, TFT_RST);
 
@@ -24,6 +24,7 @@ FocusedElement currentFocus = FOCUS_QUOTE_CARD;
 
 bool lastWiFiConnected = false;
 unsigned long lastUpdateTick = 0;
+unsigned long lastQuoteChangeTime = 0;
 
 // Joystick control state
 bool joystickCentered = true;
@@ -108,7 +109,11 @@ void handleButtonPress() {
     // Return back to Home Screen
     currentScreen = STATE_HOME;
 
-    // Restore original layout (draws the same quote card text)
+    // Select a new random quote!
+    selectRandomQuote();
+    lastQuoteChangeTime = millis();
+
+    // Restore original layout (draws the new quote card text)
     drawHomeScreen(tft);
 
     // Forces immediate clock / day/date redraw on next tick
@@ -217,6 +222,7 @@ void setup() {
 
   // Select a random quote from the library
   selectRandomQuote();
+  lastQuoteChangeTime = millis();
 
   // Draw the Initial Home Screen UI (Wi-Fi icon begins as White)
   drawHomeScreen(tft);
@@ -265,7 +271,7 @@ void loop() {
     }
   }
 
-  // 3. Process background updates (Wi-Fi state and SNTP time tracking)
+  // 3. Process background updates (Wi-Fi state, SNTP time tracking, and auto-quote rotation)
   unsigned long now = millis();
   if (now - lastUpdateTick >= 500) {
     lastUpdateTick = now;
@@ -279,9 +285,21 @@ void loop() {
       }
     }
 
-    // Process clock updates (Only visible in HOME state)
+    // Process clock and auto-quote updates (Only visible in HOME state)
     if (currentScreen == STATE_HOME) {
       updateTimeAndDate(tft);
+
+      // Auto-change quote every 1 hour (3600000 ms)
+      if (now - lastQuoteChangeTime >= 3600000ULL) {
+        lastQuoteChangeTime = now;
+        selectRandomQuote();
+        
+        // Redraw Home Screen to show the new quote
+        drawHomeScreen(tft);
+        invalidateTimeCache();
+        drawFocusHighlight(tft, currentFocus, true);
+        updateWiFiIcon(tft, WiFi.status() == WL_CONNECTED);
+      }
     }
   }
 }
