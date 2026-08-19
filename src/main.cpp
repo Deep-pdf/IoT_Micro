@@ -844,37 +844,49 @@ static void updateProjectiles(uint32_t dt) {
 }
 
 static void initStarfield() {
-  const uint16_t dimGray = tft.color565(30, 36, 42);       // Far stars (very dim)
-  const uint16_t blueGray = tft.color565(55, 68, 82);      // Mid stars (soft cool gray)
-  const uint16_t nearColor = tft.color565(85, 105, 125);   // Near stars (soft slate blue - no bright white/orange)
-
   randomSeed(millis() + analogRead(36));
 
-  // Far layer (35 stars): tiny, dim, slow. Color: dimGray
+  // Far layer (35 stars): tiny, dim, slow. Color: Dim cool-toned space palette
   for (int i = 0; i < STAR_COUNT_FAR; i++) {
     farStars[i].x = random(2, 126);
     farStars[i].y = random(0, 160);
     farStars[i].speed = STARFIELD_SPEED_FAR * (0.8f + (random(5) / 10.0f));
-    farStars[i].color = dimGray;
     farStars[i].type = 0;
+
+    int c = random(4);
+    if (c == 0) farStars[i].color = tft.color565(25, 12, 35);      // Dim Purple
+    else if (c == 1) farStars[i].color = tft.color565(12, 25, 35); // Dim Blue
+    else if (c == 2) farStars[i].color = tft.color565(12, 30, 25); // Dim Teal
+    else farStars[i].color = tft.color565(30, 25, 12);             // Dim Gold
   }
 
-  // Mid layer (25 stars): medium, slightly brighter. Color: blueGray
+  // Mid layer (25 stars): medium, slightly brighter. Color: Medium cool space palette
   for (int i = 0; i < STAR_COUNT_MID; i++) {
     midStars[i].x = random(2, 126);
     midStars[i].y = random(0, 160);
     midStars[i].speed = STARFIELD_SPEED_MID * (0.8f + (random(5) / 10.0f));
-    midStars[i].color = blueGray;
     // 0=1x1 pixel, 1=2x1 horizontal dash
     midStars[i].type = (random(4) == 0) ? 1 : 0; 
+
+    int c = random(4);
+    if (c == 0) midStars[i].color = tft.color565(55, 35, 75);
+    else if (c == 1) midStars[i].color = tft.color565(35, 55, 75);
+    else if (c == 2) midStars[i].color = tft.color565(35, 70, 55);
+    else midStars[i].color = tft.color565(70, 55, 35);
   }
 
-  // Near layer (12 stars): foreground, slate blue, fast. Color: nearColor
+  // Near layer (12 stars): foreground, bright but cool, fast
   for (int i = 0; i < STAR_COUNT_NEAR; i++) {
     nearStars[i].x = random(3, 125);
     nearStars[i].y = random(0, 160);
     nearStars[i].speed = STARFIELD_SPEED_NEAR * (0.8f + (random(5) / 10.0f));
-    nearStars[i].color = nearColor;
+    
+    int c = random(4);
+    if (c == 0) nearStars[i].color = tft.color565(95, 65, 135);
+    else if (c == 1) nearStars[i].color = tft.color565(65, 95, 135);
+    else if (c == 2) nearStars[i].color = tft.color565(65, 125, 95);
+    else nearStars[i].color = tft.color565(125, 95, 65);
+
     int r = random(4);
     if (r == 0) {
       nearStars[i].type = 2; // 2x2 soft block (simulates blur)
