@@ -114,9 +114,6 @@ void exitMaanKiBaat() {
   // Restore original layout (draws the new quote card text)
   drawHomeScreen(tft);
 
-  // Forces immediate clock / day/date redraw on next tick
-  invalidateTimeCache();
-
   // Redraw highlight state
   drawFocusHighlight(tft, currentFocus, true);
 
@@ -332,7 +329,6 @@ void loop() {
         
         // Redraw Home Screen to show the new quote
         drawHomeScreen(tft);
-        invalidateTimeCache();
         drawFocusHighlight(tft, currentFocus, true);
         updateWiFiIcon(tft, WiFi.status() == WL_CONNECTED);
       }

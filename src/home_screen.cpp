@@ -32,6 +32,11 @@ static int lastMon = -1;
 static int lastWday = -1;
 static bool wasTimeSynced = false;
 
+// Days of the week for display
+static const char* const daysOfWeek[] = {
+  "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
+};
+
 // Selected quote pointer stored in memory
 static const Quote* selectedQuote = nullptr;
 
@@ -114,11 +119,40 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   tft.drawFastVLine(122, 3, 4, ST77XX_WHITE); // Tip
   tft.fillRect(114, 4, 2, 2, ST77XX_WHITE);   // 18% charge indicator (low battery)
 
-  // 3. Draw Day Text (centered, using macros)
-  drawCenteredText(tft, "thrusday", DATE_Y, myOrange, DATE_SIZE);
+  // 3. Draw Day/Date Text & Clock if synced (blank otherwise)
+  struct tm timeinfo;
+  bool isSynced = false;
+  if (getLocalTime(&timeinfo)) {
+    if (timeinfo.tm_year > 100) {
+      isSynced = true;
+    }
+  }
 
-  // 4. Draw Large Clock (centered, using macros)
-  drawCenteredText(tft, "12:40", CLOCK_Y, myOrange, CLOCK_SIZE);
+  if (isSynced) {
+    char dateBuf[32];
+    snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
+    drawCenteredText(tft, dateBuf, DATE_Y, myOrange, DATE_SIZE);
+
+    char timeBuf[16];
+    snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+    drawCenteredText(tft, timeBuf, CLOCK_Y, myOrange, CLOCK_SIZE);
+
+    // Sync cache so updateTimeAndDate knows the screen matches current time
+    lastHour = timeinfo.tm_hour;
+    lastMin = timeinfo.tm_min;
+    lastMday = timeinfo.tm_mday;
+    lastMon = timeinfo.tm_mon;
+    lastWday = timeinfo.tm_wday;
+    wasTimeSynced = true;
+  } else {
+    // Keep it blank and invalidate cache so updateTimeAndDate draws it upon sync
+    lastHour = -1;
+    lastMin = -1;
+    lastMday = -1;
+    lastMon = -1;
+    lastWday = -1;
+    wasTimeSynced = false;
+  }
 
   // 5. Draw Quote Card
   // White rounded rectangle card (width 96, height 28, centered horizontally)
@@ -156,10 +190,6 @@ void updateWiFiIcon(Adafruit_ST7735 &tft, bool connected) {
 }
 
 void updateTimeAndDate(Adafruit_ST7735 &tft) {
-  const char* const daysOfWeek[] = {
-    "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
-  };
-
   struct tm timeinfo;
   bool isSynced = false;
   if (getLocalTime(&timeinfo)) {
