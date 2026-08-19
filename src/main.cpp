@@ -188,7 +188,10 @@ void setup() {
   randomSeed(analogRead(36));
 
   tft.initR(INITR_BLACKTAB);
+  tft.sendCommand(0x28);        // Turn display OFF immediately to hide previous frame buffer garbage
   tft.setRotation(2);
+  tft.fillScreen(ST77XX_BLACK); // Clear display RAM to black while display is OFF
+  tft.sendCommand(0x29);        // Turn display ON now that RAM is cleanly cleared
 
   // Asynchronously initialize WiFi & NTP timezone (IST = GMT+5:30 = 19800 seconds)
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -491,47 +494,64 @@ static void drawPixelWarsShip() {
   const uint16_t primaryRed = tft.color565(255, 32, 21);
   const uint16_t secondaryRed = tft.color565(122, 21, 18);
   const uint16_t orangeGlow = tft.color565(255, 74, 31);
+  const uint16_t yellowGlow = tft.color565(255, 180, 0);
   const uint16_t mainWhite = tft.color565(243, 237, 224);
   const uint16_t darkGray = tft.color565(36, 43, 49);
   const uint16_t blueGray = tft.color565(82, 103, 121);
   const uint16_t shipBlue = tft.color565(23, 105, 168);
 
   // 1. Engine Flames (trails extending down-left)
-  tft.drawLine(42, 132, 22, 147, primaryRed);
-  tft.drawLine(43, 133, 23, 148, orangeGlow);
-  tft.drawLine(44, 134, 24, 149, primaryRed);
+  // Left Engine Flame
+  tft.drawLine(30, 138, 10, 153, primaryRed);
+  tft.drawLine(31, 139, 11, 154, orangeGlow);
+  tft.drawLine(32, 140, 12, 155, yellowGlow);
+
+  // Right Engine Flame
+  tft.drawLine(62, 145, 42, 160, primaryRed);
+  tft.drawLine(63, 146, 43, 161, orangeGlow);
+  tft.drawLine(64, 147, 44, 162, yellowGlow);
   
-  tft.drawLine(52, 138, 35, 151, primaryRed);
-  tft.drawLine(53, 139, 36, 152, orangeGlow);
-  tft.drawLine(54, 140, 37, 153, primaryRed);
-  
-  tft.drawLine(47, 135, 27, 150, primaryRed);
-  tft.drawLine(48, 136, 28, 151, orangeGlow);
-  tft.drawPixel(29, 151, primaryRed);
+  // Center Engine Flame
+  tft.drawLine(43, 141, 23, 156, primaryRed);
+  tft.drawLine(44, 142, 24, 157, orangeGlow);
 
-  // 2. Spaceship Fuselage (pointing top-right)
-  tft.drawLine(78, 110, 48, 136, mainWhite);
-  tft.drawLine(79, 111, 49, 137, mainWhite);
-  tft.drawLine(77, 109, 47, 135, mainWhite);
+  // 2. Spaceship body (pointing top-right diagonally)
+  // 3-pixel thick white core fuselage
+  tft.drawLine(78, 114, 48, 140, mainWhite);
+  tft.drawLine(79, 115, 49, 141, mainWhite);
+  tft.drawLine(77, 113, 47, 139, mainWhite);
 
-  // Blue Cockpit
-  tft.fillRect(66, 116, 4, 4, shipBlue);
-  tft.drawPixel(68, 117, ST77XX_WHITE);
+  // Red nose stripes
+  tft.drawLine(81, 113, 83, 111, primaryRed);
+  tft.drawLine(82, 114, 84, 112, primaryRed);
 
-  // Wings
-  // Left Wing
-  tft.drawLine(60, 120, 44, 130, mainWhite);
-  tft.drawLine(59, 119, 43, 129, darkGray);
-  tft.drawPixel(42, 128, primaryRed);
-  tft.fillRect(44, 128, 4, 5, darkGray);
-  tft.fillRect(45, 129, 2, 3, secondaryRed);
+  // Blue Cockpit glass with a white highlight
+  tft.fillRect(70, 120, 4, 4, shipBlue);
+  tft.drawPixel(72, 121, ST77XX_WHITE);
 
-  // Right Wing
-  tft.drawLine(70, 126, 60, 138, mainWhite);
-  tft.drawLine(71, 127, 61, 139, darkGray);
-  tft.drawPixel(60, 140, primaryRed);
-  tft.fillRect(62, 135, 4, 5, darkGray);
-  tft.fillRect(63, 136, 2, 3, secondaryRed);
+  // Swept Wings
+  // Left Wing (White body with dark gray accents and red tips)
+  tft.drawLine(56, 126, 32, 136, mainWhite);
+  tft.drawLine(55, 127, 31, 137, darkGray);
+  tft.drawPixel(30, 136, primaryRed);
+  tft.drawPixel(31, 137, primaryRed);
+
+  // Left Engine cylinder and exhaust nozzle
+  tft.fillRect(32, 136, 5, 5, darkGray);
+  tft.fillRect(31, 137, 2, 3, secondaryRed);
+
+  // Right Wing (White body with dark gray accents and red tips)
+  tft.drawLine(66, 124, 74, 146, mainWhite);
+  tft.drawLine(65, 125, 73, 147, darkGray);
+  tft.drawPixel(75, 147, primaryRed);
+  tft.drawPixel(76, 148, primaryRed);
+
+  // Right Engine cylinder and exhaust nozzle
+  tft.fillRect(64, 143, 5, 5, darkGray);
+  tft.fillRect(63, 144, 3, 2, secondaryRed);
+
+  // Center Engine cylinder
+  tft.fillRect(44, 140, 3, 3, darkGray);
 }
 
 static void drawPixelWarsPlanet() {
@@ -541,9 +561,9 @@ static void drawPixelWarsPlanet() {
   const uint16_t veryDarkBlueGray = tft.color565(17, 24, 32);
 
   int pcx = 115;
-  int pcy = 155;
+  int pcy = 159;
   int pr = 40;
-  for (int py = 119; py <= 159; py++) {
+  for (int py = 123; py <= 159; py++) {
     for (int px = 70; px <= 127; px++) {
       int dx = px - pcx;
       int dy = py - pcy;
@@ -691,10 +711,10 @@ void drawPixelWarsLoadingScreen(int progress) {
     tft.drawPixel(78, 31, orangeGlow);
 
     // 6. PIXEL WARS Logo Card (Y = 39–70)
-    tft.drawRoundRect(14, 44, 100, 34, 4, darkGray);
-    tft.fillRoundRect(15, 45, 98, 32, 4, veryDarkBlueGray);
+    // tft.drawRoundRect(14, 44, 100, 34, 4, darkGray);
+    // tft.fillRoundRect(15, 45, 98, 32, 4, veryDarkBlueGray);
     drawCenteredPWText(tft, "PIXEL", 47, mainWhite, 2, true);
-    drawCenteredPWText(tft, "WARS", 62, primaryRed, 2, true);
+    drawCenteredPWText(tft, "WARS", 62, primaryRed, 3, true);
 
     // 7. Logo Decorations
     tft.drawFastHLine(6, 68, 8, primaryRed);
@@ -793,19 +813,19 @@ void drawPixelWarsStartMenu() {
     "EXIT"
   };
 
-  int rowYs[] = { 48, 61, 74, 91 };
-  int rowHs[] = { 11, 11, 15, 11 };
+  int rowYs[] = { 64, 78, 92, 106 };
+  int rowHs[] = { 12, 12, 12, 12 };
 
   if (lastPwMenuSelectedIndex == -1) {
     tft.fillScreen(ST77XX_BLACK);
     
-    // 1. Space Background (Starfield)
+    // 1. Space Background (Starfield + Meteors)
     randomSeed(12345);
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < 20; i++) {
       int sx = random(6, 122);
       int sy = random(15, 145);
       // Skip menu area
-      if (sx > 8 && sx < 120 && sy > 46 && sy < 105) continue;
+      if (sx > 8 && sx < 120 && sy > 58 && sy < 115) continue;
       
       uint16_t color;
       int r = random(3);
@@ -815,36 +835,59 @@ void drawPixelWarsStartMenu() {
       tft.drawPixel(sx, sy, color);
     }
 
-    // 2. Top Center Insignia (Y=8, center X=64)
+    // Glowing cross-shaped stars
+    // Star 1 (Top Left)
+    tft.drawFastHLine(14, 25, 3, mainWhite);
+    tft.drawFastVLine(15, 24, 3, mainWhite);
+    tft.drawPixel(15, 25, orangeGlow);
+    
+    // Star 2 (Top Right)
+    tft.drawFastHLine(109, 30, 3, mainWhite);
+    tft.drawFastVLine(110, 29, 3, mainWhite);
+    tft.drawPixel(110, 30, orangeGlow);
+
+    // Star 3 (Bottom Left)
+    tft.drawFastHLine(11, 120, 3, mainWhite);
+    tft.drawFastVLine(12, 119, 3, mainWhite);
+    tft.drawPixel(12, 120, orangeGlow);
+
+    // Shooting meteors (diagonal streaks)
+    tft.drawLine(18, 70, 22, 74, blueGray);
+    tft.drawPixel(18, 70, mainWhite);
+
+    tft.drawLine(102, 65, 106, 69, primaryRed);
+    tft.drawPixel(102, 65, orangeGlow);
+
+    // 2. Top Center Insignia (Y=8, center X=64, completed circle crosshair)
     tft.drawFastHLine(46, 8, 10, secondaryRed);
     tft.drawFastHLine(72, 8, 10, secondaryRed);
+    tft.drawCircle(64, 8, 3, primaryRed);
+    tft.drawFastHLine(58, 8, 3, primaryRed);
+    tft.drawFastHLine(68, 8, 3, primaryRed);
+    tft.drawFastVLine(64, 2, 3, primaryRed);
+    tft.drawFastVLine(64, 12, 3, primaryRed);
     tft.drawPixel(64, 8, primaryRed);
-    tft.drawPixel(64, 6, primaryRed);
-    tft.drawPixel(64, 10, primaryRed);
-    tft.drawPixel(62, 8, primaryRed);
-    tft.drawPixel(66, 8, primaryRed);
 
-    // 3. PIXEL WARS Title Card (Y = 14–40)
-    tft.drawRoundRect(14, 14, 100, 28, 4, darkGray);
-    tft.fillRoundRect(15, 15, 98, 26, 4, veryDarkBlueGray);
-    drawCenteredPWText(tft, "PIXEL", 18, mainWhite, 2, true);
-    drawCenteredPWText(tft, "WARS", 33, primaryRed, 2, true);
+    // 3. PIXEL WARS Title Card (Y = 16–42, borderless)
+    drawCenteredPWText(tft, "PIXEL", 16, mainWhite, 2, true);
+    drawCenteredPWText(tft, "WARS", 31, primaryRed, 3, true);
 
-    // 4. Logo Separator
-    tft.drawFastHLine(14, 45, 45, darkGray);
-    tft.drawFastHLine(69, 45, 45, darkGray);
-    tft.drawPixel(64, 45, primaryRed);
-    tft.drawPixel(64, 43, primaryRed);
-    tft.drawPixel(64, 47, primaryRed);
-    tft.drawPixel(62, 45, primaryRed);
-    tft.drawPixel(66, 45, primaryRed);
+    // 4. Logo Separator (completed circle crosshair at Y=49)
+    tft.drawFastHLine(14, 55, 43, darkGray);
+    tft.drawFastHLine(71, 55, 43, darkGray);
+    tft.drawCircle(64, 55, 3, primaryRed);
+    tft.drawPixel(64, 55, primaryRed);
+    tft.drawPixel(64, 51, primaryRed);
+    tft.drawPixel(64, 59, primaryRed);
+    tft.drawPixel(60, 55, primaryRed);
+    tft.drawPixel(68, 55, primaryRed);
 
     // 5. Spaceship Scene (Planet + Ship + Trails)
     drawPixelWarsPlanet();
     drawPixelWarsShip();
 
     // 6. Version Text (Y=155)
-    drawCenteredPWText(tft, "-- v1.0.0 --", 155, primaryRed, 1, false);
+    // drawCenteredPWText(tft, "-- v1.0.0 --", 155, primaryRed, 1, false);
   }
 
   // Draw/update menu rows dynamically (no flicker)
@@ -871,18 +914,8 @@ void drawPixelWarsStartMenu() {
     tft.setFont(NULL);
     tft.setTextSize(1);
     tft.setTextColor(isSelected ? mainWhite : blueGray);
-    
-    if (i == 2) {
-      // CUSTOMIZE has a subtitle
-      tft.setCursor(32, rowY);
-      tft.print("CUSTOMIZE");
-      tft.setTextColor(blueGray);
-      tft.setCursor(32, rowY + 8);
-      tft.print("(PLANE SKIN)");
-    } else {
-      tft.setCursor(32, rowY + (rowH - 8) / 2);
-      tft.print(menuItems[i]);
-    }
+    tft.setCursor(32, rowY + (rowH - 8) / 2);
+    tft.print(menuItems[i]);
 
     // Right Arrow
     int16_t arrowY = rowY + rowH / 2;
