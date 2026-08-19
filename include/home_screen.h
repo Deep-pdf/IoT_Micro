@@ -14,7 +14,9 @@ const Quote* getCurrentQuote();
 // Screen state definitions
 enum ScreenState {
   STATE_HOME,
-  STATE_QUOTE
+  STATE_QUOTE,
+  STATE_PIXEL_WARS_LOADING,
+  STATE_PIXEL_WARS_MENU
 };
 
 // Selectable home screen elements

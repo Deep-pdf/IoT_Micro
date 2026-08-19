@@ -122,7 +122,8 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   // 3. Draw Day/Date Text & Clock if synced (blank otherwise)
   struct tm timeinfo;
   bool isSynced = false;
-  if (getLocalTime(&timeinfo)) {
+  // Use a timeout of 0ms so this call doesn't block execution if NTP is unsynced
+  if (getLocalTime(&timeinfo, 0)) {
     if (timeinfo.tm_year > 100) {
       isSynced = true;
     }
@@ -192,7 +193,8 @@ void updateWiFiIcon(Adafruit_ST7735 &tft, bool connected) {
 void updateTimeAndDate(Adafruit_ST7735 &tft) {
   struct tm timeinfo;
   bool isSynced = false;
-  if (getLocalTime(&timeinfo)) {
+  // Use a timeout of 0ms so this call doesn't block execution if NTP is unsynced
+  if (getLocalTime(&timeinfo, 0)) {
     if (timeinfo.tm_year > 100) {
       isSynced = true;
     }

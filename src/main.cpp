@@ -7,6 +7,18 @@
 #include "home_screen.h"
 #include "config.h"
 #include "button.h"
+#include "icons.h"
+
+// ===== PIXEL WARS DEVELOPMENT MODE =====
+#define PIXEL_WARS_DEV_MODE true
+
+#if defined(PIXEL_WARS_DEV_MODE) && PIXEL_WARS_DEV_MODE == true
+static unsigned long pixelWarsLoadStartTime = 0;
+static int lastProgress = -1;
+
+void drawPixelWarsLoadingScreen(int progress);
+#endif
+
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -178,6 +190,10 @@ void setup() {
   WiFi.setAutoReconnect(true);
   configTime(19800, 0, "pool.ntp.org", "time.nist.gov");
 
+  // ===== PIXEL WARS DEVELOPMENT MODE =====
+#if defined(PIXEL_WARS_DEV_MODE) && PIXEL_WARS_DEV_MODE == true
+  // In development mode, we bypass the standard boot screen and delay
+#else
   // Exact orange color from the image (RGB: 255, 136, 0)
   uint16_t myOrange = tft.color565(251, 84, 43);
   
@@ -251,11 +267,18 @@ void setup() {
     }
   }
   delay(step_delay);
+#endif
 
   // Select a random quote from the library
   selectRandomQuote();
   lastQuoteChangeTime = millis();
 
+  // ===== PIXEL WARS DEVELOPMENT MODE =====
+#if defined(PIXEL_WARS_DEV_MODE) && PIXEL_WARS_DEV_MODE == true
+  currentScreen = STATE_PIXEL_WARS_LOADING;
+  pixelWarsLoadStartTime = millis();
+  drawPixelWarsLoadingScreen(0);
+#else
   // Draw the Initial Home Screen UI (Wi-Fi icon begins as White)
   drawHomeScreen(tft);
   
@@ -265,12 +288,27 @@ void setup() {
   // Cache initial connection status
   lastWiFiConnected = (WiFi.status() == WL_CONNECTED);
   updateWiFiIcon(tft, lastWiFiConnected);
+#endif
 }
 
 void loop() {
   // Update enter button state
   updateButton();
 
+  // ===== PIXEL WARS DEVELOPMENT MODE =====
+#if defined(PIXEL_WARS_DEV_MODE) && PIXEL_WARS_DEV_MODE == true
+  if (currentScreen == STATE_PIXEL_WARS_LOADING) {
+    unsigned long elapsed = millis() - pixelWarsLoadStartTime;
+    int progress = 0;
+    if (elapsed >= 3000) { // 3 seconds loading duration
+      progress = 100;
+    } else {
+      progress = (elapsed * 100) / 3000;
+    }
+    drawPixelWarsLoadingScreen(progress);
+    return;
+  }
+#else
   // 1. Process Enter Button Click (Non-blocking debounced edge detection)
   if (isEnterPressed()) {
     handleCurrentSelection();
@@ -334,4 +372,122 @@ void loop() {
       }
     }
   }
+#endif
 }
+
+// ===== PIXEL WARS DEVELOPMENT MODE =====
+#if defined(PIXEL_WARS_DEV_MODE) && PIXEL_WARS_DEV_MODE == true
+
+static void drawCenteredText(Adafruit_ST7735 &tft, const char *text, int16_t y, uint16_t color, uint8_t size) {
+  tft.setFont(&Dream_Orphans_Bd6pt7b);
+  tft.setTextColor(color);
+  tft.setTextSize(size);
+  int16_t x1, y1;
+  uint16_t w, h;
+  tft.getTextBounds(text, 0, y, &x1, &y1, &w, &h);
+  int16_t x = (128 - w) / 2 - x1;
+  tft.setCursor(x, y);
+  tft.print(text);
+}
+
+void drawPixelWarsLoadingScreen(int progress) {
+  uint16_t pwOrange = tft.color565(255, 122, 0);
+  uint16_t accentRed = tft.color565(255, 50, 50);
+  uint16_t darkGray = tft.color565(60, 60, 60);
+
+  if (lastProgress == -1) {
+    tft.fillScreen(ST77XX_BLACK);
+
+    // 1. Draw Starfield background
+    randomSeed(12345); // Fixed seed for consistent star placement
+    for (int i = 0; i < 40; i++) {
+      int sx = random(3, 125);
+      int sy = random(3, 157);
+      // Avoid drawing stars directly inside the main title card and progress container
+      if (sy > 40 && sy < 145 && sx > 10 && sx < 118) continue;
+      
+      uint16_t starColor;
+      int r = random(4);
+      if (r == 0) starColor = tft.color565(200, 50, 50);      // Red star
+      else if (r == 1) starColor = tft.color565(100, 100, 200); // Blue star
+      else if (r == 2) starColor = tft.color565(120, 120, 120); // Gray star
+      else starColor = ST77XX_WHITE;                           // White star
+      tft.drawPixel(sx, sy, starColor);
+    }
+
+    // 2. Draw outer boundary frame (dark red with bright red corners)
+    uint16_t frameColor = tft.color565(120, 20, 20);
+    tft.drawRect(0, 0, 128, 160, frameColor);
+    tft.drawRect(1, 1, 126, 158, frameColor);
+    
+    tft.drawFastHLine(0, 0, 8, accentRed);
+    tft.drawFastVLine(0, 0, 8, accentRed);
+    tft.drawFastHLine(120, 0, 8, accentRed);
+    tft.drawFastVLine(127, 0, 8, accentRed);
+    tft.drawFastHLine(0, 159, 8, accentRed);
+    tft.drawFastVLine(0, 152, 8, accentRed);
+    tft.drawFastHLine(120, 159, 8, accentRed);
+    tft.drawFastVLine(127, 152, 8, accentRed);
+
+    // 3. Draw Logo
+    tft.drawRGBBitmap(48, 10, icon_pixelwars, 32, 32);
+
+    // 4. Draw Title Card Container
+    tft.drawRoundRect(14, 46, 100, 32, 4, darkGray);
+    tft.fillRoundRect(15, 47, 98, 30, 4, tft.color565(15, 15, 15));
+
+    // 5. Draw Stacked Title
+    drawCenteredText(tft, "PIXEL", 58, ST77XX_WHITE, 1);
+    drawCenteredText(tft, "WARS", 72, accentRed, 1);
+
+    // 6. Draw Star separator
+    drawCenteredText(tft, "*", 84, accentRed, 1);
+
+    // 7. Draw LOADING...
+    drawCenteredText(tft, "LOADING...", 95, ST77XX_WHITE, 1);
+
+    // 8. Draw Progress Bar Container
+    tft.drawRoundRect(14, 101, 100, 12, 3, tft.color565(80, 20, 20));
+
+    // 9. Draw Status Capsule
+    tft.drawRoundRect(10, 132, 108, 14, 4, darkGray);
+    
+    // 10. Draw Bottom Text
+    drawCenteredText(tft, "|||| ESP32 SYSTEM ||||", 153, darkGray, 1);
+  }
+
+  // 11. Update Progress Bar Segments
+  int segmentsToFill = progress / 10; // 0 to 10 segments
+  static int lastFilledSegments = -1;
+
+  if (segmentsToFill != lastFilledSegments || lastProgress == -1) {
+    for (int i = 0; i < 10; i++) {
+      uint16_t color = (i < segmentsToFill) ? accentRed : ST77XX_BLACK;
+      tft.fillRect(19 + i * 9, 104, 8, 6, color);
+    }
+    lastFilledSegments = segmentsToFill;
+  }
+
+  // 12. Update Percentage text and status text
+  if (progress != lastProgress) {
+    // Clear old percentage area
+    tft.fillRect(40, 116, 48, 14, ST77XX_BLACK);
+    char pctBuf[16];
+    snprintf(pctBuf, sizeof(pctBuf), "%d%%", progress);
+    drawCenteredText(tft, pctBuf, 125, accentRed, 1);
+
+    // Update Status text dynamically based on progress
+    tft.fillRect(12, 134, 104, 10, ST77XX_BLACK);
+    const char* statusStr;
+    if (progress <= 25) statusStr = "LOADING SYSTEM...";
+    else if (progress <= 50) statusStr = "ESTABLISHING COMMS";
+    else if (progress <= 75) statusStr = "WARM-UP ENGINES";
+    else if (progress <= 99) statusStr = "PREPARING BATTLE";
+    else statusStr = "READY FOR BATTLE";
+    
+    drawCenteredText(tft, statusStr, 142, pwOrange, 1);
+
+    lastProgress = progress;
+  }
+}
+#endif
