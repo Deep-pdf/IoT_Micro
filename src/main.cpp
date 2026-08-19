@@ -18,10 +18,20 @@ static int lastProgress = -1;
 static int pwMenuSelectedIndex = 0;
 static int lastPwMenuSelectedIndex = -1;
 
+static unsigned long countdownStartTime = 0;
+static int lastCountdownNumber = -1;
+static float playerX = 56.0f;
+static float playerY = 120.0f;
+static float prevPlayerX = 56.0f;
+static float prevPlayerY = 120.0f;
+static unsigned long lastGameplayFrameTime = 0;
+
 void drawPixelWarsLoadingScreen(int progress);
 void drawPixelWarsStartMenu();
 void navigatePixelWarsMenu(int direction);
 void handlePixelWarsMenuSelection();
+static void drawPlayerShip(int16_t px, int16_t py);
+static void drawCenteredPWText(Adafruit_ST7735 &tft, const char *text, int16_t y, uint16_t color, uint8_t size, bool bold = false);
 #endif
 
 
@@ -352,6 +362,99 @@ void loop() {
     }
     return;
   }
+
+  if (currentScreen == STATE_PIXEL_WARS_COUNTDOWN) {
+    unsigned long elapsed = millis() - countdownStartTime;
+    uint16_t primaryRed = tft.color565(255, 32, 21);
+    uint16_t orangeGlow = tft.color565(255, 74, 31);
+    
+    if (elapsed < 800) {
+      if (lastCountdownNumber != 3) {
+        tft.fillRect(44, 68, 40, 24, ST77XX_BLACK);
+        drawCenteredPWText(tft, "3", 68, orangeGlow, 3, true);
+        lastCountdownNumber = 3;
+      }
+    } else if (elapsed < 1600) {
+      if (lastCountdownNumber != 2) {
+        tft.fillRect(44, 68, 40, 24, ST77XX_BLACK);
+        drawCenteredPWText(tft, "2", 68, orangeGlow, 3, true);
+        lastCountdownNumber = 2;
+      }
+    } else if (elapsed < 2400) {
+      if (lastCountdownNumber != 1) {
+        tft.fillRect(44, 68, 40, 24, ST77XX_BLACK);
+        drawCenteredPWText(tft, "1", 68, orangeGlow, 3, true);
+        lastCountdownNumber = 1;
+      }
+    } else if (elapsed < 3200) {
+      if (lastCountdownNumber != 0) {
+        tft.fillRect(34, 68, 60, 24, ST77XX_BLACK);
+        drawCenteredPWText(tft, "GO!", 68, primaryRed, 3, true);
+        lastCountdownNumber = 0;
+      }
+    } else {
+      // Transition to Gameplay
+      currentScreen = STATE_PIXEL_WARS_GAMEPLAY;
+      playerX = 56.0f;
+      playerY = 120.0f;
+      prevPlayerX = 56.0f;
+      prevPlayerY = 120.0f;
+      lastGameplayFrameTime = millis();
+      
+      // Clear screen and draw gameplay starfield
+      tft.fillScreen(ST77XX_BLACK);
+      randomSeed(54321);
+      for (int i = 0; i < 25; i++) {
+        int sx = random(4, 124);
+        int sy = random(4, 156);
+        tft.drawPixel(sx, sy, tft.color565(82, 103, 121));
+      }
+      drawPlayerShip((int16_t)playerX, (int16_t)playerY);
+    }
+    return;
+  }
+
+  if (currentScreen == STATE_PIXEL_WARS_GAMEPLAY) {
+    unsigned long now = millis();
+    unsigned long dt = now - lastGameplayFrameTime;
+    if (dt > 100) dt = 100;
+    lastGameplayFrameTime = now;
+
+    float dx = 0;
+    float dy = 0;
+    float speed = 0.08f; // pixels per millisecond
+
+    int vrx = analogRead(JOY_X);
+    int vry = analogRead(JOY_Y);
+
+    if (vrx < 1500) dx = -speed * dt;
+    else if (vrx > 2700) dx = speed * dt;
+
+    if (vry < 1500) dy = -speed * dt;
+    else if (vry > 2700) dy = speed * dt;
+
+    playerX += dx;
+    playerY += dy;
+
+    if (playerX < 0.0f) playerX = 0.0f;
+    if (playerX > 113.0f) playerX = 113.0f;
+
+    if (playerY < 0.0f) playerY = 0.0f;
+    if (playerY > 143.0f) playerY = 143.0f;
+
+    int16_t ix = (int16_t)playerX;
+    int16_t iy = (int16_t)playerY;
+    int16_t pix = (int16_t)prevPlayerX;
+    int16_t piy = (int16_t)prevPlayerY;
+
+    if (ix != pix || iy != piy) {
+      tft.fillRect(pix, piy, 15, 17, ST77XX_BLACK);
+      drawPlayerShip(ix, iy);
+      prevPlayerX = playerX;
+      prevPlayerY = playerY;
+    }
+    return;
+  }
 #else
   // 1. Process Enter Button Click (Non-blocking debounced edge detection)
   if (isEnterPressed()) {
@@ -422,7 +525,7 @@ void loop() {
 // ===== PIXEL WARS DEVELOPMENT MODE =====
 #if defined(PIXEL_WARS_DEV_MODE) && PIXEL_WARS_DEV_MODE == true
 
-static void drawCenteredPWText(Adafruit_ST7735 &tft, const char *text, int16_t y, uint16_t color, uint8_t size, bool bold = false) {
+static void drawCenteredPWText(Adafruit_ST7735 &tft, const char *text, int16_t y, uint16_t color, uint8_t size, bool bold) {
   tft.setFont(NULL); // Clear custom font to use default GFX font
   tft.setTextColor(color);
   tft.setTextSize(size);
@@ -580,6 +683,56 @@ static void drawPixelWarsPlanet() {
       }
     }
   }
+}
+
+static void drawPlayerShip(int16_t px, int16_t py) {
+  const uint16_t primaryRed = tft.color565(255, 32, 21);
+  const uint16_t orangeGlow = tft.color565(255, 74, 31);
+  const uint16_t yellowGlow = tft.color565(255, 180, 0);
+  const uint16_t mainWhite = tft.color565(243, 237, 224);
+  const uint16_t darkGray = tft.color565(36, 43, 49);
+  const uint16_t shipBlue = tft.color565(23, 105, 168);
+
+  // 1. Nose tip and centerline fuselage
+  tft.drawLine(px + 7, py, px + 7, py + 14, mainWhite);
+  tft.drawLine(px + 6, py + 3, px + 6, py + 14, mainWhite);
+  tft.drawLine(px + 8, py + 3, px + 8, py + 14, mainWhite);
+  tft.drawPixel(px + 7, py, primaryRed); // Red nose tip
+  tft.drawPixel(px + 7, py + 1, primaryRed);
+
+  // 2. Cockpit window
+  tft.fillRect(px + 6, py + 5, 3, 4, shipBlue);
+  tft.drawPixel(px + 7, py + 6, ST77XX_WHITE);
+
+  // 3. Swept Wings
+  tft.drawLine(px + 5, py + 8, px, py + 13, mainWhite);
+  tft.drawLine(px + 5, py + 9, px + 1, py + 13, darkGray);
+  tft.drawPixel(px, py + 14, primaryRed);
+  tft.drawPixel(px + 1, py + 14, primaryRed);
+
+  tft.drawLine(px + 9, py + 8, px + 14, py + 13, mainWhite);
+  tft.drawLine(px + 9, py + 9, px + 13, py + 13, darkGray);
+  tft.drawPixel(px + 14, py + 14, primaryRed);
+  tft.drawPixel(px + 13, py + 14, primaryRed);
+
+  // 4. Engines
+  tft.fillRect(px + 2, py + 11, 2, 3, darkGray);
+  tft.fillRect(px + 11, py + 11, 2, 3, darkGray);
+  tft.fillRect(px + 6, py + 14, 3, 2, darkGray);
+
+  // 5. Thruster flames
+  // Left flame
+  tft.drawPixel(px + 2, py + 14, orangeGlow);
+  tft.drawPixel(px + 3, py + 14, orangeGlow);
+  tft.drawPixel(px + 2, py + 15, primaryRed);
+  tft.drawPixel(px + 3, py + 15, primaryRed);
+  // Right flame
+  tft.drawPixel(px + 11, py + 14, orangeGlow);
+  tft.drawPixel(px + 12, py + 14, orangeGlow);
+  tft.drawPixel(px + 11, py + 15, primaryRed);
+  tft.drawPixel(px + 12, py + 15, primaryRed);
+  // Center flame
+  tft.drawPixel(px + 7, py + 16, yellowGlow);
 }
 
 void drawPixelWarsLoadingScreen(int progress) {
@@ -946,6 +1099,17 @@ void handlePixelWarsMenuSelection() {
   switch (pwMenuSelectedIndex) {
     case 0:
       Serial.println("START GAME");
+      currentScreen = STATE_PIXEL_WARS_COUNTDOWN;
+      countdownStartTime = millis();
+      lastCountdownNumber = -1;
+      // Draw initial black screen and sparse stars
+      tft.fillScreen(ST77XX_BLACK);
+      randomSeed(12345);
+      for (int i = 0; i < 20; i++) {
+        int sx = random(6, 122);
+        int sy = random(15, 145);
+        tft.drawPixel(sx, sy, tft.color565(82, 103, 121));
+      }
       break;
     case 1:
       Serial.println("HIGH SCORE");
