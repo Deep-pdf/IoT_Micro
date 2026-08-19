@@ -415,6 +415,14 @@ void loop() {
   }
 
   if (currentScreen == STATE_PIXEL_WARS_GAMEPLAY) {
+    if (isBackPressed()) {
+      currentScreen = STATE_PIXEL_WARS_MENU;
+      pwMenuSelectedIndex = 0;
+      lastPwMenuSelectedIndex = -1;
+      drawPixelWarsStartMenu();
+      return;
+    }
+
     unsigned long now = millis();
     unsigned long dt = now - lastGameplayFrameTime;
     if (dt > 100) dt = 100;

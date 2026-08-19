@@ -11,5 +11,6 @@ void updateButton();
 // Returns true if the button was pressed since the last time this function was called.
 // Consumes the press event (resets the flag to false).
 bool isEnterPressed();
+bool isBackPressed();
 
 #endif // BUTTON_H

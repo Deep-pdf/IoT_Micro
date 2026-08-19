@@ -10,28 +10,43 @@ static int lastRawState = HIGH;
 static unsigned long lastDebounceTime = 0;
 static bool enterPressedEvent = false;
 
+static int lastBackStableState = HIGH;
+static int lastBackRawState = HIGH;
+static unsigned long lastBackDebounceTime = 0;
+static bool backPressedEvent = false;
+
 void setupButton() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(25, INPUT_PULLUP); // BACK button
 }
 
 void updateButton() {
+  // Update ENTER Button
   int reading = digitalRead(BUTTON_PIN);
-
-  // If the raw input state changed (due to mechanical noise or pressing/releasing)
   if (reading != lastRawState) {
     lastDebounceTime = millis();
     lastRawState = reading;
   }
-
-  // Once the raw input state is stable for at least DEBOUNCE_DELAY_MS
   if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY_MS) {
-    // Check if the stable state has changed
     if (reading != lastStableState) {
       lastStableState = reading;
-
-      // Detect falling edge (HIGH -> LOW transition = press event)
       if (lastStableState == LOW) {
         enterPressedEvent = true;
+      }
+    }
+  }
+
+  // Update BACK Button
+  int backReading = digitalRead(25);
+  if (backReading != lastBackRawState) {
+    lastBackDebounceTime = millis();
+    lastBackRawState = backReading;
+  }
+  if ((millis() - lastBackDebounceTime) > DEBOUNCE_DELAY_MS) {
+    if (backReading != lastBackStableState) {
+      lastBackStableState = backReading;
+      if (lastBackStableState == LOW) {
+        backPressedEvent = true;
       }
     }
   }
@@ -40,6 +55,14 @@ void updateButton() {
 bool isEnterPressed() {
   if (enterPressedEvent) {
     enterPressedEvent = false; // Consume the event
+    return true;
+  }
+  return false;
+}
+
+bool isBackPressed() {
+  if (backPressedEvent) {
+    backPressedEvent = false; // Consume the event
     return true;
   }
   return false;
