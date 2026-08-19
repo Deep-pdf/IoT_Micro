@@ -26,12 +26,49 @@ static float prevPlayerX = 56.0f;
 static float prevPlayerY = 120.0f;
 static unsigned long lastGameplayFrameTime = 0;
 
+#define MAX_PROJECTILES 5
+struct Projectile {
+  float x;
+  float y;
+  float prevX;
+  float prevY;
+  bool active;
+};
+static Projectile projectiles[MAX_PROJECTILES];
+
+#define STAR_COUNT_FAR 35
+#define STAR_COUNT_MID 25
+#define STAR_COUNT_NEAR 12
+
+struct Star {
+  float x;
+  float y;
+  float speed;
+  uint16_t color;
+  uint8_t type; // 0=1x1, 1=2x1, 2=2x2, 3=1x3 streak, 4=cross, 5=red particle
+};
+
+static Star farStars[STAR_COUNT_FAR];
+static Star midStars[STAR_COUNT_MID];
+static Star nearStars[STAR_COUNT_NEAR];
+
+static float STARFIELD_SPEED_FAR = 0.02f;
+static float STARFIELD_SPEED_MID = 0.05f;
+static float STARFIELD_SPEED_NEAR = 0.12f;
+
 void drawPixelWarsLoadingScreen(int progress);
 void drawPixelWarsStartMenu();
 void navigatePixelWarsMenu(int direction);
 void handlePixelWarsMenuSelection();
 static void drawPlayerShip(int16_t px, int16_t py);
-static void drawCenteredPWText(Adafruit_ST7735 &tft, const char *text, int16_t y, uint16_t color, uint8_t size, bool bold = false);
+static void drawCenteredPWText(Adafruit_ST7735 &tft, const char *text, int16_t y, uint16_t color, uint8_t size, bool bold);
+static void spawnProjectile();
+static void updateProjectiles(uint32_t dt);
+static void clearProjectiles();
+static void initStarfield();
+static void updateStarfield(uint32_t dt, float speedMultiplier);
+static void drawStar(const Star &s);
+static void eraseStar(const Star &s);
 #endif
 
 
@@ -368,6 +405,14 @@ void loop() {
     uint16_t primaryRed = tft.color565(255, 32, 21);
     uint16_t orangeGlow = tft.color565(255, 74, 31);
     
+    unsigned long now = millis();
+    uint32_t dt = now - lastGameplayFrameTime;
+    if (dt > 100) dt = 100;
+    lastGameplayFrameTime = now;
+
+    // Scroll stars slowly during countdown
+    updateStarfield(dt, 0.2f);
+    
     if (elapsed < 800) {
       if (lastCountdownNumber != 3) {
         tft.fillRect(44, 68, 40, 24, ST77XX_BLACK);
@@ -400,15 +445,10 @@ void loop() {
       prevPlayerX = 56.0f;
       prevPlayerY = 120.0f;
       lastGameplayFrameTime = millis();
+      clearProjectiles(); // Clear active projectiles at startup
       
-      // Clear screen and draw gameplay starfield
-      tft.fillScreen(ST77XX_BLACK);
-      randomSeed(54321);
-      for (int i = 0; i < 25; i++) {
-        int sx = random(4, 124);
-        int sy = random(4, 156);
-        tft.drawPixel(sx, sy, tft.color565(82, 103, 121));
-      }
+      // Erase countdown text box and draw player ship
+      tft.fillRect(34, 68, 60, 24, ST77XX_BLACK);
       drawPlayerShip((int16_t)playerX, (int16_t)playerY);
     }
     return;
@@ -419,6 +459,7 @@ void loop() {
       currentScreen = STATE_PIXEL_WARS_MENU;
       pwMenuSelectedIndex = 0;
       lastPwMenuSelectedIndex = -1;
+      clearProjectiles(); // Clear active projectiles on exit
       drawPixelWarsStartMenu();
       return;
     }
@@ -427,6 +468,17 @@ void loop() {
     unsigned long dt = now - lastGameplayFrameTime;
     if (dt > 100) dt = 100;
     lastGameplayFrameTime = now;
+
+    // Check shoot input
+    if (isEnterPressed()) {
+      spawnProjectile();
+    }
+
+    // Update scrolling starfield (100% speed)
+    updateStarfield(dt, 1.0f);
+
+    // Update projectiles
+    updateProjectiles(dt);
 
     float dx = 0;
     float dy = 0;
@@ -741,6 +793,187 @@ static void drawPlayerShip(int16_t px, int16_t py) {
   tft.drawPixel(px + 12, py + 15, primaryRed);
   // Center flame
   tft.drawPixel(px + 7, py + 16, yellowGlow);
+}
+
+static void clearProjectiles() {
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
+    projectiles[i].active = false;
+  }
+}
+
+static void spawnProjectile() {
+  const uint16_t primaryRed = tft.color565(255, 32, 21);
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
+    if (!projectiles[i].active) {
+      projectiles[i].x = playerX + 6.0f;
+      projectiles[i].y = playerY - 6.0f;
+      projectiles[i].prevX = projectiles[i].x;
+      projectiles[i].prevY = projectiles[i].y;
+      projectiles[i].active = true;
+      
+      // Draw immediately
+      tft.fillRect((int16_t)projectiles[i].x, (int16_t)projectiles[i].y, 2, 6, primaryRed);
+      break;
+    }
+  }
+}
+
+static void updateProjectiles(uint32_t dt) {
+  const uint16_t primaryRed = tft.color565(255, 32, 21);
+  float speed = 0.15f; // pixels per millisecond
+
+  for (int i = 0; i < MAX_PROJECTILES; i++) {
+    if (projectiles[i].active) {
+      // 1. Erase at previous position
+      tft.fillRect((int16_t)projectiles[i].prevX, (int16_t)projectiles[i].prevY, 2, 6, ST77XX_BLACK);
+      
+      // 2. Update Y position
+      projectiles[i].y -= speed * dt;
+      
+      // 3. Check boundary
+      if (projectiles[i].y < 0.0f) {
+        projectiles[i].active = false;
+      } else {
+        // 4. Draw at new position
+        tft.fillRect((int16_t)projectiles[i].x, (int16_t)projectiles[i].y, 2, 6, primaryRed);
+        projectiles[i].prevX = projectiles[i].x;
+        projectiles[i].prevY = projectiles[i].y;
+      }
+    }
+  }
+}
+
+static void initStarfield() {
+  const uint16_t dimGray = tft.color565(30, 36, 42);       // Far stars (very dim)
+  const uint16_t blueGray = tft.color565(55, 68, 82);      // Mid stars (soft cool gray)
+  const uint16_t nearColor = tft.color565(85, 105, 125);   // Near stars (soft slate blue - no bright white/orange)
+
+  randomSeed(millis() + analogRead(36));
+
+  // Far layer (35 stars): tiny, dim, slow. Color: dimGray
+  for (int i = 0; i < STAR_COUNT_FAR; i++) {
+    farStars[i].x = random(2, 126);
+    farStars[i].y = random(0, 160);
+    farStars[i].speed = STARFIELD_SPEED_FAR * (0.8f + (random(5) / 10.0f));
+    farStars[i].color = dimGray;
+    farStars[i].type = 0;
+  }
+
+  // Mid layer (25 stars): medium, slightly brighter. Color: blueGray
+  for (int i = 0; i < STAR_COUNT_MID; i++) {
+    midStars[i].x = random(2, 126);
+    midStars[i].y = random(0, 160);
+    midStars[i].speed = STARFIELD_SPEED_MID * (0.8f + (random(5) / 10.0f));
+    midStars[i].color = blueGray;
+    // 0=1x1 pixel, 1=2x1 horizontal dash
+    midStars[i].type = (random(4) == 0) ? 1 : 0; 
+  }
+
+  // Near layer (12 stars): foreground, slate blue, fast. Color: nearColor
+  for (int i = 0; i < STAR_COUNT_NEAR; i++) {
+    nearStars[i].x = random(3, 125);
+    nearStars[i].y = random(0, 160);
+    nearStars[i].speed = STARFIELD_SPEED_NEAR * (0.8f + (random(5) / 10.0f));
+    nearStars[i].color = nearColor;
+    int r = random(4);
+    if (r == 0) {
+      nearStars[i].type = 2; // 2x2 soft block (simulates blur)
+    } else if (r == 1) {
+      nearStars[i].type = 3; // 1x3 vertical speed streak (simulates blur)
+    } else {
+      nearStars[i].type = 0; // 1x1 pixel
+    }
+  }
+}
+
+static void eraseStar(const Star &s) {
+  int16_t px = (int16_t)playerX;
+  int16_t py = (int16_t)playerY;
+  int16_t ix = (int16_t)s.x;
+  int16_t iy = (int16_t)s.y;
+
+  // Skip erasing if it falls inside player ship bounding box to prevent trails
+  if (ix >= px - 1 && ix < px + 16 && iy >= py - 1 && iy < py + 18) {
+    return;
+  }
+
+  if (s.type == 0 || s.type == 5) {
+    tft.drawPixel(ix, iy, ST77XX_BLACK);
+  } else if (s.type == 1) {
+    tft.drawFastHLine(ix, iy, 2, ST77XX_BLACK);
+  } else if (s.type == 2) {
+    tft.fillRect(ix, iy, 2, 2, ST77XX_BLACK);
+  } else if (s.type == 3) {
+    tft.drawFastVLine(ix, iy, 3, ST77XX_BLACK);
+  } else if (s.type == 4) {
+    tft.drawFastHLine(ix - 1, iy, 3, ST77XX_BLACK);
+    tft.drawFastVLine(ix, iy - 1, 3, ST77XX_BLACK);
+  }
+}
+
+static void drawStar(const Star &s) {
+  int16_t px = (int16_t)playerX;
+  int16_t py = (int16_t)playerY;
+  int16_t ix = (int16_t)s.x;
+  int16_t iy = (int16_t)s.y;
+
+  // Skip drawing if it falls inside player ship bounding box
+  if (ix >= px - 1 && ix < px + 16 && iy >= py - 1 && iy < py + 18) {
+    return;
+  }
+
+  if (s.type == 0 || s.type == 5) {
+    tft.drawPixel(ix, iy, s.color);
+  } else if (s.type == 1) {
+    tft.drawFastHLine(ix, iy, 2, s.color);
+  } else if (s.type == 2) {
+    tft.fillRect(ix, iy, 2, 2, s.color);
+  } else if (s.type == 3) {
+    tft.drawFastVLine(ix, iy, 3, s.color);
+  } else if (s.type == 4) {
+    tft.drawFastHLine(ix - 1, iy, 3, s.color);
+    tft.drawFastVLine(ix, iy - 1, 3, s.color);
+  }
+}
+
+static void updateStarfield(uint32_t dt, float speedMultiplier) {
+  // Update Far Stars
+  for (int i = 0; i < STAR_COUNT_FAR; i++) {
+    eraseStar(farStars[i]);
+    farStars[i].y += farStars[i].speed * dt * speedMultiplier;
+    if (farStars[i].y >= 160.0f) {
+      farStars[i].y = 0.0f;
+      farStars[i].x = random(2, 126);
+    }
+    drawStar(farStars[i]);
+  }
+
+  // Update Mid Stars
+  for (int i = 0; i < STAR_COUNT_MID; i++) {
+    eraseStar(midStars[i]);
+    midStars[i].y += midStars[i].speed * dt * speedMultiplier;
+    if (midStars[i].y >= 160.0f) {
+      midStars[i].y = 0.0f;
+      midStars[i].x = random(2, 126);
+      midStars[i].type = (random(4) == 0) ? 1 : 0;
+    }
+    drawStar(midStars[i]);
+  }
+
+  // Update Near Stars
+  for (int i = 0; i < STAR_COUNT_NEAR; i++) {
+    eraseStar(nearStars[i]);
+    nearStars[i].y += nearStars[i].speed * dt * speedMultiplier;
+    if (nearStars[i].y >= 160.0f) {
+      nearStars[i].y = 0.0f;
+      nearStars[i].x = random(3, 125);
+      int r = random(4);
+      if (r == 0) nearStars[i].type = 2;
+      else if (r == 1) nearStars[i].type = 3;
+      else nearStars[i].type = 0;
+    }
+    drawStar(nearStars[i]);
+  }
 }
 
 void drawPixelWarsLoadingScreen(int progress) {
@@ -1110,14 +1343,15 @@ void handlePixelWarsMenuSelection() {
       currentScreen = STATE_PIXEL_WARS_COUNTDOWN;
       countdownStartTime = millis();
       lastCountdownNumber = -1;
-      // Draw initial black screen and sparse stars
+      lastGameplayFrameTime = millis(); // Initialize the timer for countdown scrolling
+      clearProjectiles(); // Reset projectiles
+      initStarfield(); // Initialize scrolling starfield
+      
+      // Clear screen and draw initial starfield
       tft.fillScreen(ST77XX_BLACK);
-      randomSeed(12345);
-      for (int i = 0; i < 20; i++) {
-        int sx = random(6, 122);
-        int sy = random(15, 145);
-        tft.drawPixel(sx, sy, tft.color565(82, 103, 121));
-      }
+      for (int i = 0; i < STAR_COUNT_FAR; i++) drawStar(farStars[i]);
+      for (int i = 0; i < STAR_COUNT_MID; i++) drawStar(midStars[i]);
+      for (int i = 0; i < STAR_COUNT_NEAR; i++) drawStar(nearStars[i]);
       break;
     case 1:
       Serial.println("HIGH SCORE");
