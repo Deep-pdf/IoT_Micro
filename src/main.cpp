@@ -36,6 +36,36 @@ struct Projectile {
 };
 static Projectile projectiles[MAX_PROJECTILES];
 
+struct Enemy {
+  float x;
+  float y;
+  float prevX;
+  float prevY;
+  float vx;
+  float vy;
+  bool active;
+  uint8_t type;
+  bool oscillates;
+  float oscPhase;
+};
+#define MAX_ENEMIES 20
+static Enemy enemies[MAX_ENEMIES];
+
+struct Explosion {
+  int16_t cx;
+  int16_t cy;
+  unsigned long startTime;
+  uint8_t lastStage;
+  bool active;
+};
+#define MAX_EXPLOSIONS 8
+static Explosion explosions[MAX_EXPLOSIONS];
+
+// Spawn Manager variables
+static unsigned long lastSpawnActionTime = 0;
+static int spawnSequenceIndex = 0;
+static int randomSpawnCount = 0;
+
 #define STAR_COUNT_FAR 35
 #define STAR_COUNT_MID 25
 #define STAR_COUNT_NEAR 12
@@ -69,6 +99,19 @@ static void initStarfield();
 static void updateStarfield(uint32_t dt, float speedMultiplier);
 static void drawStar(const Star &s);
 static void eraseStar(const Star &s);
+
+static void resetEnemySystem();
+static void updateEnemies(uint32_t dt);
+static void updateExplosions();
+static void checkCollisions();
+static void updateSpawnManager();
+static void spawnFormation(int seqIndex);
+static void eraseEnemy(int16_t x, int16_t y, uint8_t type);
+static void drawEnemy(int16_t x, int16_t y, uint8_t type);
+static void drawEnemyType1(int16_t x, int16_t y);
+static void drawEnemyType2(int16_t x, int16_t y);
+static void drawEnemyType3(int16_t x, int16_t y);
+static void drawExplosionStage(int16_t cx, int16_t cy, uint8_t stage, bool erase);
 #endif
 
 
@@ -456,10 +499,30 @@ void loop() {
 
   if (currentScreen == STATE_PIXEL_WARS_GAMEPLAY) {
     if (isBackPressed()) {
+      // Erase player, active projectiles, active enemies, active explosions
+      tft.fillRect((int16_t)playerX, (int16_t)playerY, 15, 17, ST77XX_BLACK);
+      for (int i = 0; i < MAX_PROJECTILES; i++) {
+        if (projectiles[i].active) {
+          tft.fillRect((int16_t)projectiles[i].x, (int16_t)projectiles[i].y, 2, 6, ST77XX_BLACK);
+        }
+      }
+      for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (enemies[i].active) {
+          eraseEnemy((int16_t)enemies[i].x, (int16_t)enemies[i].y, enemies[i].type);
+        }
+      }
+      for (int i = 0; i < MAX_EXPLOSIONS; i++) {
+        if (explosions[i].active) {
+          drawExplosionStage(explosions[i].cx, explosions[i].cy, explosions[i].lastStage, true);
+        }
+      }
+
+      resetEnemySystem();
+      clearProjectiles();
+
       currentScreen = STATE_PIXEL_WARS_MENU;
       pwMenuSelectedIndex = 0;
       lastPwMenuSelectedIndex = -1;
-      clearProjectiles(); // Clear active projectiles on exit
       drawPixelWarsStartMenu();
       return;
     }
@@ -477,8 +540,20 @@ void loop() {
     // Update scrolling starfield (100% speed)
     updateStarfield(dt, 1.0f);
 
+    // Update enemy movement and draw them
+    updateEnemies(dt);
+
     // Update projectiles
     updateProjectiles(dt);
+
+    // Update explosion animations
+    updateExplosions();
+
+    // Check laser <-> enemy collisions
+    checkCollisions();
+
+    // Check and trigger spawning patterns / individual enemies
+    updateSpawnManager();
 
     float dx = 0;
     float dy = 0;
@@ -507,7 +582,24 @@ void loop() {
     int16_t pix = (int16_t)prevPlayerX;
     int16_t piy = (int16_t)prevPlayerY;
 
-    if (ix != pix || iy != piy) {
+    // Redraw player ship if moved or if an active enemy overlaps its bounding box
+    bool forcePlayerRedraw = false;
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+      if (enemies[i].active) {
+        float ex = enemies[i].x;
+        float ey = enemies[i].y;
+        float ew = (enemies[i].type == 2) ? 7.0f : ((enemies[i].type == 3) ? 13.0f : 9.0f);
+        float eh = (enemies[i].type == 2) ? 11.0f : ((enemies[i].type == 3) ? 11.0f : 9.0f);
+        
+        // Overlap test with player ship bounding box (ix, iy, 15, 17)
+        if (ex < playerX + 15.0f && ex + ew > playerX && ey < playerY + 17.0f && ey + eh > playerY) {
+          forcePlayerRedraw = true;
+          break;
+        }
+      }
+    }
+
+    if (ix != pix || iy != piy || forcePlayerRedraw) {
       tft.fillRect(pix, piy, 15, 17, ST77XX_BLACK);
       drawPlayerShip(ix, iy);
       prevPlayerX = playerX;
@@ -1352,6 +1444,7 @@ void handlePixelWarsMenuSelection() {
   switch (pwMenuSelectedIndex) {
     case 0:
       Serial.println("START GAME");
+      resetEnemySystem(); // Reset enemy logic
       currentScreen = STATE_PIXEL_WARS_COUNTDOWN;
       countdownStartTime = millis();
       lastCountdownNumber = -1;
@@ -1374,6 +1467,425 @@ void handlePixelWarsMenuSelection() {
     case 3:
       Serial.println("EXIT");
       break;
+  }
+}
+
+static void resetEnemySystem() {
+  for (int i = 0; i < MAX_ENEMIES; i++) {
+    enemies[i].active = false;
+  }
+  for (int i = 0; i < MAX_EXPLOSIONS; i++) {
+    explosions[i].active = false;
+  }
+  lastSpawnActionTime = millis();
+  spawnSequenceIndex = 0;
+  randomSpawnCount = 0;
+}
+
+static void drawEnemyType1(int16_t x, int16_t y) {
+  const uint16_t primaryRed = tft.color565(255, 32, 21);
+  const uint16_t orangeGlow = tft.color565(255, 74, 31);
+  const uint16_t darkGray = tft.color565(36, 43, 49);
+  const uint16_t blueGray = tft.color565(82, 103, 121);
+  
+  tft.drawPixel(x + 1, y, orangeGlow);
+  tft.drawPixel(x + 7, y, orangeGlow);
+  tft.fillRect(x + 2, y + 1, 5, 2, darkGray);
+  
+  tft.drawLine(x, y + 3, x + 3, y + 3, blueGray);
+  tft.drawLine(x + 5, y + 3, x + 8, y + 3, blueGray);
+  tft.drawPixel(x, y + 4, primaryRed);
+  tft.drawPixel(x + 8, y + 4, primaryRed);
+  
+  tft.fillRect(x + 3, y + 2, 3, 5, blueGray);
+  tft.drawPixel(x + 4, y + 4, orangeGlow);
+  tft.drawLine(x + 3, y + 7, x + 5, y + 7, darkGray);
+  tft.drawPixel(x + 4, y + 8, primaryRed);
+}
+
+static void drawEnemyType2(int16_t x, int16_t y) {
+  const uint16_t primaryRed = tft.color565(255, 32, 21);
+  const uint16_t enemyPurple = tft.color565(140, 30, 160);
+  const uint16_t darkGray = tft.color565(36, 43, 49);
+  const uint16_t blueGray = tft.color565(82, 103, 121);
+  
+  tft.drawPixel(x + 2, y, primaryRed);
+  tft.drawPixel(x + 4, y, primaryRed);
+  
+  tft.fillRect(x + 2, y + 1, 3, 3, darkGray);
+  
+  tft.drawLine(x + 1, y + 4, x, y + 5, blueGray);
+  tft.drawLine(x + 5, y + 4, x + 6, y + 5, blueGray);
+  tft.drawPixel(x, y + 6, enemyPurple);
+  tft.drawPixel(x + 6, y + 6, enemyPurple);
+  
+  tft.fillRect(x + 2, y + 4, 3, 5, blueGray);
+  tft.drawPixel(x + 3, y + 6, enemyPurple);
+  tft.drawPixel(x + 3, y + 9, darkGray);
+  tft.drawPixel(x + 3, y + 10, primaryRed);
+}
+
+static void drawEnemyType3(int16_t x, int16_t y) {
+  const uint16_t primaryRed = tft.color565(255, 32, 21);
+  const uint16_t orangeGlow = tft.color565(255, 74, 31);
+  const uint16_t darkGray = tft.color565(36, 43, 49);
+  const uint16_t blueGray = tft.color565(82, 103, 121);
+  
+  tft.drawPixel(x + 3, y, orangeGlow);
+  tft.drawPixel(x + 6, y, orangeGlow);
+  tft.drawPixel(x + 9, y, orangeGlow);
+  
+  tft.fillRect(x + 2, y + 1, 9, 3, darkGray);
+  
+  tft.fillRect(x + 1, y + 4, 11, 2, blueGray);
+  tft.drawPixel(x, y + 5, primaryRed);
+  tft.drawPixel(x + 12, y + 5, primaryRed);
+  
+  tft.drawPixel(x + 3, y + 4, darkGray);
+  tft.drawPixel(x + 9, y + 4, darkGray);
+  
+  tft.fillRect(x + 4, y + 5, 5, 4, darkGray);
+  tft.fillRect(x + 5, y + 7, 3, 2, blueGray);
+  tft.drawPixel(x + 6, y + 8, primaryRed);
+  
+  tft.drawPixel(x + 5, y + 10, primaryRed);
+  tft.drawPixel(x + 7, y + 10, primaryRed);
+}
+
+static void drawEnemy(int16_t x, int16_t y, uint8_t type) {
+  switch (type) {
+    case 1:
+      drawEnemyType1(x, y);
+      break;
+    case 2:
+      drawEnemyType2(x, y);
+      break;
+    case 3:
+      drawEnemyType3(x, y);
+      break;
+  }
+}
+
+static void eraseEnemy(int16_t x, int16_t y, uint8_t type) {
+  switch (type) {
+    case 1:
+      tft.fillRect(x, y, 9, 9, ST77XX_BLACK);
+      break;
+    case 2:
+      tft.fillRect(x, y, 7, 11, ST77XX_BLACK);
+      break;
+    case 3:
+      tft.fillRect(x, y, 13, 11, ST77XX_BLACK);
+      break;
+  }
+}
+
+static void drawExplosionStage(int16_t cx, int16_t cy, uint8_t stage, bool erase) {
+  uint16_t color1 = erase ? (uint16_t)ST77XX_BLACK : tft.color565(255, 180, 0);
+  uint16_t color2 = erase ? (uint16_t)ST77XX_BLACK : tft.color565(255, 32, 21);
+
+  if (stage == 1) {
+    tft.drawPixel(cx, cy, color1);
+    tft.drawPixel(cx - 1, cy, color2);
+    tft.drawPixel(cx + 1, cy, color2);
+    tft.drawPixel(cx, cy - 1, color2);
+    tft.drawPixel(cx, cy + 1, color2);
+  } else if (stage == 2) {
+    tft.drawPixel(cx - 2, cy, color1);
+    tft.drawPixel(cx + 2, cy, color1);
+    tft.drawPixel(cx, cy - 2, color1);
+    tft.drawPixel(cx, cy + 2, color1);
+    
+    tft.drawPixel(cx - 1, cy - 1, color2);
+    tft.drawPixel(cx + 1, cy - 1, color2);
+    tft.drawPixel(cx - 1, cy + 1, color2);
+    tft.drawPixel(cx + 1, cy + 1, color2);
+  } else if (stage == 3) {
+    tft.drawPixel(cx - 3, cy, color2);
+    tft.drawPixel(cx + 3, cy, color2);
+    tft.drawPixel(cx, cy - 3, color2);
+    tft.drawPixel(cx, cy + 3, color2);
+  }
+}
+
+static void updateExplosions() {
+  unsigned long now = millis();
+  for (int i = 0; i < MAX_EXPLOSIONS; i++) {
+    if (explosions[i].active) {
+      unsigned long elapsed = now - explosions[i].startTime;
+      uint8_t currentStage = 0;
+      if (elapsed < 50) {
+        currentStage = 1;
+      } else if (elapsed < 100) {
+        currentStage = 2;
+      } else if (elapsed < 150) {
+        currentStage = 3;
+      } else {
+        currentStage = 4;
+      }
+
+      if (currentStage != explosions[i].lastStage) {
+        if (explosions[i].lastStage >= 1 && explosions[i].lastStage <= 3) {
+          drawExplosionStage(explosions[i].cx, explosions[i].cy, explosions[i].lastStage, true);
+        }
+        
+        if (currentStage >= 1 && currentStage <= 3) {
+          drawExplosionStage(explosions[i].cx, explosions[i].cy, currentStage, false);
+          explosions[i].lastStage = currentStage;
+        } else {
+          explosions[i].active = false;
+        }
+      }
+    }
+  }
+}
+
+static bool spawnEnemy(float x, float y, float vx, float vy, uint8_t type, bool oscillates, float phase) {
+  for (int i = 0; i < MAX_ENEMIES; i++) {
+    if (!enemies[i].active) {
+      enemies[i].x = x;
+      enemies[i].y = y;
+      enemies[i].prevX = x;
+      enemies[i].prevY = y;
+      enemies[i].vx = vx;
+      enemies[i].vy = vy;
+      enemies[i].active = true;
+      enemies[i].type = type;
+      enemies[i].oscillates = oscillates;
+      enemies[i].oscPhase = phase;
+      return true;
+    }
+  }
+  return false;
+}
+
+static void spawnGridFormation() {
+  uint8_t typeFront = random(1, 3);
+  uint8_t typeBack = random(2, 4);
+  float vy = 0.025f;
+  
+  spawnEnemy(29.0f, -15.0f, 0.0f, vy, typeFront, false, 0.0f);
+  spawnEnemy(64.0f, -15.0f, 0.0f, vy, typeFront, false, 0.0f);
+  spawnEnemy(99.0f, -15.0f, 0.0f, vy, typeFront, false, 0.0f);
+  
+  spawnEnemy(29.0f, -35.0f, 0.0f, vy, typeBack, false, 0.0f);
+  spawnEnemy(64.0f, -35.0f, 0.0f, vy, typeBack, false, 0.0f);
+  spawnEnemy(99.0f, -35.0f, 0.0f, vy, typeBack, false, 0.0f);
+}
+
+static void spawnVFormation() {
+  float vy = 0.028f;
+  spawnEnemy(58.0f, -15.0f, 0.0f, vy, 3, true, 0.0f);
+  spawnEnemy(40.0f, -30.0f, 0.0f, vy, 1, true, 0.5f);
+  spawnEnemy(80.0f, -30.0f, 0.0f, vy, 1, true, 0.5f);
+  spawnEnemy(21.0f, -45.0f, 0.0f, vy, 2, true, 1.0f);
+  spawnEnemy(101.0f, -45.0f, 0.0f, vy, 2, true, 1.0f);
+}
+
+static void spawnRandomCluster() {
+  float cx = random(35, 90);
+  float cy = random(-40, -20);
+  int count = random(4, 7);
+  float vy = 0.032f;
+  
+  for (int i = 0; i < count; i++) {
+    float rx = cx + random(-25, 25);
+    float ry = cy + random(-20, 20);
+    if (rx < 10) rx = 10;
+    if (rx > 110) rx = 110;
+    
+    uint8_t type = random(1, 4);
+    float vx = (random(60) - 30) / 1000.0f;
+    spawnEnemy(rx, ry, vx, vy, type, false, 0.0f);
+  }
+}
+
+static void spawnDiamondFormation() {
+  float vy = 0.025f;
+  spawnEnemy(60.0f, -55.0f, 0.0f, vy, 1, false, 0.0f);
+  spawnEnemy(41.0f, -35.0f, 0.0f, vy, 2, false, 0.0f);
+  spawnEnemy(81.0f, -35.0f, 0.0f, vy, 2, false, 0.0f);
+  spawnEnemy(58.0f, -35.0f, 0.0f, vy, 3, false, 0.0f);
+  spawnEnemy(60.0f, -15.0f, 0.0f, vy, 1, false, 0.0f);
+}
+
+static void spawnLineFormation() {
+  float vy = 0.035f;
+  spawnEnemy(13.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
+  spawnEnemy(37.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
+  spawnEnemy(61.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
+  spawnEnemy(85.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
+  spawnEnemy(109.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
+}
+
+static void spawnStaggeredFormation() {
+  float vy = 0.026f;
+  spawnEnemy(11.0f, -15.0f, 0.0f, vy, 1, true, 0.0f);
+  spawnEnemy(51.0f, -15.0f, 0.0f, vy, 1, true, 0.0f);
+  spawnEnemy(91.0f, -15.0f, 0.0f, vy, 1, true, 0.0f);
+  
+  spawnEnemy(32.0f, -35.0f, 0.0f, vy, 2, true, PI);
+  spawnEnemy(72.0f, -35.0f, 0.0f, vy, 2, true, PI);
+  spawnEnemy(112.0f, -35.0f, 0.0f, vy, 2, true, PI);
+}
+
+static void spawnFormation(int seqIndex) {
+  switch (seqIndex) {
+    case 0:
+      spawnGridFormation();
+      break;
+    case 2:
+      spawnVFormation();
+      break;
+    case 3:
+      spawnRandomCluster();
+      break;
+    case 4:
+      spawnDiamondFormation();
+      break;
+    case 6:
+      spawnLineFormation();
+      break;
+    case 7:
+      spawnStaggeredFormation();
+      break;
+  }
+}
+
+static void updateSpawnManager() {
+  unsigned long now = millis();
+  
+  int activeCount = 0;
+  for (int i = 0; i < MAX_ENEMIES; i++) {
+    if (enemies[i].active) activeCount++;
+  }
+
+  if (spawnSequenceIndex == 1 || spawnSequenceIndex == 5) {
+    if (randomSpawnCount < 3) {
+      if (now - lastSpawnActionTime >= 1800) {
+        float rx = random(10, 110);
+        float ry = -15.0f;
+        float rvx = (random(100) - 50) / 1000.0f;
+        float rvy = 0.03f + (random(20) / 1000.0f);
+        uint8_t rtype = random(1, 4);
+        bool osc = (random(2) == 0);
+        
+        spawnEnemy(rx, ry, rvx, rvy, rtype, osc, (random(100) / 10.0f));
+        randomSpawnCount++;
+        lastSpawnActionTime = now;
+      }
+    } else {
+      if (now - lastSpawnActionTime >= 5000 && activeCount == 0) {
+        spawnSequenceIndex = (spawnSequenceIndex + 1) % 8;
+        randomSpawnCount = 0;
+        lastSpawnActionTime = now - 5000;
+      } else if (now - lastSpawnActionTime >= 8000) {
+        spawnSequenceIndex = (spawnSequenceIndex + 1) % 8;
+        randomSpawnCount = 0;
+        lastSpawnActionTime = now;
+      }
+    }
+    return;
+  }
+
+  unsigned long waitTime = 7000;
+  if (activeCount == 0 && (now - lastSpawnActionTime >= 3000)) {
+    waitTime = 3000;
+  }
+
+  if (now - lastSpawnActionTime >= waitTime) {
+    spawnFormation(spawnSequenceIndex);
+    lastSpawnActionTime = now;
+    spawnSequenceIndex = (spawnSequenceIndex + 1) % 8;
+    randomSpawnCount = 0;
+  }
+}
+
+static void updateEnemies(uint32_t dt) {
+  for (int i = 0; i < MAX_ENEMIES; i++) {
+    if (enemies[i].active) {
+      eraseEnemy((int16_t)enemies[i].prevX, (int16_t)enemies[i].prevY, enemies[i].type);
+      
+      if (enemies[i].oscillates) {
+        enemies[i].x += 0.03f * sin((float)millis() * 0.003f + enemies[i].oscPhase) * dt;
+      } else {
+        enemies[i].x += enemies[i].vx * dt;
+      }
+      enemies[i].y += enemies[i].vy * dt;
+      
+      if (enemies[i].x < 0.0f) enemies[i].x = 0.0f;
+      float maxW = 9.0f;
+      if (enemies[i].type == 2) maxW = 7.0f;
+      if (enemies[i].type == 3) maxW = 13.0f;
+      if (enemies[i].x > 128.0f - maxW) enemies[i].x = 128.0f - maxW;
+
+      if (enemies[i].y >= 160.0f) {
+        enemies[i].active = false;
+      } else {
+        float maxH = 9.0f;
+        if (enemies[i].type == 2) maxH = 11.0f;
+        if (enemies[i].type == 3) maxH = 11.0f;
+        
+        if (enemies[i].y + maxH > 0.0f) {
+          drawEnemy((int16_t)enemies[i].x, (int16_t)enemies[i].y, enemies[i].type);
+        }
+        
+        enemies[i].prevX = enemies[i].x;
+        enemies[i].prevY = enemies[i].y;
+      }
+    }
+  }
+}
+
+static void checkCollisions() {
+  for (int p = 0; p < MAX_PROJECTILES; p++) {
+    if (projectiles[p].active) {
+      float px = projectiles[p].x;
+      float py = projectiles[p].y;
+      float pw = 2.0f;
+      float ph = 6.0f;
+      
+      for (int e = 0; e < MAX_ENEMIES; e++) {
+        if (enemies[e].active) {
+          float ex = enemies[e].x;
+          float ey = enemies[e].y;
+          float ew = 9.0f;
+          float eh = 9.0f;
+          if (enemies[e].type == 2) {
+            ew = 7.0f;
+            eh = 11.0f;
+          } else if (enemies[e].type == 3) {
+            ew = 13.0f;
+            eh = 11.0f;
+          }
+          
+          if (ey + eh > 0.0f) {
+            if (px < ex + ew && px + pw > ex && py < ey + eh && py + ph > ey) {
+              int16_t cx = (int16_t)(ex + ew / 2.0f);
+              int16_t cy = (int16_t)(ey + eh / 2.0f);
+              
+              for (int x = 0; x < MAX_EXPLOSIONS; x++) {
+                if (!explosions[x].active) {
+                  explosions[x].cx = cx;
+                  explosions[x].cy = cy;
+                  explosions[x].startTime = millis();
+                  explosions[x].lastStage = 0;
+                  explosions[x].active = true;
+                  break;
+                }
+              }
+              
+              eraseEnemy((int16_t)enemies[e].x, (int16_t)enemies[e].y, enemies[e].type);
+              enemies[e].active = false;
+              
+              tft.fillRect((int16_t)projectiles[p].x, (int16_t)projectiles[p].y, 2, 6, ST77XX_BLACK);
+              projectiles[p].active = false;
+              break;
+            }
+          }
+        }
+      }
+    }
   }
 }
 #endif
