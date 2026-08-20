@@ -4,6 +4,7 @@
 #include "mono.h"
 #include "MikodacsPCS8pt7b.h"
 #include "Dream_Orphans_Bd6pt7b.h"
+#include "BLADRMF_4pt7b.h"
 #include "home_screen.h"
 #include "config.h"
 #include "button.h"
@@ -76,6 +77,16 @@ static float targetPaceMultiplier = 1.0f;
 static unsigned long pacePhaseStartTime = 0;
 static unsigned long pacePhaseDuration = 0;
 static uint8_t currentPacePhase = 1; // 0 = SLOW, 1 = MEDIUM, 2 = FAST
+
+// HUD Variables
+static int playerHealth = 3;
+static int score = 0;
+static int lastDrawHealth = -1;
+static int lastDrawScore = -1;
+
+#define HEART_FULL 0
+#define HEART_HALF 1
+#define HEART_EMPTY 2
 
 // Debug Random Seed Settings
 #define PIXEL_WARS_DEBUG_RANDOM false
@@ -163,6 +174,11 @@ static void updateGlobalPace(uint32_t dt);
 static void spawnEnemyProjectile(float x, float y, float vx, float vy, uint8_t type);
 static void updateEnemyProjectiles(uint32_t dt);
 static void drawEnemyProjectile(int16_t x, int16_t y, uint8_t type, bool erase);
+
+static void drawHeart(int16_t x, int16_t y, uint8_t state);
+static void drawScoreHUD(int scoreVal);
+static void drawGameplayHUD();
+static void drawHUDSeparator();
 #endif
 
 
@@ -541,8 +557,14 @@ void loop() {
       lastGameplayFrameTime = millis();
       clearProjectiles(); // Clear active projectiles at startup
       
-      // Erase countdown text box and draw player ship
+      // Reset HUD draw flags
+      lastDrawHealth = -1;
+      lastDrawScore = -1;
+
+      // Erase countdown text box, draw HUD separator, draw HUD, and draw player ship
       tft.fillRect(34, 68, 60, 24, ST77XX_BLACK);
+      drawHUDSeparator();
+      drawGameplayHUD();
       drawPlayerShip((int16_t)playerX, (int16_t)playerY);
     }
     return;
@@ -625,7 +647,7 @@ void loop() {
     if (playerX < 0.0f) playerX = 0.0f;
     if (playerX > 113.0f) playerX = 113.0f;
 
-    if (playerY < 0.0f) playerY = 0.0f;
+    if (playerY < 16.0f) playerY = 16.0f;
     if (playerY > 143.0f) playerY = 143.0f;
 
     // 8. Update player projectiles
@@ -671,6 +693,8 @@ void loop() {
       prevPlayerX = playerX;
       prevPlayerY = playerY;
     }
+
+    drawGameplayHUD();
     return;
   }
 #else
@@ -989,7 +1013,7 @@ static void updateProjectiles(uint32_t dt) {
       projectiles[i].y -= speed * dt;
       
       // 3. Check boundary
-      if (projectiles[i].y < 0.0f) {
+      if (projectiles[i].y < 14.0f) {
         projectiles[i].active = false;
       } else {
         // 4. Draw at new position
@@ -1062,6 +1086,10 @@ static void eraseStar(const Star &s) {
   int16_t ix = (int16_t)s.x;
   int16_t iy = (int16_t)s.y;
 
+  if (iy < 14) {
+    return;
+  }
+
   // Skip erasing if it falls inside player ship bounding box to prevent trails
   if (ix >= px - 1 && ix < px + 16 && iy >= py - 1 && iy < py + 18) {
     return;
@@ -1086,6 +1114,10 @@ static void drawStar(const Star &s) {
   int16_t py = (int16_t)playerY;
   int16_t ix = (int16_t)s.x;
   int16_t iy = (int16_t)s.y;
+
+  if (iy < 14) {
+    return;
+  }
 
   // Skip drawing if it falls inside player ship bounding box
   if (ix >= px - 1 && ix < px + 16 && iy >= py - 1 && iy < py + 18) {
@@ -1560,6 +1592,12 @@ static void resetEnemySystem() {
   pacePhaseStartTime = millis();
   pacePhaseDuration = random(4000, 7001); // 4-7 seconds for first phase
   currentPacePhase = 1; // Start at MEDIUM
+
+  // Reset HUD
+  playerHealth = 3;
+  score = 0;
+  lastDrawHealth = -1;
+  lastDrawScore = -1;
 }
 
 static void drawEnemyType1(int16_t x, int16_t y) {
@@ -1934,7 +1972,9 @@ static void updateEnemies(uint32_t dt) {
   unsigned long now = millis();
   for (int i = 0; i < MAX_ENEMIES; i++) {
     if (enemies[i].active) {
-      eraseEnemy((int16_t)enemies[i].prevX, (int16_t)enemies[i].prevY, enemies[i].type);
+      if (enemies[i].prevY >= 14.0f) {
+        eraseEnemy((int16_t)enemies[i].prevX, (int16_t)enemies[i].prevY, enemies[i].type);
+      }
       
       float maxW = 9.0f;
       float maxH = 9.0f;
@@ -2053,7 +2093,7 @@ static void updateEnemies(uint32_t dt) {
           flash = ((millis() / 50) % 2 == 0);
         }
         
-        if (enemies[i].y + maxH > 0.0f) {
+        if (enemies[i].y >= 14.0f) {
           drawEnemy((int16_t)enemies[i].x, (int16_t)enemies[i].y, enemies[i].type, flash);
         }
         
@@ -2194,7 +2234,9 @@ static void drawEnemyProjectile(int16_t x, int16_t y, uint8_t type, bool erase) 
 static void updateEnemyProjectiles(uint32_t dt) {
   for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
     if (enemyProjectiles[i].active) {
-      drawEnemyProjectile((int16_t)enemyProjectiles[i].prevX, (int16_t)enemyProjectiles[i].prevY, enemyProjectiles[i].type, true);
+      if (enemyProjectiles[i].prevY >= 14.0f) {
+        drawEnemyProjectile((int16_t)enemyProjectiles[i].prevX, (int16_t)enemyProjectiles[i].prevY, enemyProjectiles[i].type, true);
+      }
       
       if (enemyProjectiles[i].type == 3) {
         enemyProjectiles[i].vx = 0.015f * sin((float)millis() * 0.004f);
@@ -2203,7 +2245,7 @@ static void updateEnemyProjectiles(uint32_t dt) {
       enemyProjectiles[i].x += enemyProjectiles[i].vx * currentPaceMultiplier * dt;
       enemyProjectiles[i].y += enemyProjectiles[i].vy * currentPaceMultiplier * dt;
       
-      if (enemyProjectiles[i].y >= 160.0f || enemyProjectiles[i].y < -10.0f || enemyProjectiles[i].x < -10.0f || enemyProjectiles[i].x >= 138.0f) {
+      if (enemyProjectiles[i].y >= 160.0f || enemyProjectiles[i].y < 14.0f || enemyProjectiles[i].x < -10.0f || enemyProjectiles[i].x >= 138.0f) {
         enemyProjectiles[i].active = false;
       } else {
         drawEnemyProjectile((int16_t)enemyProjectiles[i].x, (int16_t)enemyProjectiles[i].y, enemyProjectiles[i].type, false);
@@ -2212,5 +2254,104 @@ static void updateEnemyProjectiles(uint32_t dt) {
       }
     }
   }
+}
+
+static void drawHeart(int16_t x, int16_t y, uint8_t state) {
+  const uint16_t borderRed = tft.color565(150, 20, 20); // Darker red border
+  const uint16_t fillRed = tft.color565(255, 32, 21);   // Bright red fill
+  const uint16_t black = ST77XX_BLACK;
+
+  // Clear bounding box (7x7) to black
+  tft.fillRect(x, y, 7, 7, black);
+
+  // Draw Border (always present)
+  tft.drawPixel(x + 1, y, borderRed);
+  tft.drawPixel(x + 2, y, borderRed);
+  tft.drawPixel(x + 4, y, borderRed);
+  tft.drawPixel(x + 5, y, borderRed);
+
+  tft.drawPixel(x, y + 1, borderRed);
+  tft.drawPixel(x + 3, y + 1, borderRed);
+  tft.drawPixel(x + 6, y + 1, borderRed);
+
+  tft.drawPixel(x, y + 2, borderRed);
+  tft.drawPixel(x + 6, y + 2, borderRed);
+
+  tft.drawPixel(x, y + 3, borderRed);
+  tft.drawPixel(x + 6, y + 3, borderRed);
+
+  tft.drawPixel(x + 1, y + 4, borderRed);
+  tft.drawPixel(x + 5, y + 4, borderRed);
+
+  tft.drawPixel(x + 2, y + 5, borderRed);
+  tft.drawPixel(x + 4, y + 5, borderRed);
+
+  tft.drawPixel(x + 3, y + 6, borderRed);
+
+  // Draw Fill
+  if (state == HEART_FULL) {
+    tft.drawPixel(x + 1, y + 1, fillRed);
+    tft.drawPixel(x + 2, y + 1, fillRed);
+    tft.drawPixel(x + 4, y + 1, fillRed);
+    tft.drawPixel(x + 5, y + 1, fillRed);
+
+    tft.fillRect(x + 1, y + 2, 5, 1, fillRed);
+    tft.fillRect(x + 1, y + 3, 5, 1, fillRed);
+    tft.fillRect(x + 2, y + 4, 3, 1, fillRed);
+    tft.drawPixel(x + 3, y + 5, fillRed);
+  } else if (state == HEART_HALF) {
+    tft.drawPixel(x + 1, y + 1, fillRed);
+    tft.drawPixel(x + 2, y + 1, fillRed);
+
+    tft.fillRect(x + 1, y + 2, 3, 1, fillRed);
+    tft.fillRect(x + 1, y + 3, 3, 1, fillRed);
+    tft.fillRect(x + 2, y + 4, 2, 1, fillRed);
+    tft.drawPixel(x + 3, y + 5, fillRed);
+  }
+}
+
+static void drawScoreHUD(int scoreVal) {
+  tft.setFont(&BLADRMF_4pt7b);
+  tft.setTextSize(1);
+  tft.setTextColor(tft.color565(200, 200, 200)); // Off-white/light gray
+  
+  // Format score: SCORE 00000
+  char scoreBuf[20];
+  snprintf(scoreBuf, sizeof(scoreBuf), "SCORE %05d", scoreVal);
+  
+  // Measure text width
+  int16_t x1, y1;
+  uint16_t w, h;
+  tft.getTextBounds(scoreBuf, 0, 0, &x1, &y1, &w, &h);
+  
+  int16_t sx = 128 - w - 4; // 4 pixels margin from right
+  int16_t sy = 9;           // baseline Y (fits in Y=3..9)
+  
+  // Clear only the score text box to black to prevent flicker
+  tft.fillRect(sx, 1, w, 11, ST77XX_BLACK);
+  
+  tft.setCursor(sx, sy);
+  tft.print(scoreBuf);
+}
+
+static void drawGameplayHUD() {
+  if (playerHealth != lastDrawHealth) {
+    drawHeart(4, 3, (playerHealth >= 1) ? HEART_FULL : HEART_EMPTY);
+    drawHeart(14, 3, (playerHealth >= 2) ? HEART_FULL : HEART_EMPTY);
+    drawHeart(24, 3, (playerHealth >= 3) ? HEART_FULL : HEART_EMPTY);
+    lastDrawHealth = playerHealth;
+  }
+  
+  if (score != lastDrawScore) {
+    drawScoreHUD(score);
+    lastDrawScore = score;
+  }
+}
+
+static void drawHUDSeparator() {
+  const uint16_t lineCol = tft.color565(82, 103, 121); // Blue-gray
+  tft.drawFastHLine(4, 13, 30, lineCol);
+  tft.drawFastHLine(44, 13, 40, lineCol);
+  tft.drawFastHLine(94, 13, 30, lineCol);
 }
 #endif
