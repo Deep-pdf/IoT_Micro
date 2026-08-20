@@ -45,11 +45,56 @@ struct Enemy {
   float vy;
   bool active;
   uint8_t type;
-  bool oscillates;
-  float oscPhase;
+  uint8_t moveStyle;
+  float movePhase;
+  float baseX;
+  int8_t driftDir;
+  unsigned long nextAttackTime;
+  unsigned long nextMoveChangeTime;
+  bool bombWarningActive;
+  unsigned long bombWarningStartTime;
 };
 #define MAX_ENEMIES 20
 static Enemy enemies[MAX_ENEMIES];
+
+struct EnemyProjectile {
+  float x;
+  float y;
+  float prevX;
+  float prevY;
+  float vx;
+  float vy;
+  bool active;
+  uint8_t type; // 1 = normal, 2 = angled, 3 = bomb
+};
+#define MAX_ENEMY_PROJECTILES 12
+static EnemyProjectile enemyProjectiles[MAX_ENEMY_PROJECTILES];
+
+// Pacing Variables
+static float currentPaceMultiplier = 1.0f;
+static float targetPaceMultiplier = 1.0f;
+static unsigned long pacePhaseStartTime = 0;
+static unsigned long pacePhaseDuration = 0;
+static uint8_t currentPacePhase = 1; // 0 = SLOW, 1 = MEDIUM, 2 = FAST
+
+// Debug Random Seed Settings
+#define PIXEL_WARS_DEBUG_RANDOM false
+
+// Tuning Constants
+const unsigned long MIN_ATTACK_DELAY_BASIC = 2500;
+const unsigned long MAX_ATTACK_DELAY_BASIC = 6000;
+const unsigned long MIN_ATTACK_DELAY_FAST = 1800;
+const unsigned long MAX_ATTACK_DELAY_FAST = 4500;
+const unsigned long MIN_ATTACK_DELAY_HEAVY = 4000;
+const unsigned long MAX_ATTACK_DELAY_HEAVY = 8000;
+const unsigned long MIN_ATTACK_DELAY_SPECIAL = 3000;
+const unsigned long MAX_ATTACK_DELAY_SPECIAL = 7000;
+
+#define STYLE_STRAIGHT 0
+#define STYLE_DRIFT 1
+#define STYLE_OSCILLATE 2
+#define STYLE_ZIGZAG 3
+#define STYLE_STEP 4
 
 struct Explosion {
   int16_t cx;
@@ -107,11 +152,17 @@ static void checkCollisions();
 static void updateSpawnManager();
 static void spawnFormation(int seqIndex);
 static void eraseEnemy(int16_t x, int16_t y, uint8_t type);
-static void drawEnemy(int16_t x, int16_t y, uint8_t type);
+static void drawEnemy(int16_t x, int16_t y, uint8_t type, bool flashRed);
 static void drawEnemyType1(int16_t x, int16_t y);
 static void drawEnemyType2(int16_t x, int16_t y);
-static void drawEnemyType3(int16_t x, int16_t y);
+static void drawEnemyType3(int16_t x, int16_t y, bool flashRed);
+static void drawEnemyType4(int16_t x, int16_t y, bool flashRed);
 static void drawExplosionStage(int16_t cx, int16_t cy, uint8_t stage, bool erase);
+
+static void updateGlobalPace(uint32_t dt);
+static void spawnEnemyProjectile(float x, float y, float vx, float vy, uint8_t type);
+static void updateEnemyProjectiles(uint32_t dt);
+static void drawEnemyProjectile(int16_t x, int16_t y, uint8_t type, bool erase);
 #endif
 
 
@@ -499,7 +550,7 @@ void loop() {
 
   if (currentScreen == STATE_PIXEL_WARS_GAMEPLAY) {
     if (isBackPressed()) {
-      // Erase player, active projectiles, active enemies, active explosions
+      // Erase player, active projectiles, active enemies, active explosions, active enemy projectiles
       tft.fillRect((int16_t)playerX, (int16_t)playerY, 15, 17, ST77XX_BLACK);
       for (int i = 0; i < MAX_PROJECTILES; i++) {
         if (projectiles[i].active) {
@@ -514,6 +565,11 @@ void loop() {
       for (int i = 0; i < MAX_EXPLOSIONS; i++) {
         if (explosions[i].active) {
           drawExplosionStage(explosions[i].cx, explosions[i].cy, explosions[i].lastStage, true);
+        }
+      }
+      for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
+        if (enemyProjectiles[i].active) {
+          drawEnemyProjectile((int16_t)enemyProjectiles[i].x, (int16_t)enemyProjectiles[i].y, enemyProjectiles[i].type, true);
         }
       }
 
@@ -537,24 +593,19 @@ void loop() {
       spawnProjectile();
     }
 
-    // Update scrolling starfield (100% speed)
-    updateStarfield(dt, 1.0f);
+    // 1. Update global gameplay pace
+    updateGlobalPace(dt);
 
-    // Update enemy movement and draw them
+    // 2. Update scrolling background (Reinforces pacing)
+    updateStarfield(dt, 1.0f * currentPaceMultiplier);
+
+    // 3 & 4. Spawn/update enemies and move them (Paced)
     updateEnemies(dt);
 
-    // Update projectiles
-    updateProjectiles(dt);
+    // 5 & 6. Spawn/update enemy projectiles (Paced)
+    updateEnemyProjectiles(dt);
 
-    // Update explosion animations
-    updateExplosions();
-
-    // Check laser <-> enemy collisions
-    checkCollisions();
-
-    // Check and trigger spawning patterns / individual enemies
-    updateSpawnManager();
-
+    // 7. Update player movement
     float dx = 0;
     float dy = 0;
     float speed = 0.08f; // pixels per millisecond
@@ -577,6 +628,18 @@ void loop() {
     if (playerY < 0.0f) playerY = 0.0f;
     if (playerY > 143.0f) playerY = 143.0f;
 
+    // 8. Update player projectiles
+    updateProjectiles(dt);
+
+    // 9. Check player projectile -> enemy collision
+    checkCollisions();
+
+    // 10. Update visual effects (explosions)
+    updateExplosions();
+
+    // 11. Check and trigger spawning patterns / individual enemies
+    updateSpawnManager();
+
     int16_t ix = (int16_t)playerX;
     int16_t iy = (int16_t)playerY;
     int16_t pix = (int16_t)prevPlayerX;
@@ -588,8 +651,11 @@ void loop() {
       if (enemies[i].active) {
         float ex = enemies[i].x;
         float ey = enemies[i].y;
-        float ew = (enemies[i].type == 2) ? 7.0f : ((enemies[i].type == 3) ? 13.0f : 9.0f);
-        float eh = (enemies[i].type == 2) ? 11.0f : ((enemies[i].type == 3) ? 11.0f : 9.0f);
+        float ew = 9.0f;
+        float eh = 9.0f;
+        if (enemies[i].type == 2) { ew = 7.0f; eh = 11.0f; }
+        else if (enemies[i].type == 3) { ew = 13.0f; eh = 11.0f; }
+        else if (enemies[i].type == 4) { ew = 9.0f; eh = 9.0f; }
         
         // Overlap test with player ship bounding box (ix, iy, 15, 17)
         if (ex < playerX + 15.0f && ex + ew > playerX && ey < playerY + 17.0f && ey + eh > playerY) {
@@ -1471,15 +1537,29 @@ void handlePixelWarsMenuSelection() {
 }
 
 static void resetEnemySystem() {
+  if (PIXEL_WARS_DEBUG_RANDOM) {
+    randomSeed(12345);
+  }
   for (int i = 0; i < MAX_ENEMIES; i++) {
     enemies[i].active = false;
   }
   for (int i = 0; i < MAX_EXPLOSIONS; i++) {
     explosions[i].active = false;
   }
+  for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
+    enemyProjectiles[i].active = false;
+  }
+  
   lastSpawnActionTime = millis();
   spawnSequenceIndex = 0;
   randomSpawnCount = 0;
+  
+  // Reset pacing
+  currentPaceMultiplier = 1.0f;
+  targetPaceMultiplier = 1.0f;
+  pacePhaseStartTime = millis();
+  pacePhaseDuration = random(4000, 7001); // 4-7 seconds for first phase
+  currentPacePhase = 1; // Start at MEDIUM
 }
 
 static void drawEnemyType1(int16_t x, int16_t y) {
@@ -1525,11 +1605,11 @@ static void drawEnemyType2(int16_t x, int16_t y) {
   tft.drawPixel(x + 3, y + 10, primaryRed);
 }
 
-static void drawEnemyType3(int16_t x, int16_t y) {
+static void drawEnemyType3(int16_t x, int16_t y, bool flashRed) {
   const uint16_t primaryRed = tft.color565(255, 32, 21);
-  const uint16_t orangeGlow = tft.color565(255, 74, 31);
-  const uint16_t darkGray = tft.color565(36, 43, 49);
-  const uint16_t blueGray = tft.color565(82, 103, 121);
+  const uint16_t orangeGlow = flashRed ? primaryRed : tft.color565(255, 74, 31);
+  const uint16_t darkGray = flashRed ? primaryRed : tft.color565(36, 43, 49);
+  const uint16_t blueGray = flashRed ? primaryRed : tft.color565(82, 103, 121);
   
   tft.drawPixel(x + 3, y, orangeGlow);
   tft.drawPixel(x + 6, y, orangeGlow);
@@ -1552,7 +1632,29 @@ static void drawEnemyType3(int16_t x, int16_t y) {
   tft.drawPixel(x + 7, y + 10, primaryRed);
 }
 
-static void drawEnemy(int16_t x, int16_t y, uint8_t type) {
+static void drawEnemyType4(int16_t x, int16_t y, bool flashRed) {
+  const uint16_t primaryRed = tft.color565(255, 32, 21);
+  const uint16_t yellowAccent = flashRed ? primaryRed : tft.color565(255, 180, 0);
+  const uint16_t bodyColor = flashRed ? primaryRed : tft.color565(36, 43, 49);
+  const uint16_t detailColor = flashRed ? primaryRed : tft.color565(82, 103, 121);
+
+  tft.drawPixel(x + 2, y, yellowAccent);
+  tft.drawPixel(x + 6, y, yellowAccent);
+  tft.fillRect(x + 3, y + 1, 3, 2, bodyColor);
+  
+  tft.drawPixel(x, y + 2, yellowAccent);
+  tft.drawPixel(x + 8, y + 2, yellowAccent);
+  tft.drawLine(x + 1, y + 3, x + 2, y + 4, detailColor);
+  tft.drawLine(x + 7, y + 3, x + 6, y + 4, detailColor);
+  
+  tft.fillRect(x + 3, y + 3, 3, 4, bodyColor);
+  tft.drawPixel(x + 4, y + 5, yellowAccent);
+  
+  tft.drawPixel(x + 4, y + 7, detailColor);
+  tft.drawPixel(x + 4, y + 8, yellowAccent);
+}
+
+static void drawEnemy(int16_t x, int16_t y, uint8_t type, bool flashRed) {
   switch (type) {
     case 1:
       drawEnemyType1(x, y);
@@ -1561,7 +1663,10 @@ static void drawEnemy(int16_t x, int16_t y, uint8_t type) {
       drawEnemyType2(x, y);
       break;
     case 3:
-      drawEnemyType3(x, y);
+      drawEnemyType3(x, y, flashRed);
+      break;
+    case 4:
+      drawEnemyType4(x, y, flashRed);
       break;
   }
 }
@@ -1576,6 +1681,9 @@ static void eraseEnemy(int16_t x, int16_t y, uint8_t type) {
       break;
     case 3:
       tft.fillRect(x, y, 13, 11, ST77XX_BLACK);
+      break;
+    case 4:
+      tft.fillRect(x, y, 9, 9, ST77XX_BLACK);
       break;
   }
 }
@@ -1640,7 +1748,7 @@ static void updateExplosions() {
   }
 }
 
-static bool spawnEnemy(float x, float y, float vx, float vy, uint8_t type, bool oscillates, float phase) {
+static bool spawnEnemy(float x, float y, float vx, float vy, uint8_t type) {
   for (int i = 0; i < MAX_ENEMIES; i++) {
     if (!enemies[i].active) {
       enemies[i].x = x;
@@ -1651,8 +1759,30 @@ static bool spawnEnemy(float x, float y, float vx, float vy, uint8_t type, bool 
       enemies[i].vy = vy;
       enemies[i].active = true;
       enemies[i].type = type;
-      enemies[i].oscillates = oscillates;
-      enemies[i].oscPhase = phase;
+      
+      // Randomly assign movement style and next attack delay
+      if (type == 1) {
+        enemies[i].moveStyle = (random(5) == 0) ? STYLE_DRIFT : STYLE_STRAIGHT;
+        enemies[i].nextAttackTime = millis() + random(MIN_ATTACK_DELAY_BASIC, MAX_ATTACK_DELAY_BASIC);
+      } else if (type == 2) {
+        uint8_t r = random(3);
+        enemies[i].moveStyle = (r == 0) ? STYLE_ZIGZAG : ((r == 1) ? STYLE_STEP : STYLE_DRIFT);
+        enemies[i].nextAttackTime = millis() + random(MIN_ATTACK_DELAY_FAST, MAX_ATTACK_DELAY_FAST);
+      } else if (type == 3) {
+        enemies[i].moveStyle = (random(2) == 0) ? STYLE_STRAIGHT : STYLE_OSCILLATE;
+        enemies[i].nextAttackTime = millis() + random(MIN_ATTACK_DELAY_HEAVY, MAX_ATTACK_DELAY_HEAVY);
+      } else { // Special (Type 4)
+        enemies[i].moveStyle = random(5);
+        enemies[i].nextAttackTime = millis() + random(MIN_ATTACK_DELAY_SPECIAL, MAX_ATTACK_DELAY_SPECIAL);
+      }
+      
+      enemies[i].movePhase = (random(100) / 10.0f);
+      enemies[i].baseX = x;
+      enemies[i].driftDir = (random(2) == 0) ? -1 : 1;
+      enemies[i].nextMoveChangeTime = millis() + random(800, 2000);
+      enemies[i].bombWarningActive = false;
+      enemies[i].bombWarningStartTime = 0;
+      
       return true;
     }
   }
@@ -1661,25 +1791,25 @@ static bool spawnEnemy(float x, float y, float vx, float vy, uint8_t type, bool 
 
 static void spawnGridFormation() {
   uint8_t typeFront = random(1, 3);
-  uint8_t typeBack = random(2, 4);
+  uint8_t typeBack = random(2, 5); // 2, 3, or 4
   float vy = 0.025f;
   
-  spawnEnemy(29.0f, -15.0f, 0.0f, vy, typeFront, false, 0.0f);
-  spawnEnemy(64.0f, -15.0f, 0.0f, vy, typeFront, false, 0.0f);
-  spawnEnemy(99.0f, -15.0f, 0.0f, vy, typeFront, false, 0.0f);
+  spawnEnemy(29.0f, -15.0f, 0.0f, vy, typeFront);
+  spawnEnemy(64.0f, -15.0f, 0.0f, vy, typeFront);
+  spawnEnemy(99.0f, -15.0f, 0.0f, vy, typeFront);
   
-  spawnEnemy(29.0f, -35.0f, 0.0f, vy, typeBack, false, 0.0f);
-  spawnEnemy(64.0f, -35.0f, 0.0f, vy, typeBack, false, 0.0f);
-  spawnEnemy(99.0f, -35.0f, 0.0f, vy, typeBack, false, 0.0f);
+  spawnEnemy(29.0f, -35.0f, 0.0f, vy, typeBack);
+  spawnEnemy(64.0f, -35.0f, 0.0f, vy, typeBack);
+  spawnEnemy(99.0f, -35.0f, 0.0f, vy, typeBack);
 }
 
 static void spawnVFormation() {
   float vy = 0.028f;
-  spawnEnemy(58.0f, -15.0f, 0.0f, vy, 3, true, 0.0f);
-  spawnEnemy(40.0f, -30.0f, 0.0f, vy, 1, true, 0.5f);
-  spawnEnemy(80.0f, -30.0f, 0.0f, vy, 1, true, 0.5f);
-  spawnEnemy(21.0f, -45.0f, 0.0f, vy, 2, true, 1.0f);
-  spawnEnemy(101.0f, -45.0f, 0.0f, vy, 2, true, 1.0f);
+  spawnEnemy(58.0f, -15.0f, 0.0f, vy, 3);
+  spawnEnemy(40.0f, -30.0f, 0.0f, vy, 1);
+  spawnEnemy(80.0f, -30.0f, 0.0f, vy, 1);
+  spawnEnemy(21.0f, -45.0f, 0.0f, vy, 2);
+  spawnEnemy(101.0f, -45.0f, 0.0f, vy, 2);
 }
 
 static void spawnRandomCluster() {
@@ -1694,39 +1824,39 @@ static void spawnRandomCluster() {
     if (rx < 10) rx = 10;
     if (rx > 110) rx = 110;
     
-    uint8_t type = random(1, 4);
+    uint8_t type = random(1, 5); // types 1 to 4
     float vx = (random(60) - 30) / 1000.0f;
-    spawnEnemy(rx, ry, vx, vy, type, false, 0.0f);
+    spawnEnemy(rx, ry, vx, vy, type);
   }
 }
 
 static void spawnDiamondFormation() {
   float vy = 0.025f;
-  spawnEnemy(60.0f, -55.0f, 0.0f, vy, 1, false, 0.0f);
-  spawnEnemy(41.0f, -35.0f, 0.0f, vy, 2, false, 0.0f);
-  spawnEnemy(81.0f, -35.0f, 0.0f, vy, 2, false, 0.0f);
-  spawnEnemy(58.0f, -35.0f, 0.0f, vy, 3, false, 0.0f);
-  spawnEnemy(60.0f, -15.0f, 0.0f, vy, 1, false, 0.0f);
+  spawnEnemy(60.0f, -55.0f, 0.0f, vy, 1);
+  spawnEnemy(41.0f, -35.0f, 0.0f, vy, 2);
+  spawnEnemy(81.0f, -35.0f, 0.0f, vy, 2);
+  spawnEnemy(58.0f, -35.0f, 0.0f, vy, 3);
+  spawnEnemy(60.0f, -15.0f, 0.0f, vy, 1);
 }
 
 static void spawnLineFormation() {
   float vy = 0.035f;
-  spawnEnemy(13.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
-  spawnEnemy(37.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
-  spawnEnemy(61.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
-  spawnEnemy(85.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
-  spawnEnemy(109.0f, -15.0f, 0.0f, vy, 2, false, 0.0f);
+  spawnEnemy(13.0f, -15.0f, 0.0f, vy, 2);
+  spawnEnemy(37.0f, -15.0f, 0.0f, vy, 2);
+  spawnEnemy(61.0f, -15.0f, 0.0f, vy, 2);
+  spawnEnemy(85.0f, -15.0f, 0.0f, vy, 2);
+  spawnEnemy(109.0f, -15.0f, 0.0f, vy, 2);
 }
 
 static void spawnStaggeredFormation() {
   float vy = 0.026f;
-  spawnEnemy(11.0f, -15.0f, 0.0f, vy, 1, true, 0.0f);
-  spawnEnemy(51.0f, -15.0f, 0.0f, vy, 1, true, 0.0f);
-  spawnEnemy(91.0f, -15.0f, 0.0f, vy, 1, true, 0.0f);
+  spawnEnemy(11.0f, -15.0f, 0.0f, vy, 1);
+  spawnEnemy(51.0f, -15.0f, 0.0f, vy, 1);
+  spawnEnemy(91.0f, -15.0f, 0.0f, vy, 1);
   
-  spawnEnemy(32.0f, -35.0f, 0.0f, vy, 2, true, PI);
-  spawnEnemy(72.0f, -35.0f, 0.0f, vy, 2, true, PI);
-  spawnEnemy(112.0f, -35.0f, 0.0f, vy, 2, true, PI);
+  spawnEnemy(32.0f, -35.0f, 0.0f, vy, 2);
+  spawnEnemy(72.0f, -35.0f, 0.0f, vy, 2);
+  spawnEnemy(112.0f, -35.0f, 0.0f, vy, 2);
 }
 
 static void spawnFormation(int seqIndex) {
@@ -1767,10 +1897,9 @@ static void updateSpawnManager() {
         float ry = -15.0f;
         float rvx = (random(100) - 50) / 1000.0f;
         float rvy = 0.03f + (random(20) / 1000.0f);
-        uint8_t rtype = random(1, 4);
-        bool osc = (random(2) == 0);
+        uint8_t rtype = random(1, 5); // 1 to 4
         
-        spawnEnemy(rx, ry, rvx, rvy, rtype, osc, (random(100) / 10.0f));
+        spawnEnemy(rx, ry, rvx, rvy, rtype);
         randomSpawnCount++;
         lastSpawnActionTime = now;
       }
@@ -1802,32 +1931,130 @@ static void updateSpawnManager() {
 }
 
 static void updateEnemies(uint32_t dt) {
+  unsigned long now = millis();
   for (int i = 0; i < MAX_ENEMIES; i++) {
     if (enemies[i].active) {
       eraseEnemy((int16_t)enemies[i].prevX, (int16_t)enemies[i].prevY, enemies[i].type);
       
-      if (enemies[i].oscillates) {
-        enemies[i].x += 0.03f * sin((float)millis() * 0.003f + enemies[i].oscPhase) * dt;
-      } else {
-        enemies[i].x += enemies[i].vx * dt;
+      float maxW = 9.0f;
+      float maxH = 9.0f;
+      if (enemies[i].type == 2) { maxW = 7.0f; maxH = 11.0f; }
+      else if (enemies[i].type == 3) { maxW = 13.0f; maxH = 11.0f; }
+      else if (enemies[i].type == 4) { maxW = 9.0f; maxH = 9.0f; }
+
+      // Update baseX if horizontal velocity is present
+      enemies[i].baseX += enemies[i].vx * currentPaceMultiplier * dt;
+
+      if (enemies[i].moveStyle == STYLE_STRAIGHT) {
+        enemies[i].y += enemies[i].vy * currentPaceMultiplier * dt;
       }
-      enemies[i].y += enemies[i].vy * dt;
+      else if (enemies[i].moveStyle == STYLE_DRIFT) {
+        enemies[i].x += enemies[i].driftDir * 0.015f * currentPaceMultiplier * dt;
+        enemies[i].y += enemies[i].vy * currentPaceMultiplier * dt;
+        if (enemies[i].x <= 0.0f) { enemies[i].x = 0.0f; enemies[i].driftDir = 1; }
+        if (enemies[i].x >= 128.0f - maxW) { enemies[i].x = 128.0f - maxW; enemies[i].driftDir = -1; }
+      }
+      else if (enemies[i].moveStyle == STYLE_OSCILLATE) {
+        enemies[i].y += enemies[i].vy * currentPaceMultiplier * dt;
+        enemies[i].x = enemies[i].baseX + 12.0f * sin((float)millis() * 0.003f + enemies[i].movePhase);
+      }
+      else if (enemies[i].moveStyle == STYLE_ZIGZAG) {
+        if (now >= enemies[i].nextMoveChangeTime) {
+          enemies[i].driftDir = -enemies[i].driftDir;
+          enemies[i].nextMoveChangeTime = now + random(1000, 2001);
+        }
+        enemies[i].x += enemies[i].driftDir * 0.03f * currentPaceMultiplier * dt;
+        enemies[i].y += enemies[i].vy * currentPaceMultiplier * dt;
+      }
+      else if (enemies[i].moveStyle == STYLE_STEP) {
+        if (now >= enemies[i].nextMoveChangeTime) {
+          uint8_t currentPhase = ((int)enemies[i].movePhase) % 2;
+          currentPhase = 1 - currentPhase;
+          enemies[i].movePhase = currentPhase;
+          if (currentPhase == 1) {
+            enemies[i].driftDir = (random(2) == 0) ? -1 : 1;
+          }
+          enemies[i].nextMoveChangeTime = now + random(600, 1001);
+        }
+        uint8_t currentPhase = ((int)enemies[i].movePhase) % 2;
+        if (currentPhase == 0) {
+          enemies[i].y += enemies[i].vy * currentPaceMultiplier * dt;
+        } else {
+          enemies[i].x += enemies[i].driftDir * 0.035f * currentPaceMultiplier * dt;
+        }
+      }
       
       if (enemies[i].x < 0.0f) enemies[i].x = 0.0f;
-      float maxW = 9.0f;
-      if (enemies[i].type == 2) maxW = 7.0f;
-      if (enemies[i].type == 3) maxW = 13.0f;
       if (enemies[i].x > 128.0f - maxW) enemies[i].x = 128.0f - maxW;
 
       if (enemies[i].y >= 160.0f) {
         enemies[i].active = false;
       } else {
-        float maxH = 9.0f;
-        if (enemies[i].type == 2) maxH = 11.0f;
-        if (enemies[i].type == 3) maxH = 11.0f;
+        // Fire logic
+        if (now >= enemies[i].nextAttackTime) {
+          if (enemies[i].y < 0.0f) {
+            enemies[i].nextAttackTime = now + 500;
+          } else {
+            uint8_t attackType = 1;
+            if (enemies[i].type == 1) attackType = 1;
+            else if (enemies[i].type == 2) attackType = (random(4) == 0) ? 2 : 1;
+            else if (enemies[i].type == 3) attackType = 3;
+            else {
+              int r = random(100);
+              if (r < 60) attackType = 1;
+              else if (r < 85) attackType = 2;
+              else attackType = 3;
+            }
+
+            if (attackType == 3) {
+              if (!enemies[i].bombWarningActive) {
+                enemies[i].bombWarningActive = true;
+                enemies[i].bombWarningStartTime = now;
+                enemies[i].nextAttackTime = now + 200;
+              } else {
+                enemies[i].bombWarningActive = false;
+                float bx = enemies[i].x + ((enemies[i].type == 3) ? 5.0f : 3.0f);
+                float by = enemies[i].y + 11.0f;
+                spawnEnemyProjectile(bx, by, 0.0f, 0.035f, 3);
+                
+                unsigned long delay = random(MIN_ATTACK_DELAY_HEAVY, MAX_ATTACK_DELAY_HEAVY);
+                if (enemies[i].type == 4) delay = random(MIN_ATTACK_DELAY_SPECIAL, MAX_ATTACK_DELAY_SPECIAL);
+                enemies[i].nextAttackTime = now + delay;
+              }
+            } else {
+              float sx = enemies[i].x + ((enemies[i].type == 2) ? 2.5f : 3.5f);
+              float sy = enemies[i].y + ((enemies[i].type == 2) ? 11.0f : 9.0f);
+              float svx = 0.0f;
+              float svy = (enemies[i].type == 2) ? 0.08f : 0.055f;
+              
+              if (attackType == 2) {
+                float dx = (playerX + 6.0f) - sx;
+                float dy = (playerY + 8.0f) - sy;
+                float dist = sqrt(dx * dx + dy * dy);
+                if (dist > 0.0f) {
+                  float shotSpeed = (enemies[i].type == 2) ? 0.08f : 0.055f;
+                  svx = (dx / dist) * shotSpeed;
+                  svy = (dy / dist) * shotSpeed;
+                }
+              }
+              spawnEnemyProjectile(sx, sy, svx, svy, attackType);
+              
+              unsigned long delay = 0;
+              if (enemies[i].type == 1) delay = random(MIN_ATTACK_DELAY_BASIC, MAX_ATTACK_DELAY_BASIC);
+              else if (enemies[i].type == 2) delay = random(MIN_ATTACK_DELAY_FAST, MAX_ATTACK_DELAY_FAST);
+              else delay = random(MIN_ATTACK_DELAY_SPECIAL, MAX_ATTACK_DELAY_SPECIAL);
+              enemies[i].nextAttackTime = now + delay;
+            }
+          }
+        }
+
+        bool flash = false;
+        if (enemies[i].bombWarningActive) {
+          flash = ((millis() / 50) % 2 == 0);
+        }
         
         if (enemies[i].y + maxH > 0.0f) {
-          drawEnemy((int16_t)enemies[i].x, (int16_t)enemies[i].y, enemies[i].type);
+          drawEnemy((int16_t)enemies[i].x, (int16_t)enemies[i].y, enemies[i].type, flash);
         }
         
         enemies[i].prevX = enemies[i].x;
@@ -1857,6 +2084,9 @@ static void checkCollisions() {
           } else if (enemies[e].type == 3) {
             ew = 13.0f;
             eh = 11.0f;
+          } else if (enemies[e].type == 4) {
+            ew = 9.0f;
+            eh = 9.0f;
           }
           
           if (ey + eh > 0.0f) {
@@ -1884,6 +2114,101 @@ static void checkCollisions() {
             }
           }
         }
+      }
+    }
+  }
+}
+
+static void updateGlobalPace(uint32_t dt) {
+  unsigned long now = millis();
+  currentPaceMultiplier += (targetPaceMultiplier - currentPaceMultiplier) * 0.0005f * dt;
+  if (currentPaceMultiplier < 0.5f) currentPaceMultiplier = 0.5f;
+  if (currentPaceMultiplier > 2.0f) currentPaceMultiplier = 2.0f;
+
+  if (now - pacePhaseStartTime >= pacePhaseDuration) {
+    uint8_t nextPhase = random(3);
+    while (nextPhase == currentPacePhase) {
+      nextPhase = random(3);
+    }
+    currentPacePhase = nextPhase;
+    
+    if (currentPacePhase == 0) {
+      targetPaceMultiplier = 0.75f;
+      pacePhaseDuration = random(3000, 6001);
+    } else if (currentPacePhase == 1) {
+      targetPaceMultiplier = 1.0f;
+      pacePhaseDuration = random(4000, 8001);
+    } else {
+      targetPaceMultiplier = 1.30f;
+      pacePhaseDuration = random(2000, 5001);
+    }
+    pacePhaseStartTime = now;
+  }
+}
+
+static void spawnEnemyProjectile(float x, float y, float vx, float vy, uint8_t type) {
+  for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
+    if (!enemyProjectiles[i].active) {
+      enemyProjectiles[i].x = x;
+      enemyProjectiles[i].y = y;
+      enemyProjectiles[i].prevX = x;
+      enemyProjectiles[i].prevY = y;
+      enemyProjectiles[i].vx = vx;
+      enemyProjectiles[i].vy = vy;
+      enemyProjectiles[i].active = true;
+      enemyProjectiles[i].type = type;
+      
+      drawEnemyProjectile((int16_t)x, (int16_t)y, type, false);
+      break;
+    }
+  }
+}
+
+static void drawEnemyProjectile(int16_t x, int16_t y, uint8_t type, bool erase) {
+  uint16_t color = ST77XX_BLACK;
+  if (!erase) {
+    if (type == 1) {
+      color = tft.color565(255, 32, 21);
+    } else if (type == 2) {
+      color = tft.color565(255, 120, 0);
+    } else if (type == 3) {
+      if ((millis() / 150) % 2 == 0) {
+        color = tft.color565(255, 32, 21);
+      } else {
+        color = tft.color565(255, 180, 0);
+      }
+    }
+  }
+  
+  if (type == 1 || type == 2) {
+    tft.fillRect(x, y, 2, 4, color);
+  } else if (type == 3) {
+    tft.drawPixel(x + 1, y, color);
+    tft.drawPixel(x, y + 1, color);
+    tft.drawPixel(x + 1, y + 1, color);
+    tft.drawPixel(x + 2, y + 1, color);
+    tft.drawPixel(x + 1, y + 2, color);
+  }
+}
+
+static void updateEnemyProjectiles(uint32_t dt) {
+  for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
+    if (enemyProjectiles[i].active) {
+      drawEnemyProjectile((int16_t)enemyProjectiles[i].prevX, (int16_t)enemyProjectiles[i].prevY, enemyProjectiles[i].type, true);
+      
+      if (enemyProjectiles[i].type == 3) {
+        enemyProjectiles[i].vx = 0.015f * sin((float)millis() * 0.004f);
+      }
+      
+      enemyProjectiles[i].x += enemyProjectiles[i].vx * currentPaceMultiplier * dt;
+      enemyProjectiles[i].y += enemyProjectiles[i].vy * currentPaceMultiplier * dt;
+      
+      if (enemyProjectiles[i].y >= 160.0f || enemyProjectiles[i].y < -10.0f || enemyProjectiles[i].x < -10.0f || enemyProjectiles[i].x >= 138.0f) {
+        enemyProjectiles[i].active = false;
+      } else {
+        drawEnemyProjectile((int16_t)enemyProjectiles[i].x, (int16_t)enemyProjectiles[i].y, enemyProjectiles[i].type, false);
+        enemyProjectiles[i].prevX = enemyProjectiles[i].x;
+        enemyProjectiles[i].prevY = enemyProjectiles[i].y;
       }
     }
   }
