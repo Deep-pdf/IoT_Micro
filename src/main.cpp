@@ -74,15 +74,24 @@ static EnemyProjectile enemyProjectiles[MAX_ENEMY_PROJECTILES];
 // Pacing Variables
 static float currentPaceMultiplier = 1.0f;
 static float targetPaceMultiplier = 1.0f;
+static float basePaceMultiplier = 1.0f;
+static float targetBasePaceMultiplier = 1.0f;
 static unsigned long pacePhaseStartTime = 0;
 static unsigned long pacePhaseDuration = 0;
 static uint8_t currentPacePhase = 1; // 0 = SLOW, 1 = MEDIUM, 2 = FAST
+static unsigned long gameStartTime = 0;
 
 // HUD Variables
 static int playerHealth = 3;
 static int score = 0;
 static int lastDrawHealth = -1;
 static int lastDrawScore = -1;
+
+// Player Effect Blink Variables
+static bool playerHeartBlinkActive = false;
+static unsigned long playerHeartBlinkStartTime = 0;
+static bool playerDamageBlinkActive = false;
+static unsigned long playerDamageBlinkStartTime = 0;
 
 #define HEART_FULL 0
 #define HEART_HALF 1
@@ -590,6 +599,15 @@ void loop() {
       lastGameplayFrameTime = millis();
       clearProjectiles(); // Clear active projectiles at startup
       
+      // Reset pacing/time variables on start
+      gameStartTime = millis();
+      basePaceMultiplier = 1.0f;
+      targetBasePaceMultiplier = 1.0f;
+      currentPaceMultiplier = 0.5f;
+      targetPaceMultiplier = 0.5f;
+      playerHeartBlinkActive = false;
+      playerDamageBlinkActive = false;
+      
       // Reset HUD draw flags
       lastDrawHealth = -1;
       lastDrawScore = -1;
@@ -715,8 +733,11 @@ void loop() {
     int16_t pix = (int16_t)prevPlayerX;
     int16_t piy = (int16_t)prevPlayerY;
 
-    // Redraw player ship if moved or if an active enemy overlaps its bounding box
+    // Redraw player ship if moved or if an active enemy overlaps its bounding box, or if blinking
     bool forcePlayerRedraw = false;
+    if (playerHeartBlinkActive || playerDamageBlinkActive) {
+      forcePlayerRedraw = true;
+    }
     for (int i = 0; i < MAX_ENEMIES; i++) {
       if (enemies[i].active) {
         float ex = enemies[i].x;
@@ -976,12 +997,36 @@ static void drawPixelWarsPlanet() {
 }
 
 static void drawPlayerShip(int16_t px, int16_t py) {
-  const uint16_t primaryRed = tft.color565(255, 32, 21);
-  const uint16_t orangeGlow = tft.color565(255, 74, 31);
-  const uint16_t yellowGlow = tft.color565(255, 180, 0);
-  const uint16_t mainWhite = tft.color565(243, 237, 224);
-  const uint16_t darkGray = tft.color565(36, 43, 49);
-  const uint16_t shipBlue = tft.color565(23, 105, 168);
+  bool usePinkTint = false;
+  if (playerHeartBlinkActive) {
+    unsigned long elapsed = millis() - playerHeartBlinkStartTime;
+    if (elapsed >= 400) {
+      playerHeartBlinkActive = false;
+    } else {
+      if ((elapsed / 100) % 2 == 0) {
+        usePinkTint = true;
+      }
+    }
+  }
+
+  bool useRedTint = false;
+  if (playerDamageBlinkActive) {
+    unsigned long elapsed = millis() - playerDamageBlinkStartTime;
+    if (elapsed >= 400) {
+      playerDamageBlinkActive = false;
+    } else {
+      if ((elapsed / 100) % 2 == 0) {
+        useRedTint = true;
+      }
+    }
+  }
+
+  const uint16_t primaryRed = usePinkTint ? tft.color565(255, 120, 160) : (useRedTint ? tft.color565(255, 0, 0) : tft.color565(255, 32, 21));
+  const uint16_t orangeGlow = usePinkTint ? tft.color565(255, 160, 180) : (useRedTint ? tft.color565(200, 50, 0) : tft.color565(255, 74, 31));
+  const uint16_t yellowGlow = usePinkTint ? tft.color565(255, 200, 220) : (useRedTint ? tft.color565(150, 30, 0) : tft.color565(255, 180, 0));
+  const uint16_t mainWhite = usePinkTint ? tft.color565(255, 180, 200) : (useRedTint ? tft.color565(200, 50, 50) : tft.color565(243, 237, 224));
+  const uint16_t darkGray = usePinkTint ? tft.color565(120, 80, 100) : (useRedTint ? tft.color565(80, 20, 20) : tft.color565(36, 43, 49));
+  const uint16_t shipBlue = usePinkTint ? tft.color565(200, 100, 150) : (useRedTint ? tft.color565(150, 0, 0) : tft.color565(23, 105, 168));
 
   // 1. Nose tip and centerline fuselage
   tft.drawLine(px + 7, py, px + 7, py + 14, mainWhite);
@@ -1637,11 +1682,16 @@ static void resetEnemySystem() {
   randomSpawnCount = 0;
   
   // Reset pacing
-  currentPaceMultiplier = 1.0f;
-  targetPaceMultiplier = 1.0f;
+  basePaceMultiplier = 1.0f;
+  targetBasePaceMultiplier = 1.0f;
+  currentPaceMultiplier = 0.5f;
+  targetPaceMultiplier = 0.5f;
   pacePhaseStartTime = millis();
   pacePhaseDuration = random(4000, 7001); // 4-7 seconds for first phase
   currentPacePhase = 1; // Start at MEDIUM
+  gameStartTime = millis();
+  playerHeartBlinkActive = false;
+  playerDamageBlinkActive = false;
 
   // Reset HUD
   playerHealth = 3;
@@ -1886,9 +1936,13 @@ static void spawnGridFormation() {
   spawnEnemy(64.0f, -15.0f, 0.0f, vy, typeFront);
   spawnEnemy(99.0f, -15.0f, 0.0f, vy, typeFront);
   
-  spawnEnemy(29.0f, -35.0f, 0.0f, vy, typeBack);
-  spawnEnemy(64.0f, -35.0f, 0.0f, vy, typeBack);
-  spawnEnemy(99.0f, -35.0f, 0.0f, vy, typeBack);
+  if (score >= 100) {
+    spawnEnemy(29.0f, -35.0f, 0.0f, vy, typeBack);
+    if (score >= 200) {
+      spawnEnemy(64.0f, -35.0f, 0.0f, vy, typeBack);
+    }
+    spawnEnemy(99.0f, -35.0f, 0.0f, vy, typeBack);
+  }
 }
 
 static void spawnVFormation() {
@@ -1896,14 +1950,23 @@ static void spawnVFormation() {
   spawnEnemy(58.0f, -15.0f, 0.0f, vy, 3);
   spawnEnemy(40.0f, -30.0f, 0.0f, vy, 1);
   spawnEnemy(80.0f, -30.0f, 0.0f, vy, 1);
-  spawnEnemy(21.0f, -45.0f, 0.0f, vy, 2);
-  spawnEnemy(101.0f, -45.0f, 0.0f, vy, 2);
+  if (score >= 100) {
+    spawnEnemy(21.0f, -45.0f, 0.0f, vy, 2);
+    if (score >= 200) {
+      spawnEnemy(101.0f, -45.0f, 0.0f, vy, 2);
+    }
+  }
 }
 
 static void spawnRandomCluster() {
   float cx = random(35, 90);
   float cy = random(-40, -20);
   int count = random(4, 7);
+  if (score < 100) {
+    count = random(2, 4);
+  } else if (score < 200) {
+    count = random(3, 5);
+  }
   float vy = 0.032f;
   
   for (int i = 0; i < count; i++) {
@@ -1923,17 +1986,25 @@ static void spawnDiamondFormation() {
   spawnEnemy(60.0f, -55.0f, 0.0f, vy, 1);
   spawnEnemy(41.0f, -35.0f, 0.0f, vy, 2);
   spawnEnemy(81.0f, -35.0f, 0.0f, vy, 2);
-  spawnEnemy(58.0f, -35.0f, 0.0f, vy, 3);
-  spawnEnemy(60.0f, -15.0f, 0.0f, vy, 1);
+  if (score >= 100) {
+    spawnEnemy(58.0f, -35.0f, 0.0f, vy, 3);
+    if (score >= 200) {
+      spawnEnemy(60.0f, -15.0f, 0.0f, vy, 1);
+    }
+  }
 }
 
 static void spawnLineFormation() {
   float vy = 0.035f;
   spawnEnemy(13.0f, -15.0f, 0.0f, vy, 2);
-  spawnEnemy(37.0f, -15.0f, 0.0f, vy, 2);
   spawnEnemy(61.0f, -15.0f, 0.0f, vy, 2);
-  spawnEnemy(85.0f, -15.0f, 0.0f, vy, 2);
   spawnEnemy(109.0f, -15.0f, 0.0f, vy, 2);
+  if (score >= 100) {
+    spawnEnemy(37.0f, -15.0f, 0.0f, vy, 2);
+    if (score >= 200) {
+      spawnEnemy(85.0f, -15.0f, 0.0f, vy, 2);
+    }
+  }
 }
 
 static void spawnStaggeredFormation() {
@@ -1941,10 +2012,13 @@ static void spawnStaggeredFormation() {
   spawnEnemy(11.0f, -15.0f, 0.0f, vy, 1);
   spawnEnemy(51.0f, -15.0f, 0.0f, vy, 1);
   spawnEnemy(91.0f, -15.0f, 0.0f, vy, 1);
-  
-  spawnEnemy(32.0f, -35.0f, 0.0f, vy, 2);
-  spawnEnemy(72.0f, -35.0f, 0.0f, vy, 2);
-  spawnEnemy(112.0f, -35.0f, 0.0f, vy, 2);
+  if (score >= 100) {
+    spawnEnemy(32.0f, -35.0f, 0.0f, vy, 2);
+    if (score >= 200) {
+      spawnEnemy(72.0f, -35.0f, 0.0f, vy, 2);
+      spawnEnemy(112.0f, -35.0f, 0.0f, vy, 2);
+    }
+  }
 }
 
 static void spawnFormation(int seqIndex) {
@@ -1978,8 +2052,12 @@ static void updateSpawnManager() {
     if (enemies[i].active) activeCount++;
   }
 
+  int maxRandomSpawn = 3;
+  if (score < 100) maxRandomSpawn = 1;
+  else if (score < 200) maxRandomSpawn = 2;
+
   if (spawnSequenceIndex == 1 || spawnSequenceIndex == 5) {
-    if (randomSpawnCount < 3) {
+    if (randomSpawnCount < maxRandomSpawn) {
       if (now - lastSpawnActionTime >= 1800) {
         float rx = random(10, 110);
         float ry = -15.0f;
@@ -2204,6 +2282,13 @@ static void checkCollisions() {
               eraseEnemy((int16_t)enemies[e].x, (int16_t)enemies[e].y, enemies[e].type);
               enemies[e].active = false;
               
+              // Increment score based on enemy type
+              if (enemies[e].type == 1) score += 10;
+              else if (enemies[e].type == 2) score += 15;
+              else if (enemies[e].type == 3) score += 20;
+              else if (enemies[e].type == 4) score += 25;
+              if (score > 99999) score = 99999; // HUD max display clamp
+              
               // Heart drop opportunity: 8-15% chance (12% selected)
               if (random(100) < 12) {
                 float hx = ex + ew / 2.0f;
@@ -2224,9 +2309,9 @@ static void checkCollisions() {
 
 static void updateGlobalPace(uint32_t dt) {
   unsigned long now = millis();
-  currentPaceMultiplier += (targetPaceMultiplier - currentPaceMultiplier) * 0.0005f * dt;
-  if (currentPaceMultiplier < 0.5f) currentPaceMultiplier = 0.5f;
-  if (currentPaceMultiplier > 2.0f) currentPaceMultiplier = 2.0f;
+  basePaceMultiplier += (targetBasePaceMultiplier - basePaceMultiplier) * 0.0005f * dt;
+  if (basePaceMultiplier < 0.5f) basePaceMultiplier = 0.5f;
+  if (basePaceMultiplier > 2.0f) basePaceMultiplier = 2.0f;
 
   if (now - pacePhaseStartTime >= pacePhaseDuration) {
     uint8_t nextPhase = random(3);
@@ -2236,17 +2321,28 @@ static void updateGlobalPace(uint32_t dt) {
     currentPacePhase = nextPhase;
     
     if (currentPacePhase == 0) {
-      targetPaceMultiplier = 0.75f;
+      targetBasePaceMultiplier = 0.75f;
       pacePhaseDuration = random(3000, 6001);
     } else if (currentPacePhase == 1) {
-      targetPaceMultiplier = 1.0f;
+      targetBasePaceMultiplier = 1.0f;
       pacePhaseDuration = random(4000, 8001);
     } else {
-      targetPaceMultiplier = 1.30f;
+      targetBasePaceMultiplier = 1.30f;
       pacePhaseDuration = random(2000, 5001);
     }
     pacePhaseStartTime = now;
   }
+
+  // Calculate gradual speed progression factor
+  float elapsed = (float)(now - gameStartTime) / 60000.0f; // 60s ramp
+  if (elapsed > 1.0f) elapsed = 1.0f;
+  float scoreProg = (float)score / 500.0f;
+  if (scoreProg > 1.0f) scoreProg = 1.0f;
+  float progression = elapsed > scoreProg ? elapsed : scoreProg;
+  
+  // Progression scales from 0.5 to 1.0
+  float factor = 0.5f + 0.5f * progression;
+  currentPaceMultiplier = basePaceMultiplier * factor;
 }
 
 static void spawnEnemyProjectile(float x, float y, float vx, float vy, uint8_t type) {
@@ -2492,6 +2588,40 @@ static void updateBombs(uint32_t dt) {
       bombs[i].x += bombs[i].vx * currentPaceMultiplier * dt;
       bombs[i].y += bombs[i].vy * currentPaceMultiplier * dt;
       
+      // Check collision/proximity with player ship
+      // Player ship center is at (playerX + 7.5, playerY + 8.5), Bomb center is at (bombs[i].x + 4.0, bombs[i].y + 4.0)
+      float bx = bombs[i].x + 4.0f;
+      float by = bombs[i].y + 4.0f;
+      float px = playerX + 7.5f;
+      float py = playerY + 8.5f;
+      float distSq = (bx - px) * (bx - px) + (by - py) * (by - py);
+      
+      if (distSq < 132.0f) { // Proximity distance < ~11.5 pixels
+        bombs[i].active = false;
+        
+        // Spawn explosion animation
+        for (int x = 0; x < MAX_EXPLOSIONS; x++) {
+          if (!explosions[x].active) {
+            explosions[x].cx = (int16_t)bx;
+            explosions[x].cy = (int16_t)by;
+            explosions[x].startTime = millis();
+            explosions[x].lastStage = 0;
+            explosions[x].active = true;
+            break;
+          }
+        }
+        
+        // Decrease player health
+        if (playerHealth > 0) {
+          playerHealth--;
+        }
+        
+        // Trigger damage blink
+        playerDamageBlinkActive = true;
+        playerDamageBlinkStartTime = millis();
+        continue;
+      }
+      
       // Clamp x to stay within screen boundaries
       if (bombs[i].x < 0.0f) {
         bombs[i].x = 0.0f;
@@ -2523,6 +2653,19 @@ static void updateHeartDrops(uint32_t dt) {
       
       heartDrops[i].x += heartDrops[i].vx * currentPaceMultiplier * dt;
       heartDrops[i].y += heartDrops[i].vy * currentPaceMultiplier * dt;
+      
+      // Check collision with player ship (15x17 box at playerX, playerY)
+      // Heart drop bounding box is 7x7
+      if (heartDrops[i].x < playerX + 15.0f && heartDrops[i].x + 7.0f > playerX &&
+          heartDrops[i].y < playerY + 17.0f && heartDrops[i].y + 7.0f > playerY) {
+        heartDrops[i].active = false;
+        if (playerHealth < 3) {
+          playerHealth++;
+        }
+        playerHeartBlinkActive = true;
+        playerHeartBlinkStartTime = millis();
+        continue;
+      }
       
       // Clamp x to stay within screen boundaries
       if (heartDrops[i].x < 0.0f) {
