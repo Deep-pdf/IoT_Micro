@@ -82,7 +82,7 @@ static uint8_t currentPacePhase = 1; // 0 = SLOW, 1 = MEDIUM, 2 = FAST
 static unsigned long gameStartTime = 0;
 
 // HUD Variables
-static int playerHealth = 3;
+static int playerHealth = 6;
 static int score = 0;
 static int lastDrawHealth = -1;
 static int lastDrawScore = -1;
@@ -92,6 +92,10 @@ static bool playerHeartBlinkActive = false;
 static unsigned long playerHeartBlinkStartTime = 0;
 static bool playerDamageBlinkActive = false;
 static unsigned long playerDamageBlinkStartTime = 0;
+
+// Defeat State Variables
+static bool playerDefeated = false;
+static unsigned long defeatTime = 0;
 
 #define HEART_FULL 0
 #define HEART_HALF 1
@@ -194,6 +198,7 @@ static void eraseStar(const Star &s);
 static void resetEnemySystem();
 static void updateEnemies(uint32_t dt);
 static void updateExplosions();
+static void triggerDefeat();
 static void checkCollisions();
 static void updateSpawnManager();
 static void spawnFormation(int seqIndex);
@@ -607,6 +612,8 @@ void loop() {
       targetPaceMultiplier = 0.5f;
       playerHeartBlinkActive = false;
       playerDamageBlinkActive = false;
+      playerHealth = 6;
+      playerDefeated = false;
       
       // Reset HUD draw flags
       lastDrawHealth = -1;
@@ -621,6 +628,37 @@ void loop() {
   }
 
   if (currentScreen == STATE_PIXEL_WARS_GAMEPLAY) {
+    if (playerDefeated) {
+      unsigned long now = millis();
+      unsigned long dt = now - lastGameplayFrameTime;
+      if (dt > 100) dt = 100;
+      lastGameplayFrameTime = now;
+      
+      updateStarfield(dt, 0.2f);
+      updateExplosions();
+      
+      // Draw defeat modal box overlay
+      tft.fillRect(14, 50, 100, 60, ST77XX_BLACK);
+      tft.drawRect(14, 50, 100, 60, tft.color565(255, 32, 21));
+      drawCenteredPWText(tft, "GAME OVER", 60, tft.color565(255, 32, 21), 2, true);
+      
+      char scoreBuf[25];
+      snprintf(scoreBuf, sizeof(scoreBuf), "SCORE: %05d", score);
+      drawCenteredPWText(tft, scoreBuf, 85, tft.color565(200, 200, 200), 1, false);
+      
+      if (now - defeatTime >= 3000 || isEnterPressed() || isBackPressed()) {
+        playerDefeated = false;
+        resetEnemySystem();
+        clearProjectiles();
+        
+        currentScreen = STATE_PIXEL_WARS_MENU;
+        pwMenuSelectedIndex = 0;
+        lastPwMenuSelectedIndex = -1;
+        drawPixelWarsStartMenu();
+      }
+      return;
+    }
+
     if (isBackPressed()) {
       // Erase player, active projectiles, active enemies, active explosions, active enemy projectiles
       tft.fillRect((int16_t)playerX, (int16_t)playerY, 15, 17, ST77XX_BLACK);
@@ -1694,7 +1732,8 @@ static void resetEnemySystem() {
   playerDamageBlinkActive = false;
 
   // Reset HUD
-  playerHealth = 3;
+  playerHealth = 6;
+  playerDefeated = false;
   score = 0;
   lastDrawHealth = -1;
   lastDrawScore = -1;
@@ -2238,6 +2277,24 @@ static void updateEnemies(uint32_t dt) {
   }
 }
 
+static void triggerDefeat() {
+  playerDefeated = true;
+  defeatTime = millis();
+  tft.fillRect((int16_t)playerX, (int16_t)playerY, 15, 17, ST77XX_BLACK);
+  
+  // Spawn player explosion
+  for (int x = 0; x < MAX_EXPLOSIONS; x++) {
+    if (!explosions[x].active) {
+      explosions[x].cx = (int16_t)playerX + 7;
+      explosions[x].cy = (int16_t)playerY + 8;
+      explosions[x].startTime = millis();
+      explosions[x].lastStage = 0;
+      explosions[x].active = true;
+      break;
+    }
+  }
+}
+
 static void checkCollisions() {
   for (int p = 0; p < MAX_PROJECTILES; p++) {
     if (projectiles[p].active) {
@@ -2302,6 +2359,49 @@ static void checkCollisions() {
             }
           }
         }
+      }
+    }
+  }
+
+  // Check collision: Player Ship vs Enemy Planes
+  for (int e = 0; e < MAX_ENEMIES; e++) {
+    if (enemies[e].active) {
+      float ex = enemies[e].x;
+      float ey = enemies[e].y;
+      float ew = 9.0f;
+      float eh = 9.0f;
+      if (enemies[e].type == 2) { ew = 7.0f; eh = 11.0f; }
+      else if (enemies[e].type == 3) { ew = 13.0f; eh = 11.0f; }
+      else if (enemies[e].type == 4) { ew = 9.0f; eh = 9.0f; }
+      
+      if (ex < playerX + 15.0f && ex + ew > playerX && ey < playerY + 17.0f && ey + eh > playerY) {
+        // Destroy the enemy plane
+        int16_t cx = (int16_t)(ex + ew / 2.0f);
+        int16_t cy = (int16_t)(ey + eh / 2.0f);
+        for (int x = 0; x < MAX_EXPLOSIONS; x++) {
+          if (!explosions[x].active) {
+            explosions[x].cx = cx;
+            explosions[x].cy = cy;
+            explosions[x].startTime = millis();
+            explosions[x].lastStage = 0;
+            explosions[x].active = true;
+            break;
+          }
+        }
+        eraseEnemy((int16_t)enemies[e].x, (int16_t)enemies[e].y, enemies[e].type);
+        enemies[e].active = false;
+        
+        // Subtract half life (1 half heart = subtract 1)
+        if (playerHealth > 0) {
+          playerHealth--;
+          if (playerHealth <= 0) {
+            triggerDefeat();
+          }
+        }
+        
+        // Trigger damage blink
+        playerDamageBlinkActive = true;
+        playerDamageBlinkStartTime = millis();
       }
     }
   }
@@ -2404,6 +2504,22 @@ static void updateEnemyProjectiles(uint32_t dt) {
       enemyProjectiles[i].x += enemyProjectiles[i].vx * currentPaceMultiplier * dt;
       enemyProjectiles[i].y += enemyProjectiles[i].vy * currentPaceMultiplier * dt;
       
+      // Check collision with player ship (15x17 box at playerX, playerY)
+      // Projectile bounding box: ~3x4
+      if (enemyProjectiles[i].x < playerX + 15.0f && enemyProjectiles[i].x + 3.0f > playerX &&
+          enemyProjectiles[i].y < playerY + 17.0f && enemyProjectiles[i].y + 4.0f > playerY) {
+        enemyProjectiles[i].active = false;
+        if (playerHealth > 0) {
+          playerHealth--;
+          if (playerHealth <= 0) {
+            triggerDefeat();
+          }
+        }
+        playerDamageBlinkActive = true;
+        playerDamageBlinkStartTime = millis();
+        continue;
+      }
+      
       if (enemyProjectiles[i].y >= 160.0f || enemyProjectiles[i].y < 14.0f || enemyProjectiles[i].x < -10.0f || enemyProjectiles[i].x >= 138.0f) {
         enemyProjectiles[i].active = false;
       } else {
@@ -2492,9 +2608,9 @@ static void drawScoreHUD(int scoreVal) {
 
 static void drawGameplayHUD() {
   if (playerHealth != lastDrawHealth) {
-    drawHeart(4, 3, (playerHealth >= 1) ? HEART_FULL : HEART_EMPTY);
-    drawHeart(14, 3, (playerHealth >= 2) ? HEART_FULL : HEART_EMPTY);
-    drawHeart(24, 3, (playerHealth >= 3) ? HEART_FULL : HEART_EMPTY);
+    drawHeart(4, 3, (playerHealth >= 2) ? HEART_FULL : ((playerHealth >= 1) ? HEART_HALF : HEART_EMPTY));
+    drawHeart(14, 3, (playerHealth >= 4) ? HEART_FULL : ((playerHealth >= 3) ? HEART_HALF : HEART_EMPTY));
+    drawHeart(24, 3, (playerHealth >= 6) ? HEART_FULL : ((playerHealth >= 5) ? HEART_HALF : HEART_EMPTY));
     lastDrawHealth = playerHealth;
   }
   
@@ -2611,9 +2727,13 @@ static void updateBombs(uint32_t dt) {
           }
         }
         
-        // Decrease player health
+        // Decrease player health by 2 (full heart)
         if (playerHealth > 0) {
-          playerHealth--;
+          playerHealth -= 2;
+          if (playerHealth < 0) playerHealth = 0;
+          if (playerHealth <= 0) {
+            triggerDefeat();
+          }
         }
         
         // Trigger damage blink
@@ -2659,8 +2779,9 @@ static void updateHeartDrops(uint32_t dt) {
       if (heartDrops[i].x < playerX + 15.0f && heartDrops[i].x + 7.0f > playerX &&
           heartDrops[i].y < playerY + 17.0f && heartDrops[i].y + 7.0f > playerY) {
         heartDrops[i].active = false;
-        if (playerHealth < 3) {
-          playerHealth++;
+        if (playerHealth < 6) {
+          playerHealth += 2;
+          if (playerHealth > 6) playerHealth = 6;
         }
         playerHeartBlinkActive = true;
         playerHeartBlinkStartTime = millis();
