@@ -117,6 +117,32 @@ struct Explosion {
 #define MAX_EXPLOSIONS 8
 static Explosion explosions[MAX_EXPLOSIONS];
 
+// Bomb drop system
+struct Bomb {
+  float x;
+  float y;
+  float prevX;
+  float prevY;
+  float vx;
+  float vy;
+  bool active;
+};
+#define MAX_BOMBS 5
+static Bomb bombs[MAX_BOMBS];
+
+// Heart drop system
+struct HeartDrop {
+  float x;
+  float y;
+  float prevX;
+  float prevY;
+  float vx;
+  float vy;
+  bool active;
+};
+#define MAX_HEART_DROPS 3
+static HeartDrop heartDrops[MAX_HEART_DROPS];
+
 // Spawn Manager variables
 static unsigned long lastSpawnActionTime = 0;
 static int spawnSequenceIndex = 0;
@@ -178,7 +204,14 @@ static void drawEnemyProjectile(int16_t x, int16_t y, uint8_t type, bool erase);
 static void drawHeart(int16_t x, int16_t y, uint8_t state);
 static void drawScoreHUD(int scoreVal);
 static void drawGameplayHUD();
-static void drawHUDSeparator();
+
+static void updateBombs(uint32_t dt);
+static void updateHeartDrops(uint32_t dt);
+static void drawBomb(int16_t x, int16_t y, bool erase);
+static void drawHeartDrop(int16_t x, int16_t y, bool erase);
+static bool spawnBomb(float x, float y);
+static bool spawnHeartDrop(float x, float y);
+static void clearBombsAndHearts();
 #endif
 
 
@@ -561,9 +594,8 @@ void loop() {
       lastDrawHealth = -1;
       lastDrawScore = -1;
 
-      // Erase countdown text box, draw HUD separator, draw HUD, and draw player ship
+      // Erase countdown text box, draw HUD, and draw player ship
       tft.fillRect(34, 68, 60, 24, ST77XX_BLACK);
-      drawHUDSeparator();
       drawGameplayHUD();
       drawPlayerShip((int16_t)playerX, (int16_t)playerY);
     }
@@ -592,6 +624,16 @@ void loop() {
       for (int i = 0; i < MAX_ENEMY_PROJECTILES; i++) {
         if (enemyProjectiles[i].active) {
           drawEnemyProjectile((int16_t)enemyProjectiles[i].x, (int16_t)enemyProjectiles[i].y, enemyProjectiles[i].type, true);
+        }
+      }
+      for (int i = 0; i < MAX_BOMBS; i++) {
+        if (bombs[i].active) {
+          drawBomb((int16_t)bombs[i].x, (int16_t)bombs[i].y, true);
+        }
+      }
+      for (int i = 0; i < MAX_HEART_DROPS; i++) {
+        if (heartDrops[i].active) {
+          drawHeartDrop((int16_t)heartDrops[i].x, (int16_t)heartDrops[i].y, true);
         }
       }
 
@@ -624,6 +666,9 @@ void loop() {
     // 3 & 4. Spawn/update enemies and move them (Paced)
     updateEnemies(dt);
 
+    // Update bombs (Paced)
+    updateBombs(dt);
+
     // 5 & 6. Spawn/update enemy projectiles (Paced)
     updateEnemyProjectiles(dt);
 
@@ -652,6 +697,9 @@ void loop() {
 
     // 8. Update player projectiles
     updateProjectiles(dt);
+
+    // Update heart drops (Paced)
+    updateHeartDrops(dt);
 
     // 9. Check player projectile -> enemy collision
     checkCollisions();
@@ -1582,6 +1630,8 @@ static void resetEnemySystem() {
     enemyProjectiles[i].active = false;
   }
   
+  clearBombsAndHearts();
+  
   lastSpawnActionTime = millis();
   spawnSequenceIndex = 0;
   randomSpawnCount = 0;
@@ -2035,6 +2085,12 @@ static void updateEnemies(uint32_t dt) {
           if (enemies[i].y < 0.0f) {
             enemies[i].nextAttackTime = now + 500;
           } else {
+            // Bomb drop opportunity: 5-12% chance (10% selected)
+            if (random(100) < 10) {
+              float bx = enemies[i].x + ((enemies[i].type == 2) ? 3.5f : 4.5f);
+              float by = enemies[i].y + ((enemies[i].type == 2) ? 11.0f : 9.0f);
+              spawnBomb(bx, by);
+            }
             uint8_t attackType = 1;
             if (enemies[i].type == 1) attackType = 1;
             else if (enemies[i].type == 2) attackType = (random(4) == 0) ? 2 : 1;
@@ -2147,6 +2203,13 @@ static void checkCollisions() {
               
               eraseEnemy((int16_t)enemies[e].x, (int16_t)enemies[e].y, enemies[e].type);
               enemies[e].active = false;
+              
+              // Heart drop opportunity: 8-15% chance (12% selected)
+              if (random(100) < 12) {
+                float hx = ex + ew / 2.0f;
+                float hy = ey + eh / 2.0f;
+                spawnHeartDrop(hx, hy);
+              }
               
               tft.fillRect((int16_t)projectiles[p].x, (int16_t)projectiles[p].y, 2, 6, ST77XX_BLACK);
               projectiles[p].active = false;
@@ -2311,7 +2374,7 @@ static void drawHeart(int16_t x, int16_t y, uint8_t state) {
 }
 
 static void drawScoreHUD(int scoreVal) {
-  tft.setFont(&BLADRMF_4pt7b);
+  tft.setFont(NULL); // Use default readable font
   tft.setTextSize(1);
   tft.setTextColor(tft.color565(200, 200, 200)); // Off-white/light gray
   
@@ -2319,16 +2382,13 @@ static void drawScoreHUD(int scoreVal) {
   char scoreBuf[20];
   snprintf(scoreBuf, sizeof(scoreBuf), "SCORE %05d", scoreVal);
   
-  // Measure text width
-  int16_t x1, y1;
-  uint16_t w, h;
-  tft.getTextBounds(scoreBuf, 0, 0, &x1, &y1, &w, &h);
-  
+  // Measure text width for default font
+  int16_t w = strlen(scoreBuf) * 6 - 1;
   int16_t sx = 128 - w - 4; // 4 pixels margin from right
-  int16_t sy = 9;           // baseline Y (fits in Y=3..9)
+  int16_t sy = 3;           // Top margin 3 pixels (aligned with hearts)
   
   // Clear only the score text box to black to prevent flicker
-  tft.fillRect(sx, 1, w, 11, ST77XX_BLACK);
+  tft.fillRect(sx, sy, w, 8, ST77XX_BLACK);
   
   tft.setCursor(sx, sy);
   tft.print(scoreBuf);
@@ -2348,10 +2408,239 @@ static void drawGameplayHUD() {
   }
 }
 
-static void drawHUDSeparator() {
-  const uint16_t lineCol = tft.color565(82, 103, 121); // Blue-gray
-  tft.drawFastHLine(4, 13, 30, lineCol);
-  tft.drawFastHLine(44, 13, 40, lineCol);
-  tft.drawFastHLine(94, 13, 30, lineCol);
+static bool spawnBomb(float x, float y) {
+  for (int i = 0; i < MAX_BOMBS; i++) {
+    if (!bombs[i].active) {
+      bombs[i].x = x + (random(7) - 3); // random starting offset
+      if (bombs[i].x < 0.0f) bombs[i].x = 0.0f;
+      if (bombs[i].x > 120.0f) bombs[i].x = 120.0f;
+      bombs[i].y = y;
+      bombs[i].prevX = bombs[i].x;
+      bombs[i].prevY = bombs[i].y;
+      
+      // Randomize drift: left, right, almost straight
+      int driftChoice = random(3);
+      if (driftChoice == 0) {
+        bombs[i].vx = -0.012f - (random(10) / 1000.0f); // left
+      } else if (driftChoice == 1) {
+        bombs[i].vx = 0.012f + (random(10) / 1000.0f);  // right
+      } else {
+        bombs[i].vx = (random(6) - 3) / 1000.0f;        // almost straight
+      }
+      
+      // Randomize speed: slightly slow, normal, slightly faster
+      int speedChoice = random(3);
+      if (speedChoice == 0) {
+        bombs[i].vy = 0.025f + (random(8) / 1000.0f);   // slow
+      } else if (speedChoice == 1) {
+        bombs[i].vy = 0.04f + (random(8) / 1000.0f);    // normal
+      } else {
+        bombs[i].vy = 0.055f + (random(12) / 1000.0f);  // faster
+      }
+      
+      bombs[i].active = true;
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool spawnHeartDrop(float x, float y) {
+  for (int i = 0; i < MAX_HEART_DROPS; i++) {
+    if (!heartDrops[i].active) {
+      heartDrops[i].x = x + (random(7) - 3); // initial X offset
+      if (heartDrops[i].x < 0.0f) heartDrops[i].x = 0.0f;
+      if (heartDrops[i].x > 121.0f) heartDrops[i].x = 121.0f;
+      heartDrops[i].y = y;
+      heartDrops[i].prevX = heartDrops[i].x;
+      heartDrops[i].prevY = heartDrops[i].y;
+      
+      // Randomize initial x offset / horizontal drift
+      int driftChoice = random(3);
+      if (driftChoice == 0) {
+        heartDrops[i].vx = -0.01f - (random(8) / 1000.0f);
+      } else if (driftChoice == 1) {
+        heartDrops[i].vx = 0.01f + (random(8) / 1000.0f);
+      } else {
+        heartDrops[i].vx = (random(4) - 2) / 1000.0f;
+      }
+      
+      // Randomize speed: slightly slow, normal, slightly faster
+      int speedChoice = random(3);
+      if (speedChoice == 0) {
+        heartDrops[i].vy = 0.02f + (random(8) / 1000.0f);
+      } else if (speedChoice == 1) {
+        heartDrops[i].vy = 0.035f + (random(8) / 1000.0f);
+      } else {
+        heartDrops[i].vy = 0.05f + (random(10) / 1000.0f);
+      }
+      
+      heartDrops[i].active = true;
+      return true;
+    }
+  }
+  return false;
+}
+
+static void updateBombs(uint32_t dt) {
+  for (int i = 0; i < MAX_BOMBS; i++) {
+    if (bombs[i].active) {
+      if (bombs[i].prevY >= 14.0f) {
+        drawBomb((int16_t)bombs[i].prevX, (int16_t)bombs[i].prevY, true);
+      }
+      
+      bombs[i].x += bombs[i].vx * currentPaceMultiplier * dt;
+      bombs[i].y += bombs[i].vy * currentPaceMultiplier * dt;
+      
+      // Clamp x to stay within screen boundaries
+      if (bombs[i].x < 0.0f) {
+        bombs[i].x = 0.0f;
+        bombs[i].vx = -bombs[i].vx * 0.5f; // simple bounce
+      } else if (bombs[i].x > 120.0f) {
+        bombs[i].x = 120.0f;
+        bombs[i].vx = -bombs[i].vx * 0.5f;
+      }
+      
+      if (bombs[i].y >= 160.0f) {
+        bombs[i].active = false;
+      } else {
+        if (bombs[i].y >= 14.0f) {
+          drawBomb((int16_t)bombs[i].x, (int16_t)bombs[i].y, false);
+        }
+        bombs[i].prevX = bombs[i].x;
+        bombs[i].prevY = bombs[i].y;
+      }
+    }
+  }
+}
+
+static void updateHeartDrops(uint32_t dt) {
+  for (int i = 0; i < MAX_HEART_DROPS; i++) {
+    if (heartDrops[i].active) {
+      if (heartDrops[i].prevY >= 14.0f) {
+        drawHeartDrop((int16_t)heartDrops[i].prevX, (int16_t)heartDrops[i].prevY, true);
+      }
+      
+      heartDrops[i].x += heartDrops[i].vx * currentPaceMultiplier * dt;
+      heartDrops[i].y += heartDrops[i].vy * currentPaceMultiplier * dt;
+      
+      // Clamp x to stay within screen boundaries
+      if (heartDrops[i].x < 0.0f) {
+        heartDrops[i].x = 0.0f;
+        heartDrops[i].vx = -heartDrops[i].vx * 0.5f; // simple bounce
+      } else if (heartDrops[i].x > 121.0f) {
+        heartDrops[i].x = 121.0f;
+        heartDrops[i].vx = -heartDrops[i].vx * 0.5f;
+      }
+      
+      if (heartDrops[i].y >= 160.0f) {
+        heartDrops[i].active = false;
+      } else {
+        if (heartDrops[i].y >= 14.0f) {
+          drawHeartDrop((int16_t)heartDrops[i].x, (int16_t)heartDrops[i].y, false);
+        }
+        heartDrops[i].prevX = heartDrops[i].x;
+        heartDrops[i].prevY = heartDrops[i].y;
+      }
+    }
+  }
+}
+
+static void clearBombsAndHearts() {
+  for (int i = 0; i < MAX_BOMBS; i++) {
+    bombs[i].active = false;
+  }
+  for (int i = 0; i < MAX_HEART_DROPS; i++) {
+    heartDrops[i].active = false;
+  }
+}
+
+static void drawBomb(int16_t x, int16_t y, bool erase) {
+  if (erase) {
+    tft.fillRect(x, y, 8, 8, ST77XX_BLACK);
+    return;
+  }
+  
+  uint16_t bodyColor = tft.color565(90, 30, 20); // Dark red/brown
+  uint16_t darkGray = tft.color565(60, 60, 60);  // Dark gray/iron
+  uint16_t sparkColor = ((millis() / 120) % 2 == 0) ? tft.color565(255, 60, 0) : tft.color565(255, 180, 0); // Pulsing orange-red/yellow
+  uint16_t fuseGray = tft.color565(120, 100, 80);
+
+  // Row 0: Spark/Fuse
+  tft.drawPixel(x + 4, y, sparkColor);
+  
+  // Row 1: Fuse line
+  tft.drawPixel(x + 4, y + 1, fuseGray);
+
+  // Row 2: Bomb collar / top
+  tft.fillRect(x + 3, y + 2, 2, 1, darkGray);
+
+  // Row 3: Bomb body
+  tft.fillRect(x + 2, y + 3, 4, 1, bodyColor);
+  
+  // Row 4: Bomb body middle
+  tft.fillRect(x + 1, y + 4, 6, 1, bodyColor);
+  
+  // Row 5: Bomb body middle
+  tft.fillRect(x + 1, y + 5, 6, 1, bodyColor);
+
+  // Row 6: Bomb body lower
+  tft.fillRect(x + 2, y + 6, 4, 1, bodyColor);
+
+  // Row 7: Bomb body bottom point
+  tft.fillRect(x + 3, y + 7, 2, 1, bodyColor);
+}
+
+static void drawHeartDrop(int16_t x, int16_t y, bool erase) {
+  if (erase) {
+    tft.fillRect(x, y, 7, 7, ST77XX_BLACK);
+    return;
+  }
+  uint16_t borderRed = tft.color565(200, 0, 0); // Brighter outline
+  uint16_t fillRed = tft.color565(255, 50, 50);    // Brighter red fill
+  uint16_t highlight = ST77XX_WHITE;
+  
+  // Draw border/shape in borderRed
+  tft.drawPixel(x + 1, y, borderRed);
+  tft.drawPixel(x + 2, y, borderRed);
+  tft.drawPixel(x + 4, y, borderRed);
+  tft.drawPixel(x + 5, y, borderRed);
+
+  tft.drawPixel(x, y + 1, borderRed);
+  tft.drawPixel(x + 3, y + 1, borderRed);
+  tft.drawPixel(x + 6, y + 1, borderRed);
+
+  tft.drawPixel(x, y + 2, borderRed);
+  tft.drawPixel(x + 6, y + 2, borderRed);
+
+  tft.drawPixel(x, y + 3, borderRed);
+  tft.drawPixel(x + 6, y + 3, borderRed);
+
+  tft.drawPixel(x + 1, y + 4, borderRed);
+  tft.drawPixel(x + 5, y + 4, borderRed);
+
+  tft.drawPixel(x + 2, y + 5, borderRed);
+  tft.drawPixel(x + 4, y + 5, borderRed);
+
+  tft.drawPixel(x + 3, y + 6, borderRed);
+
+  // Fill in the middle
+  tft.drawPixel(x + 1, y + 1, fillRed);
+  tft.drawPixel(x + 2, y + 1, fillRed);
+  tft.drawPixel(x + 4, y + 1, fillRed);
+  tft.drawPixel(x + 5, y + 1, fillRed);
+
+  tft.fillRect(x + 1, y + 2, 5, 1, fillRed);
+  tft.fillRect(x + 1, y + 3, 5, 1, fillRed);
+  tft.fillRect(x + 2, y + 4, 3, 1, fillRed);
+  tft.drawPixel(x + 3, y + 5, fillRed);
+
+  // Tiny blinking pixel / subtle highlight
+  bool blink = (millis() / 250) % 2 == 0;
+  if (blink) {
+    tft.drawPixel(x + 2, y + 2, highlight);
+  } else {
+    tft.drawPixel(x + 2, y + 2, fillRed);
+  }
 }
 #endif
