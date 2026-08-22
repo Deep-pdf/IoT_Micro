@@ -183,25 +183,26 @@ void handleCurrentSelection() {
 }
 
 void setup() {
-  // Initialize Joystick Pins
+  // 1. Pull display reset LOW immediately to blank the panel and hide previous RAM contents
+  pinMode(TFT_RST, OUTPUT);
+  digitalWrite(TFT_RST, LOW);
+
+  // 2. Initialize display hardware and command it OFF to blank it cleanly
+  tft.initR(INITR_BLACKTAB);
+  tft.sendCommand(0x28);        // Display OFF
+  tft.setRotation(2);
+  tft.fillScreen(ST77XX_BLACK); // Clear display RAM to black while OFF
+
+  // 3. Initialize joystick, button, random seed, and Pixel Wars preferences
   pinMode(JOY_X, INPUT);
   pinMode(JOY_Y, INPUT);
   pinMode(JOY_SW, INPUT_PULLUP);
-
-  // Initialize Enter Push Button (GPIO 13)
   setupButton();
-
-  // Seed random generator using float read on empty analog pin
   randomSeed(analogRead(36));
-
-  // Initialize Pixel Wars game data (like loading high scores)
   pixelWars.begin();
 
-  tft.initR(INITR_BLACKTAB);
-  tft.sendCommand(0x28);        // Turn display OFF immediately to hide previous frame buffer garbage
-  tft.setRotation(2);
-  tft.fillScreen(ST77XX_BLACK); // Clear display RAM to black while display is OFF
-  tft.sendCommand(0x29);        // Turn display ON now that RAM is cleanly cleared
+  // 4. Turn display back ON (now cleanly displaying a black screen)
+  tft.sendCommand(0x29);
 
   // Asynchronously initialize WiFi & NTP timezone (IST = GMT+5:30 = 19800 seconds)
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);

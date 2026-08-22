@@ -100,9 +100,16 @@ void PixelWars::update() {
   }
 
   if (currentScreen == STATE_PIXEL_WARS_MENU) {
+    // Handle back button to exit to home screen
+    if (isBackPressed()) {
+      exitPixelWars();
+      return;
+    }
+
     // 1. Handle selection
     if (isEnterPressed()) {
       handlePixelWarsMenuSelection();
+      return;
     }
 
     // 2. Handle navigation
