@@ -90,6 +90,7 @@ void PixelWars::update() {
         currentScreen = STATE_PIXEL_WARS_MENU;
         pwMenuSelectedIndex = 0;
         lastPwMenuSelectedIndex = -1;
+        clearButtonEvents();
         drawPixelWarsStartMenu();
       }
     } else {
@@ -189,6 +190,7 @@ void PixelWars::update() {
       prevPlayerY = 120.0f;
       lastGameplayFrameTime = millis();
       clearProjectiles(); // Clear active projectiles at startup
+      clearButtonEvents(); // Clear any buttons pressed during countdown
       
       // Reset pacing/time variables on start
       gameStartTime = millis();

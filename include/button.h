@@ -12,5 +12,6 @@ void updateButton();
 // Consumes the press event (resets the flag to false).
 bool isEnterPressed();
 bool isBackPressed();
+void clearButtonEvents();
 
 #endif // BUTTON_H

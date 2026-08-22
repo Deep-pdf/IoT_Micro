@@ -67,3 +67,8 @@ bool isBackPressed() {
   }
   return false;
 }
+
+void clearButtonEvents() {
+  enterPressedEvent = false;
+  backPressedEvent = false;
+}

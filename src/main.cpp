@@ -81,6 +81,7 @@ void handleNavigation(JoyDirection dir) {
 
 // Shows the Shayari/quote screen (using the current quote)
 void enterMaanKiBaat() {
+  clearButtonEvents();
   currentScreen = STATE_QUOTE;
 
   // Get the EXACT SAME selected quote from memory
@@ -106,6 +107,7 @@ void enterMaanKiBaat() {
 
 // Returns to the Home Screen from Maan Ki Baat
 void exitMaanKiBaat() {
+  clearButtonEvents();
   currentScreen = STATE_HOME;
 
   // Select a new random quote!
@@ -126,6 +128,7 @@ void exitMaanKiBaat() {
 
 // Launches Pixel Wars app cleanly
 void enterPixelWars() {
+  clearButtonEvents();
   currentScreen = STATE_PIXEL_WARS_LOADING;
   pixelWarsLoadStartTime = millis();
   lastProgress = -1;
@@ -134,6 +137,7 @@ void enterPixelWars() {
 
 // Exits Pixel Wars back to Home Screen
 void exitPixelWars() {
+  clearButtonEvents();
   currentScreen = STATE_HOME;
 
   // Select a new random quote!
