@@ -8,6 +8,7 @@
 #include "pixel_wars/PixelWars.h"
 #include "pixel_wars/PixelWarsShared.h"
 #include "pixel_wars/PixelWarsMenu.h"
+#include "ai/AIApp.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -156,8 +157,30 @@ void exitPixelWars() {
   lastWiFiConnected = currentWiFiConnected;
 }
 
-void enterAIPlaceholder() {
-  Serial.println("Placeholder Action: Open AI Application");
+void enterAI() {
+  clearButtonEvents();
+  currentScreen = STATE_AI;
+  AIApp::init(tft);
+}
+
+void exitAI() {
+  clearButtonEvents();
+  currentScreen = STATE_HOME;
+
+  // Select a new random quote!
+  selectRandomQuote();
+  lastQuoteChangeTime = millis();
+
+  // Restore original layout
+  drawHomeScreen(tft);
+
+  // Redraw highlight state
+  drawFocusHighlight(tft, currentFocus, true);
+
+  // Redraw connection status
+  bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+  updateWiFiIcon(tft, currentWiFiConnected);
+  lastWiFiConnected = currentWiFiConnected;
 }
 
 void enterLostCrownPlaceholder() {
@@ -175,7 +198,7 @@ void handleCurrentSelection() {
         enterPixelWars();
         break;
       case FOCUS_AI:
-        enterAIPlaceholder();
+        enterAI();
         break;
       case FOCUS_LOST_CROWN:
         enterLostCrownPlaceholder();
@@ -302,6 +325,12 @@ void loop() {
       currentScreen == STATE_PIXEL_WARS_GAMEPLAY ||
       currentScreen == STATE_PIXEL_WARS_HIGH_SCORE) {
     pixelWars.update();
+  } else if (currentScreen == STATE_AI) {
+    if (isBackPressed()) {
+      exitAI();
+    } else {
+      AIApp::update(tft);
+    }
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)
     if (isEnterPressed()) {
