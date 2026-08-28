@@ -326,10 +326,9 @@ void loop() {
       currentScreen == STATE_PIXEL_WARS_HIGH_SCORE) {
     pixelWars.update();
   } else if (currentScreen == STATE_AI) {
-    if (isBackPressed()) {
+    AIApp::update(tft);
+    if (AIApp::shouldExit()) {
       exitAI();
-    } else {
-      AIApp::update(tft);
     }
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)
