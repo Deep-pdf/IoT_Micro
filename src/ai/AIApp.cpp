@@ -185,21 +185,6 @@ static void drawThinkingScreen(Adafruit_ST7735 &tft) {
     tft.print(msg);
 }
 
-// Pagination and response text scrolling
-static const int MAX_Q_LINES    = 6;
-static const int MAX_RESP_LINES = 80;
-
-static String qLines[MAX_Q_LINES];
-static int    qLineCount = 0;
-
-static String respLines[MAX_RESP_LINES];
-static int    totalRespLines   = 0;
-static int    respScrollRow    = 0;
-static int    maxRespScroll    = 0;
-static int    visibleRespLines = 0;
-static int16_t respStartY       = 0;
-static unsigned long lastScrollTime = 0;
-
 // Cleans up string: converts single '\n' or '\r' to ' ', preserves double '\n\n' as paragraph break '\n'
 static String normalizeResponseText(const String &raw) {
     String out = "";
@@ -228,133 +213,136 @@ static String normalizeResponseText(const String &raw) {
     return out;
 }
 
-static void formatTextIntoLines(const String &text, int maxChars, String lines[], int &lineCount, int maxLines) {
-    lineCount = 0;
-    if (text.length() == 0) return;
-
-    String currentLine = "";
-
-    const char *p = text.c_str();
-    while (*p && lineCount < maxLines) {
-        if (*p == '\n') {
-            lines[lineCount++] = currentLine;
-            currentLine = "";
-            p++;
-            continue;
-        }
-
-        if (*p == ' ' && currentLine.length() == 0) {
-            p++;
-            continue;
-        }
-
-        const char *wStart = p;
-        while (*p && *p != ' ' && *p != '\n') p++;
-        int wLen = (int)(p - wStart);
-
-        String word = "";
-        for (int i = 0; i < wLen; i++) word += wStart[i];
-
-        int spaceNeeded = (currentLine.length() > 0 ? 1 : 0) + wLen;
-        if ((int)currentLine.length() + spaceNeeded <= maxChars) {
-            if (currentLine.length() > 0) currentLine += ' ';
-            currentLine += word;
-        } else {
-            if (currentLine.length() > 0) {
-                lines[lineCount++] = currentLine;
-                currentLine = "";
-            }
-            if (lineCount >= maxLines) break;
-
-            while ((int)word.length() > maxChars && lineCount < maxLines) {
-                lines[lineCount++] = word.substring(0, maxChars);
-                word = word.substring(maxChars);
-            }
-            if (word.length() > 0 && lineCount < maxLines) {
-                currentLine = word;
-            }
-        }
-    }
-
-    if (currentLine.length() > 0 && lineCount < maxLines) {
-        lines[lineCount++] = currentLine;
-    }
-}
-
-static void renderResponseTextOnly(Adafruit_ST7735 &tft) {
-    // Clear only response body area (respStartY to 148)
-    tft.fillRect(0, respStartY, 128, 149 - respStartY, COL_BG);
-
+// Dedicated function for rendering word-wrapped text using plain font (same as question)
+static void drawWrappedText(
+    Adafruit_ST7735 &tft,
+    const String &text,
+    int startX,
+    int startY,
+    int maxWidth,
+    int lineH,
+    int maxY
+) {
     tft.setFont(NULL);
     tft.setTextSize(1);
     tft.setTextColor(COL_RESP_TXT, COL_BG);
 
-    int16_t currY = respStartY;
-    for (int i = 0; i < visibleRespLines; i++) {
-        int lineIdx = respScrollRow + i;
-        if (lineIdx >= totalRespLines) break;
+    int leftMargin = startX;
+    int maxX       = startX + maxWidth;
+    int curX       = leftMargin;
+    int curY       = startY;
+    const int charWidth = 6;
+    const int spaceWidth = 6;
 
-        tft.setCursor(4, currY);
-        tft.print(respLines[lineIdx]);
-        currY += 10;
+    const char *p = text.c_str();
+    while (*p && (curY + 8) <= maxY) {
+        // Skip carriage returns
+        if (*p == '\r') {
+            p++;
+            continue;
+        }
+
+        // Handle explicit newline
+        if (*p == '\n') {
+            curX = leftMargin;
+            curY += lineH;
+            p++;
+            continue;
+        }
+
+        // Skip leading spaces at start of line
+        if (*p == ' ' && curX == leftMargin) {
+            p++;
+            continue;
+        }
+
+        // Handle space between words
+        if (*p == ' ') {
+            if (curX + spaceWidth <= maxX) {
+                tft.setCursor(curX, curY);
+                tft.print(' ');
+                curX += spaceWidth;
+            } else {
+                curX = leftMargin;
+                curY += lineH;
+                if (curY + 8 > maxY) break;
+            }
+            p++;
+            continue;
+        }
+
+        // Extract word
+        const char *wStart = p;
+        while (*p && *p != ' ' && *p != '\n' && *p != '\r') {
+            p++;
+        }
+        int wLen = (int)(p - wStart);
+        if (wLen == 0) continue;
+
+        String word = "";
+        for (int i = 0; i < wLen; i++) word += wStart[i];
+        int wPixels = wLen * charWidth;
+
+        // If word doesn't fit on current line, move to next line
+        if (curX + wPixels > maxX && curX > leftMargin) {
+            curX = leftMargin;
+            curY += lineH;
+            if (curY + 8 > maxY) break;
+        }
+
+        // Handle single word wider than maxWidth
+        if (wPixels > maxWidth) {
+            int maxChars = maxWidth / charWidth;
+            int offset = 0;
+            while (offset < wLen && curY + 8 <= maxY) {
+                int chunkLen = (wLen - offset > maxChars) ? maxChars : (wLen - offset);
+                String chunk = word.substring(offset, offset + chunkLen);
+                tft.setCursor(leftMargin, curY);
+                tft.print(chunk);
+                offset += chunkLen;
+                if (offset < wLen) {
+                    curY += lineH;
+                } else {
+                    curX = leftMargin + chunkLen * charWidth;
+                }
+            }
+        } else {
+            // Print word at current position
+            tft.setCursor(curX, curY);
+            tft.print(word);
+            curX += wPixels;
+        }
     }
 }
 
-static void drawResponseScreen(Adafruit_ST7735 &tft, const String &text) {
-    // 1. Clear full body display area below header (Y=14 to 160)
+static void drawResponseBody(Adafruit_ST7735 &tft, const String &text) {
+    // Clear response display area (Y=14 to 160)
     tft.fillRect(0, 14, 128, 146, COL_BG);
 
-    // 2. Format Question into lines (shows full question wrapped)
-    String qFull = "Q: " + inputText;
-    formatTextIntoLines(qFull, 20, qLines, qLineCount, MAX_Q_LINES);
-
-    // Render Question Banner
-    int qHeight = qLineCount * 9 + 4;
-    tft.fillRect(0, 14, 128, qHeight, 0x0826); // Dark navy-gray banner
+    // 1. Question preview banner at Y=14..24
     tft.setFont(NULL);
     tft.setTextSize(1);
-    tft.setTextColor(0x07FF, 0x0826);          // Cyan text on dark banner
-
-    for (int i = 0; i < qLineCount; i++) {
-        tft.setCursor(4, 16 + i * 9);
-        tft.print(qLines[i]);
+    tft.setTextColor(0x07FF, COL_BG);
+    tft.setCursor(4, 16);
+    String qPreview = "Q: " + inputText;
+    if (qPreview.length() > 20) {
+        qPreview = qPreview.substring(0, 19) + "~";
     }
+    tft.print(qPreview);
 
     // Divider line
-    tft.drawFastHLine(0, 14 + qHeight, 128, 0x07FF);
+    tft.drawFastHLine(0, 26, 128, COL_HDR_ACC);
 
-    // 3. Format Response Text into lines
+    // 2. Draw AI response text wrapped using plain font
     String normalized = normalizeResponseText(text);
-    formatTextIntoLines(normalized, 20, respLines, totalRespLines, MAX_RESP_LINES);
+    drawWrappedText(tft, normalized, 4, 30, 120, 10, 148);
 
-    // Calculate response vertical geometry
-    respStartY = 14 + qHeight + 3;
-    int availH = 148 - respStartY;
-    visibleRespLines = availH / 10;
-    if (visibleRespLines < 1) visibleRespLines = 1;
-
-    respScrollRow = 0;
-    if (totalRespLines > visibleRespLines) {
-        maxRespScroll = totalRespLines - visibleRespLines;
-    } else {
-        maxRespScroll = 0;
-    }
-
-    // 4. Render initial response text slice
-    renderResponseTextOnly(tft);
-
-    // 5. Render Bottom Hint & Scroll Indicator
-    tft.fillRect(0, 149, 128, 11, COL_BG);
+    // 3. Bottom hint
     tft.setFont(NULL);
     tft.setTextSize(1);
     tft.setTextColor(COL_HINT_TXT, COL_BG);
     tft.setCursor(4, 151);
-
-    if (maxRespScroll > 0) {
-        tft.print("BACK:exit  ^v:scroll");
-    } else {
-        tft.print("BACK: new question");
-    }
+    tft.print("BACK: new question");
 }
 
 // ============================================================
@@ -492,7 +480,7 @@ static void updateThinking(Adafruit_ST7735 &tft) {
 
     // Render response and transition
     aiState = CHAT_RESPONSE;
-    drawResponseScreen(tft, responseText);
+    drawResponseBody(tft, responseText);
     clearButtonEvents();
 }
 
