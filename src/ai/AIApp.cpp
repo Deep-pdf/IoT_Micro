@@ -214,18 +214,21 @@ static String normalizeResponseText(const String &raw) {
 }
 
 // Dedicated function for rendering word-wrapped text using plain font (same as question)
-static void drawWrappedText(
+// Returns the bottom Y coordinate of the rendered text block
+static int drawWrappedText(
     Adafruit_ST7735 &tft,
     const String &text,
     int startX,
     int startY,
     int maxWidth,
     int lineH,
-    int maxY
+    int maxY,
+    uint16_t textColor = COL_RESP_TXT,
+    uint16_t bgColor = COL_BG
 ) {
     tft.setFont(NULL);
     tft.setTextSize(1);
-    tft.setTextColor(COL_RESP_TXT, COL_BG);
+    tft.setTextColor(textColor, bgColor);
 
     int leftMargin = startX;
     int maxX       = startX + maxWidth;
@@ -313,29 +316,26 @@ static void drawWrappedText(
             curX += wPixels;
         }
     }
+
+    return curY + 8; // Return bottom Y of the text block
 }
 
 static void drawResponseBody(Adafruit_ST7735 &tft, const String &text) {
     // Clear response display area (Y=14 to 160)
     tft.fillRect(0, 14, 128, 146, COL_BG);
 
-    // 1. Question preview banner at Y=14..24
-    tft.setFont(NULL);
-    tft.setTextSize(1);
-    tft.setTextColor(0x07FF, COL_BG);
-    tft.setCursor(4, 16);
-    String qPreview = "Q: " + inputText;
-    if (qPreview.length() > 20) {
-        qPreview = qPreview.substring(0, 19) + "~";
-    }
-    tft.print(qPreview);
+    // 1. Dynamic Question box starting at Y=16 (fully visible, word-wrapped without breaking words)
+    String fullQuestion = "Q: " + inputText;
+    int qEndY = drawWrappedText(tft, fullQuestion, 4, 16, 120, 10, 60, 0x07FF, COL_BG);
 
-    // Divider line
-    tft.drawFastHLine(0, 26, 128, COL_HDR_ACC);
+    // Divider line immediately below dynamic question box
+    int sepY = qEndY + 2;
+    tft.drawFastHLine(0, sepY, 128, COL_HDR_ACC);
 
-    // 2. Draw AI response text wrapped using plain font
+    // 2. AI Response body starting right below separator line
+    int respStartY = sepY + 4;
     String normalized = normalizeResponseText(text);
-    drawWrappedText(tft, normalized, 4, 30, 120, 10, 148);
+    drawWrappedText(tft, normalized, 4, respStartY, 120, 10, 148, COL_RESP_TXT, COL_BG);
 
     // 3. Bottom hint
     tft.setFont(NULL);
