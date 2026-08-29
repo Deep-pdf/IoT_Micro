@@ -1,4 +1,4 @@
-﻿#include "AIApp.h"
+#include "AIApp.h"
 #include "AIKeyboard.h"
 #include "AIConnection.h"
 #include "BLADRMF_4pt7b.h"
@@ -82,17 +82,17 @@ static bool          _wantsExit     = false;
 static void drawHeader(Adafruit_ST7735 &tft) {
     tft.fillRect(0, 0, 128, HDR_H, COL_HDR_BG);
 
-    // "DEEPAI" centred using BLADRMF_4pt7b
+    // "Gemini" centred using BLADRMF_4pt7b
     tft.setFont(&BLADRMF_4pt7b);
     tft.setTextSize(1);
     tft.setTextColor(COL_HDR_TXT, COL_HDR_BG);
 
     int16_t x1, y1;
     uint16_t tw, th;
-    tft.getTextBounds("DEEPAI", 0, HDR_H - 2, &x1, &y1, &tw, &th);
+    tft.getTextBounds("Gemini", 0, HDR_H - 2, &x1, &y1, &tw, &th);
     // x1 is the offset from cursor to left of bounding box
     tft.setCursor((128 - (int16_t)tw) / 2 - x1, HDR_H - 2);
-    tft.print("DEEPAI");
+    tft.print("Gemini");
 
     // Small accent indicators (default font, textSize=1)
     tft.setFont(NULL);
@@ -269,21 +269,28 @@ static void processJoystick(Adafruit_ST7735 &tft) {
     int vrx = analogRead(JOY_X_PIN);
     int vry = analogRead(JOY_Y_PIN);
 
-    bool centered = (vrx > JOY_DEAD_LO && vrx < JOY_DEAD_HI &&
-                     vry > JOY_DEAD_LO && vry < JOY_DEAD_HI);
+    // Calculate displacement relative to dead-zone thresholds (1200..2800)
+    int diffX = 0;
+    if (vrx < 1200)      diffX = vrx - 1200;      // negative -> left
+    else if (vrx > 2800) diffX = vrx - 2800;      // positive -> right
 
-    if (centered) {
+    int diffY = 0;
+    if (vry < 1200)      diffY = vry - 1200;      // negative -> up
+    else if (vry > 2800) diffY = vry - 2800;      // positive -> down
+
+    if (diffX == 0 && diffY == 0) {
         joyCentered = true;
         joyMoving   = false;
         return;
     }
 
-    // Decode direction from ADC value
+    // Pick dominant axis
     int dx = 0, dy = 0;
-    if      (vrx < JOY_THRESH_LO) dx = -1;
-    else if (vrx > JOY_THRESH_HI) dx =  1;
-    if      (vry < JOY_THRESH_LO) dy = -1;
-    else if (vry > JOY_THRESH_HI) dy =  1;
+    if (abs(diffX) >= abs(diffY)) {
+        dx = (diffX < 0) ? -1 : 1;
+    } else {
+        dy = (diffY < 0) ? -1 : 1;
+    }
 
     unsigned long now = millis();
 
@@ -293,7 +300,8 @@ static void processJoystick(Adafruit_ST7735 &tft) {
         joyMoving    = true;
         joyMoveStart = now;
         lastRepeat   = now;
-        lastDx = dx;  lastDy = dy;
+        lastDx       = dx;
+        lastDy       = dy;
         AIKeyboard::navigate(dx, dy);
         AIKeyboard::render(tft);           // Dirty-only (2 keys repainted)
 
@@ -302,7 +310,9 @@ static void processJoystick(Adafruit_ST7735 &tft) {
         if ((now - joyMoveStart) > (unsigned long)JOY_INIT_DELAY) {
             if ((now - lastRepeat) >= (unsigned long)JOY_REPEAT_RATE) {
                 lastRepeat = now;
-                AIKeyboard::navigate(lastDx, lastDy);
+                lastDx     = dx;
+                lastDy     = dy;
+                AIKeyboard::navigate(dx, dy);
                 AIKeyboard::render(tft);
             }
         }
@@ -364,11 +374,12 @@ static void updateKeyboard(Adafruit_ST7735 &tft) {
         }
     }
 
-    // â”€â”€ 4. BACK button â†’ signal main.cpp to exit to home â”€â”€â”€â”€â”€
-    //   We consume the event here so main.cpp's own guard can't
-    //   race with us; we set the _wantsExit flag instead.
+    // â”€â”€ 4. Physical BACK button â†’ delete recent character ──────
     if (isBackPressed()) {
-        _wantsExit = true;
+        if (inputText.length() > 0) {
+            inputText.remove(inputText.length() - 1);
+            inputDirty = true;
+        }
     }
 }
 
@@ -453,6 +464,13 @@ bool AIApp::shouldExit() {
 //  Called every loop() while STATE_AI is active.
 // ============================================================
 void AIApp::update(Adafruit_ST7735 &tft) {
+    // 5-second long press on BACK button exits to Home screen
+    if (isBackLongPressed()) {
+        _wantsExit = true;
+        clearButtonEvents();
+        return;
+    }
+
     switch (aiState) {
         case CHAT_KEYBOARD: updateKeyboard(tft); break;
         case CHAT_THINKING: updateThinking(tft); break;
