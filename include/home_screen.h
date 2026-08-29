@@ -23,19 +23,39 @@ enum ScreenState {
   STATE_AI
 };
 
+// Sub-pages for Apps / Home Screen
+enum AppsPage {
+  APPS_PAGE_1 = 0, // Existing Home Screen (Image 1)
+  APPS_PAGE_2 = 1  // Apps Grid Screen (Image 2)
+};
+
 // Selectable home screen elements
 enum FocusedElement {
+  // Page 1 Elements
   FOCUS_QUOTE_CARD = 0,
   FOCUS_PIXEL_WARS = 1,
   FOCUS_AI         = 2,
-  FOCUS_LOST_CROWN = 3
+  FOCUS_LOST_CROWN = 3,
+
+  // Page 2 Elements
+  FOCUS_PAGE2_PIXEL_WARS = 4,
+  FOCUS_PAGE2_AI         = 5,
+  FOCUS_PAGE2_LOST_CROWN = 6,
+  FOCUS_PAGE2_SPOTIFY    = 7,
+  FOCUS_PAGE2_CALCULATOR = 8
 };
 
 // Draws the static home screen elements in landscape orientation (Rotation 1)
 void drawHomeScreen(Adafruit_ST7735 &tft);
 
+// Draws the static Page 2 (Apps Grid) elements (Rotation 2)
+void drawAppsPage2(Adafruit_ST7735 &tft);
+
 // Updates the Wi-Fi icon color in the status bar (green if connected, white if disconnected)
 void updateWiFiIcon(Adafruit_ST7735 &tft, bool connected);
+
+// Updates the Wi-Fi icon color in the status bar on Page 2
+void updateWiFiIconPage2(Adafruit_ST7735 &tft, bool connected);
 
 // Updates the clock and day/date elements dynamically if they change
 void updateTimeAndDate(Adafruit_ST7735 &tft);

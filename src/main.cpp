@@ -23,6 +23,7 @@ Adafruit_ST7735 tft(TFT_CS, TFT_DC, TFT_RST);
 
 // Global States
 ScreenState currentScreen = STATE_HOME;
+AppsPage currentAppsPage = APPS_PAGE_1;
 FocusedElement currentFocus = FOCUS_QUOTE_CARD;
 
 bool lastWiFiConnected = false;
@@ -40,43 +41,183 @@ enum JoyDirection {
   DIR_RIGHT
 };
 
-// Handles navigation state transitions between selectable Home Screen elements
+// Redraws the current active apps page (Page 1 or Page 2)
+void redrawCurrentAppsPage() {
+  if (currentAppsPage == APPS_PAGE_2) {
+    drawAppsPage2(tft);
+    drawFocusHighlight(tft, currentFocus, true);
+    bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+    updateWiFiIconPage2(tft, currentWiFiConnected);
+  } else {
+    drawHomeScreen(tft);
+    drawFocusHighlight(tft, currentFocus, true);
+    bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+    updateWiFiIcon(tft, currentWiFiConnected);
+  }
+}
+
+// Handles navigation state transitions between selectable Home & Apps Screen elements
 void handleNavigation(JoyDirection dir) {
   if (currentScreen != STATE_HOME) return;
 
-  FocusedElement nextFocus = currentFocus;
+  if (currentAppsPage == APPS_PAGE_1) {
+    // -------------------------------------------------------------
+    // PAGE 1 NAVIGATION (Existing Home Screen - Image 1)
+    // -------------------------------------------------------------
+    if (currentFocus == FOCUS_QUOTE_CARD) {
+      if (dir == DIR_DOWN) {
+        // Move from quote card down to first icon in last row
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PIXEL_WARS;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PIXEL_WARS) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_QUOTE_CARD;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        // ON LAST ROW + DOWN AGAIN -> SWITCH TO PAGE 2!
+        currentAppsPage = APPS_PAGE_2;
+        currentFocus = FOCUS_PAGE2_PIXEL_WARS;
+        drawAppsPage2(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIconPage2(tft, currentWiFiConnected);
+      }
+    } else if (currentFocus == FOCUS_AI) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_QUOTE_CARD;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PIXEL_WARS;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_LOST_CROWN;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        // ON LAST ROW + DOWN AGAIN -> SWITCH TO PAGE 2!
+        currentAppsPage = APPS_PAGE_2;
+        currentFocus = FOCUS_PAGE2_AI;
+        drawAppsPage2(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIconPage2(tft, currentWiFiConnected);
+      }
+    } else if (currentFocus == FOCUS_LOST_CROWN) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_QUOTE_CARD;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        // ON LAST ROW + DOWN AGAIN -> SWITCH TO PAGE 2!
+        currentAppsPage = APPS_PAGE_2;
+        currentFocus = FOCUS_PAGE2_LOST_CROWN;
+        drawAppsPage2(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIconPage2(tft, currentWiFiConnected);
+      }
+    }
 
-  if (currentFocus == FOCUS_QUOTE_CARD) {
-    if (dir == DIR_DOWN) {
-      nextFocus = FOCUS_PIXEL_WARS;
-    }
-  } else if (currentFocus == FOCUS_PIXEL_WARS) {
-    if (dir == DIR_UP) {
-      nextFocus = FOCUS_QUOTE_CARD;
-    } else if (dir == DIR_RIGHT) {
-      nextFocus = FOCUS_AI;
-    }
-  } else if (currentFocus == FOCUS_AI) {
-    if (dir == DIR_UP) {
-      nextFocus = FOCUS_QUOTE_CARD;
-    } else if (dir == DIR_LEFT) {
-      nextFocus = FOCUS_PIXEL_WARS;
-    } else if (dir == DIR_RIGHT) {
-      nextFocus = FOCUS_LOST_CROWN;
-    }
-  } else if (currentFocus == FOCUS_LOST_CROWN) {
-    if (dir == DIR_UP) {
-      nextFocus = FOCUS_QUOTE_CARD;
-    } else if (dir == DIR_LEFT) {
-      nextFocus = FOCUS_AI;
-    }
-  }
+  } else if (currentAppsPage == APPS_PAGE_2) {
+    // -------------------------------------------------------------
+    // PAGE 2 NAVIGATION (Apps Grid - Image 2)
+    // -------------------------------------------------------------
+    // Row 0: FOCUS_PAGE2_PIXEL_WARS (col 0), FOCUS_PAGE2_AI (col 1), FOCUS_PAGE2_LOST_CROWN (col 2)
+    // Row 1: FOCUS_PAGE2_SPOTIFY (col 0), FOCUS_PAGE2_CALCULATOR (col 1)
 
-  // Update visual highlights if focus changed
-  if (nextFocus != currentFocus) {
-    drawFocusHighlight(tft, currentFocus, false); // Clear old highlight
-    currentFocus = nextFocus;
-    drawFocusHighlight(tft, currentFocus, true);  // Draw new highlight
+    if (currentFocus == FOCUS_PAGE2_PIXEL_WARS) {
+      if (dir == DIR_UP) {
+        // UP FROM PAGE 2 ROW 0 -> RETURN TO PAGE 1!
+        currentAppsPage = APPS_PAGE_1;
+        currentFocus = FOCUS_PIXEL_WARS;
+        drawHomeScreen(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIcon(tft, currentWiFiConnected);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_SPOTIFY;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_AI) {
+      if (dir == DIR_UP) {
+        // UP FROM PAGE 2 ROW 0 -> RETURN TO PAGE 1!
+        currentAppsPage = APPS_PAGE_1;
+        currentFocus = FOCUS_AI;
+        drawHomeScreen(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIcon(tft, currentWiFiConnected);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_PIXEL_WARS;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_LOST_CROWN;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_LOST_CROWN) {
+      if (dir == DIR_UP) {
+        // UP FROM PAGE 2 ROW 0 -> RETURN TO PAGE 1!
+        currentAppsPage = APPS_PAGE_1;
+        currentFocus = FOCUS_LOST_CROWN;
+        drawHomeScreen(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIcon(tft, currentWiFiConnected);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        // Col 2 on Row 1 is empty, move to nearest valid item: Calculator (Col 1)
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_SPOTIFY) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_PIXEL_WARS;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_CALCULATOR) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_SPOTIFY;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    }
   }
 }
 
@@ -115,16 +256,8 @@ void exitMaanKiBaat() {
   selectRandomQuote();
   lastQuoteChangeTime = millis();
 
-  // Restore original layout (draws the new quote card text)
-  drawHomeScreen(tft);
-
-  // Redraw highlight state
-  drawFocusHighlight(tft, currentFocus, true);
-
-  // Redraw connection status
-  bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
-  updateWiFiIcon(tft, currentWiFiConnected);
-  lastWiFiConnected = currentWiFiConnected;
+  // Restore active page layout
+  redrawCurrentAppsPage();
 }
 
 // Launches Pixel Wars app cleanly
@@ -145,16 +278,8 @@ void exitPixelWars() {
   selectRandomQuote();
   lastQuoteChangeTime = millis();
 
-  // Restore original layout
-  drawHomeScreen(tft);
-
-  // Redraw highlight state
-  drawFocusHighlight(tft, currentFocus, true);
-
-  // Redraw connection status
-  bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
-  updateWiFiIcon(tft, currentWiFiConnected);
-  lastWiFiConnected = currentWiFiConnected;
+  // Restore active page layout
+  redrawCurrentAppsPage();
 }
 
 void enterAI() {
@@ -171,20 +296,20 @@ void exitAI() {
   selectRandomQuote();
   lastQuoteChangeTime = millis();
 
-  // Restore original layout
-  drawHomeScreen(tft);
-
-  // Redraw highlight state
-  drawFocusHighlight(tft, currentFocus, true);
-
-  // Redraw connection status
-  bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
-  updateWiFiIcon(tft, currentWiFiConnected);
-  lastWiFiConnected = currentWiFiConnected;
+  // Restore active page layout
+  redrawCurrentAppsPage();
 }
 
 void enterLostCrownPlaceholder() {
   Serial.println("Placeholder Action: Enter Lost Crown Game");
+}
+
+void enterSpotifyPlaceholder() {
+  Serial.println("Placeholder Action: Enter Spotify App");
+}
+
+void enterCalculatorPlaceholder() {
+  Serial.println("Placeholder Action: Enter Calculator App");
 }
 
 // Dispatches action based on the current focused menu item
@@ -195,13 +320,22 @@ void handleCurrentSelection() {
         enterMaanKiBaat();
         break;
       case FOCUS_PIXEL_WARS:
+      case FOCUS_PAGE2_PIXEL_WARS:
         enterPixelWars();
         break;
       case FOCUS_AI:
+      case FOCUS_PAGE2_AI:
         enterAI();
         break;
       case FOCUS_LOST_CROWN:
+      case FOCUS_PAGE2_LOST_CROWN:
         enterLostCrownPlaceholder();
+        break;
+      case FOCUS_PAGE2_SPOTIFY:
+        enterSpotifyPlaceholder();
+        break;
+      case FOCUS_PAGE2_CALCULATOR:
+        enterCalculatorPlaceholder();
         break;
     }
   } else if (currentScreen == STATE_QUOTE) {
@@ -374,12 +508,16 @@ void loop() {
       if (currentWiFiConnected != lastWiFiConnected) {
         lastWiFiConnected = currentWiFiConnected;
         if (currentScreen == STATE_HOME) {
-          updateWiFiIcon(tft, lastWiFiConnected);
+          if (currentAppsPage == APPS_PAGE_2) {
+            updateWiFiIconPage2(tft, lastWiFiConnected);
+          } else {
+            updateWiFiIcon(tft, lastWiFiConnected);
+          }
         }
       }
 
-      // Process clock and auto-quote updates (Only visible in HOME state)
-      if (currentScreen == STATE_HOME) {
+      // Process clock and auto-quote updates (Only visible in HOME state on Page 1)
+      if (currentScreen == STATE_HOME && currentAppsPage == APPS_PAGE_1) {
         updateTimeAndDate(tft);
 
         // Auto-change quote every 1 hour (3600000 ms)

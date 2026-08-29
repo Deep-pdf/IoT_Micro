@@ -238,6 +238,48 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
   }
 }
 
+void drawAppsPage2(Adafruit_ST7735 &tft) {
+  // Ensure we are in Rotation 2 (Portrait)
+  tft.setRotation(2);
+
+  // Exact orange color (#FF7A00)
+  uint16_t myOrange = tft.color565(255, 122, 0);
+
+  // 1. Draw Top Status Bar (Black background, width 128, height 10)
+  tft.fillRect(0, 0, 128, 10, ST77XX_BLACK);
+
+  // 2. Clear main apps background (Full orange background, height 150)
+  tft.fillRect(0, 10, 128, 150, myOrange);
+
+  // 3. Draw Wi-Fi Icon & Battery Icon in Status Bar (White outline & icons)
+  tft.drawBitmap(100, 2, wifi_bitmap, 6, 6, ST77XX_WHITE);
+  tft.drawRect(112, 2, 10, 6, ST77XX_WHITE);
+  tft.drawFastVLine(122, 3, 4, ST77XX_WHITE); // Tip
+  tft.fillRect(114, 4, 2, 2, ST77XX_WHITE);   // 18% charge indicator
+
+  // 4. Draw Title "apps" in black (Dream Orphans font, size 2, centered at Y = 25)
+  drawCenteredText(tft, "apps", 25, ST77XX_BLACK, 2);
+
+  // 5. Draw 3x2 Grid of 32x32 Pixel Art Icons
+  // Row 0 (Y = 34): Pixel Wars (X=8), Gemini AI (X=48), Lost Crown (X=88)
+  tft.drawRGBBitmap(8, 34, icon_pixelwars, 32, 32);
+  tft.drawRGBBitmap(48, 34, icon_gpt, 32, 32);
+  tft.drawRGBBitmap(88, 34, icon_lostcrown, 32, 32);
+
+  // Row 1 (Y = 74): Spotify (X=8), Calculator (X=48)
+  tft.drawRGBBitmap(8, 74, icon_spotify, 32, 32);
+  tft.drawRGBBitmap(48, 74, icon_calculator, 32, 32);
+}
+
+void updateWiFiIconPage2(Adafruit_ST7735 &tft, bool connected) {
+  // Clear old Wi-Fi icon area in black status bar
+  tft.fillRect(100, 2, 6, 6, ST77XX_BLACK);
+
+  // Draw the Wi-Fi icon with appropriate color (green if connected, white if disconnected)
+  uint16_t iconColor = connected ? ST77XX_GREEN : ST77XX_WHITE;
+  tft.drawBitmap(100, 2, wifi_bitmap, 6, 6, iconColor);
+}
+
 void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highlighted) {
   uint16_t myOrange = tft.color565(255, 122, 0);
 
@@ -245,8 +287,8 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
     // Quote card highlight: draw/clear border slightly outside the card
     uint16_t color = highlighted ? myOrange : ST77XX_BLACK;
     tft.drawRoundRect(14, 76, 100, 32, 5, color);
-  } else {
-    // Bottom icons highlight: draw/clear border around the icon on the orange bar
+  } else if (element == FOCUS_PIXEL_WARS || element == FOCUS_AI || element == FOCUS_LOST_CROWN) {
+    // Page 1 Bottom icons highlight (Y = 125, border at Y = 123)
     int16_t x = 0;
     if (element == FOCUS_PIXEL_WARS) x = 8;
     else if (element == FOCUS_AI) x = 48;
@@ -254,6 +296,19 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
 
     uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
     tft.drawRect(x - 2, 123, 36, 36, color);
+  } else {
+    // Page 2 Grid icons highlight (Row 0 at Y = 34 / border 32, Row 1 at Y = 74 / border 72)
+    int16_t x = 0;
+    int16_t y = 0;
+
+    if (element == FOCUS_PAGE2_PIXEL_WARS)      { x = 8;  y = 34; }
+    else if (element == FOCUS_PAGE2_AI)         { x = 48; y = 34; }
+    else if (element == FOCUS_PAGE2_LOST_CROWN) { x = 88; y = 34; }
+    else if (element == FOCUS_PAGE2_SPOTIFY)    { x = 8;  y = 74; }
+    else if (element == FOCUS_PAGE2_CALCULATOR) { x = 48; y = 74; }
+
+    uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
+    tft.drawRect(x - 2, y - 2, 36, 36, color);
   }
 }
 

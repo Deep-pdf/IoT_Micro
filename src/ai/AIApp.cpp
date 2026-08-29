@@ -222,6 +222,7 @@ static int    maxRespScroll    = 0;
 static int    visibleRespLines = 0;
 static int16_t respStartY       = 0;
 static unsigned long lastScrollTick = 0;
+static bool scrollStickCentered     = true;
 
 // Dedicated function for rendering word-wrapped text using plain font (same as question)
 // Returns the bottom Y coordinate of the rendered text block
@@ -619,6 +620,34 @@ static void updateResponse(Adafruit_ST7735 &tft) {
         AIKeyboard::init();
         drawInputBox(tft);
         AIKeyboard::render(tft, true);
+        return;
+    }
+
+    // 2. Joystick UP/DOWN scrolling for long responses
+    int vry = analogRead(JOY_Y_PIN);
+    unsigned long now = millis();
+
+    bool centered = (vry >= 1200 && vry <= 2800);
+    if (centered) {
+        scrollStickCentered = true;
+    } else if (maxRespScroll > 0) {
+        if (scrollStickCentered || (now - lastScrollTick >= 120)) {
+            if (vry < 1200) { // Push UP -> scroll towards top
+                if (respScrollRow > 0) {
+                    respScrollRow--;
+                    lastScrollTick = now;
+                    scrollStickCentered = false;
+                    renderResponseSlice(tft);
+                }
+            } else if (vry > 2800) { // Push DOWN -> scroll towards bottom
+                if (respScrollRow < maxRespScroll) {
+                    respScrollRow++;
+                    lastScrollTick = now;
+                    scrollStickCentered = false;
+                    renderResponseSlice(tft);
+                }
+            }
+        }
     }
 }
 
