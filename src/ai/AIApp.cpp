@@ -213,6 +213,16 @@ static String normalizeResponseText(const String &raw) {
     return out;
 }
 
+// Pagination and response text scrolling state
+static const int MAX_RESP_LINES = 100;
+static String respLines[MAX_RESP_LINES];
+static int    totalRespLines   = 0;
+static int    respScrollRow    = 0;
+static int    maxRespScroll    = 0;
+static int    visibleRespLines = 0;
+static int16_t respStartY       = 0;
+static unsigned long lastScrollTick = 0;
+
 // Dedicated function for rendering word-wrapped text using plain font (same as question)
 // Returns the bottom Y coordinate of the rendered text block
 static int drawWrappedText(
@@ -320,29 +330,132 @@ static int drawWrappedText(
     return curY + 8; // Return bottom Y of the text block
 }
 
+// Formats normalized text into word-wrapped lines array
+static void formatIntoLines(const String &text, int maxWidth, String lines[], int &lineCount, int maxLines) {
+    lineCount = 0;
+    if (text.length() == 0) return;
+
+    int maxChars = maxWidth / 6; // 120 / 6 = 20 characters per line
+    String curLine = "";
+
+    const char *p = text.c_str();
+    while (*p && lineCount < maxLines) {
+        if (*p == '\r') { p++; continue; }
+
+        if (*p == '\n') {
+            lines[lineCount++] = curLine;
+            curLine = "";
+            p++;
+            continue;
+        }
+
+        if (*p == ' ' && curLine.length() == 0) {
+            p++;
+            continue;
+        }
+
+        // Extract word
+        const char *wStart = p;
+        while (*p && *p != ' ' && *p != '\n' && *p != '\r') p++;
+        int wLen = (int)(p - wStart);
+        if (wLen == 0) {
+            if (*p == ' ') p++;
+            continue;
+        }
+
+        String word = "";
+        for (int i = 0; i < wLen; i++) word += wStart[i];
+
+        int spaceNeeded = (curLine.length() > 0 ? 1 : 0) + wLen;
+        if ((int)curLine.length() + spaceNeeded <= maxChars) {
+            if (curLine.length() > 0) curLine += ' ';
+            curLine += word;
+        } else {
+            if (curLine.length() > 0) {
+                lines[lineCount++] = curLine;
+                curLine = "";
+            }
+            if (lineCount >= maxLines) break;
+
+            // Handle word longer than maxChars
+            while ((int)word.length() > maxChars && lineCount < maxLines) {
+                lines[lineCount++] = word.substring(0, maxChars);
+                word = word.substring(maxChars);
+            }
+            if (word.length() > 0 && lineCount < maxLines) {
+                curLine = word;
+            }
+        }
+
+        if (*p == ' ') p++;
+    }
+
+    if (curLine.length() > 0 && lineCount < maxLines) {
+        lines[lineCount++] = curLine;
+    }
+}
+
+// Renders the visible slice of lines based on respScrollRow
+static void renderResponseSlice(Adafruit_ST7735 &tft) {
+    // Clear only response body area from respStartY to 148
+    tft.fillRect(0, respStartY, 128, 149 - respStartY, COL_BG);
+
+    tft.setFont(NULL);
+    tft.setTextSize(1);
+    tft.setTextColor(COL_RESP_TXT, COL_BG);
+
+    int curY = respStartY;
+    for (int i = 0; i < visibleRespLines; i++) {
+        int lineIdx = respScrollRow + i;
+        if (lineIdx >= totalRespLines) break;
+
+        tft.setCursor(4, curY);
+        tft.print(respLines[lineIdx]);
+        curY += 10;
+    }
+
+    // Bottom hint
+    tft.fillRect(0, 149, 128, 11, COL_BG);
+    tft.setTextColor(COL_HINT_TXT, COL_BG);
+    tft.setCursor(4, 151);
+
+    if (maxRespScroll > 0) {
+        tft.print("BACK:exit  ^v:scroll");
+    } else {
+        tft.print("BACK: new question");
+    }
+}
+
 static void drawResponseBody(Adafruit_ST7735 &tft, const String &text) {
     // Clear response display area (Y=14 to 160)
     tft.fillRect(0, 14, 128, 146, COL_BG);
 
     // 1. Dynamic Question box starting at Y=16 (fully visible, word-wrapped without breaking words)
     String fullQuestion = "Q: " + inputText;
-    int qEndY = drawWrappedText(tft, fullQuestion, 4, 16, 120, 10, 60, 0x07FF, COL_BG);
+    int qEndY = drawWrappedText(tft, fullQuestion, 4, 16, 120, 10, 56, 0x07FF, COL_BG);
 
     // Divider line immediately below dynamic question box
     int sepY = qEndY + 2;
     tft.drawFastHLine(0, sepY, 128, COL_HDR_ACC);
 
-    // 2. AI Response body starting right below separator line
-    int respStartY = sepY + 4;
-    String normalized = normalizeResponseText(text);
-    drawWrappedText(tft, normalized, 4, respStartY, 120, 10, 148, COL_RESP_TXT, COL_BG);
+    // 2. Format response text into lines array for scrolling
+    respStartY = sepY + 4;
+    int availH = 148 - respStartY;
+    visibleRespLines = availH / 10;
+    if (visibleRespLines < 1) visibleRespLines = 1;
 
-    // 3. Bottom hint
-    tft.setFont(NULL);
-    tft.setTextSize(1);
-    tft.setTextColor(COL_HINT_TXT, COL_BG);
-    tft.setCursor(4, 151);
-    tft.print("BACK: new question");
+    String normalized = normalizeResponseText(text);
+    formatIntoLines(normalized, 120, respLines, totalRespLines, MAX_RESP_LINES);
+
+    respScrollRow = 0;
+    if (totalRespLines > visibleRespLines) {
+        maxRespScroll = totalRespLines - visibleRespLines;
+    } else {
+        maxRespScroll = 0;
+    }
+
+    // 3. Render initial slice
+    renderResponseSlice(tft);
 }
 
 // ============================================================
@@ -409,7 +522,7 @@ static void processJoystick(Adafruit_ST7735 &tft) {
 // ============================================================
 static void updateKeyboard(Adafruit_ST7735 &tft) {
 
-    // â”€â”€ 1. Cursor blink (non-blocking) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── 1. Cursor blink (non-blocking) ──────────────────────
     unsigned long now = millis();
     if (now - lastBlink >= CURSOR_BLINK_MS) {
         lastBlink     = now;
@@ -421,15 +534,15 @@ static void updateKeyboard(Adafruit_ST7735 &tft) {
         inputDirty = false;
     }
 
-    // â”€â”€ 2. Joystick navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── 2. Joystick navigation ──────────────────────────────
     processJoystick(tft);
 
-    // â”€â”€ 3. Physical ENTER button â†’ select current key â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── 3. Physical ENTER button → select current key ────────
     if (isEnterPressed()) {
         char k = AIKeyboard::selectCurrentKey();
 
         if (k == KEY_SHIFT) {
-            // Shift toggled: all alpha labels change â†’ full redraw
+            // Shift toggled: all alpha labels change → full redraw
             AIKeyboard::render(tft, true);
 
         } else if (k == KEY_BACKSPACE) {
@@ -459,7 +572,7 @@ static void updateKeyboard(Adafruit_ST7735 &tft) {
         }
     }
 
-    // â”€â”€ 4. Physical BACK button â†’ delete recent character ──────
+    // ── 4. Physical BACK button → delete recent character ──────
     if (isBackPressed()) {
         if (inputText.length() > 0) {
             inputText.remove(inputText.length() - 1);
@@ -475,7 +588,7 @@ static void updateThinking(Adafruit_ST7735 &tft) {
     // Draw "Thinking..." screen once
     drawThinkingScreen(tft);
 
-    // Blocking HTTP call to Flask â†’ Gemini (uses existing AIConnection)
+    // Blocking HTTP call to Flask → Gemini (uses existing AIConnection)
     responseText = AIConnection::postAsk(inputText);
 
     // Render response and transition
@@ -488,9 +601,8 @@ static void updateThinking(Adafruit_ST7735 &tft) {
 //  STATE: CHAT_RESPONSE
 // ============================================================
 static void updateResponse(Adafruit_ST7735 &tft) {
-    // BACK or ENTER â†’ return to keyboard for a new question
+    // 1. BACK or ENTER → return to keyboard for a new question
     if (isBackPressed() || isEnterPressed()) {
-        // Consume the event so main.cpp's isBackPressed() guard is not triggered
         inputText     = "";
         aiState       = CHAT_KEYBOARD;
         cursorVisible = true;
@@ -498,6 +610,7 @@ static void updateResponse(Adafruit_ST7735 &tft) {
         joyCentered   = true;
         joyMoving     = false;
         inputDirty    = true;
+        respScrollRow = 0;
         clearButtonEvents();
 
         // Full screen redraw
