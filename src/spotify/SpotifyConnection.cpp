@@ -12,12 +12,46 @@
 #define SPOTIFY_BRIDGE_PORT 8888
 #endif
 
-static const unsigned long HTTP_TIMEOUT_MS = 4000;
+static const unsigned long HTTP_TIMEOUT_MS = 3000;
 static String lastLoggedTrackId = "";
 static bool lastLoggedPlaying = false;
 
 bool SpotifyConnection::ensureWiFiConnected() {
     return (WiFi.status() == WL_CONNECTED);
+}
+
+bool SpotifyConnection::postEndpoint(const char* path) {
+    if (!ensureWiFiConnected()) {
+        return false;
+    }
+
+    char url[128];
+    snprintf(url, sizeof(url), "http://%s:%d%s", SPOTIFY_BRIDGE_HOST, SPOTIFY_BRIDGE_PORT, path);
+
+    HTTPClient http;
+    http.begin(url);
+    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(HTTP_TIMEOUT_MS);
+
+    int httpCode = http.POST("{}");
+    http.end();
+
+    return (httpCode == 200 || httpCode == 204);
+}
+
+bool SpotifyConnection::sendPlayPause() {
+    Serial.println("[Spotify] -> POST /spotify/playpause");
+    return postEndpoint("/spotify/playpause");
+}
+
+bool SpotifyConnection::sendNext() {
+    Serial.println("[Spotify] -> POST /spotify/next");
+    return postEndpoint("/spotify/next");
+}
+
+bool SpotifyConnection::sendPrevious() {
+    Serial.println("[Spotify] -> POST /spotify/previous");
+    return postEndpoint("/spotify/previous");
 }
 
 bool SpotifyConnection::getState(SpotifyTrackState &state) {
@@ -67,7 +101,7 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
 
     DeserializationError error = deserializeJson(doc, payload);
     if (error) {
-        Serial.print("[Spotify] JSON parse error: ");
+        Serial.print("[Spotify] JSON error: ");
         Serial.println(error.c_str());
         state.connected = true;
         state.ok = false;
@@ -86,28 +120,73 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
     state.artworkUrl = doc["artwork_url"].is<const char*>() ? doc["artwork_url"].as<String>() : "";
     state.lastSyncMillis = millis();
 
-    // Log to Serial only when track or playback state changes
+    // Log when track or playing state changes
     if (state.trackId != lastLoggedTrackId || state.playing != lastLoggedPlaying) {
         lastLoggedTrackId = state.trackId;
         lastLoggedPlaying = state.playing;
 
-        Serial.println("================================");
-        Serial.println("Spotify State Synchronized");
-        Serial.print("Playing: ");
-        Serial.println(state.playing ? "YES" : "PAUSED / IDLE");
-        Serial.print("Title:   ");
-        Serial.println(state.title.isEmpty() ? "(No Track)" : state.title);
-        Serial.print("Artist:  ");
-        Serial.println(state.artist.isEmpty() ? "(None)" : state.artist);
-        Serial.print("Album:   ");
-        Serial.println(state.album.isEmpty() ? "(None)" : state.album);
-        Serial.print("Progress: ");
-        Serial.print(state.progressMs / 1000);
-        Serial.print("s / ");
-        Serial.print(state.durationMs / 1000);
-        Serial.println("s");
-        Serial.println("================================");
+        Serial.println("--------------------------------");
+        Serial.print("[Spotify] Track:  ");
+        Serial.println(state.title.isEmpty() ? "(No Track Playing)" : state.title);
+        Serial.print("[Spotify] Artist: ");
+        Serial.println(state.artist);
+        Serial.print("[Spotify] State:  ");
+        Serial.println(state.playing ? "PLAYING" : "PAUSED");
+        Serial.println("--------------------------------");
     }
 
     return true;
+}
+
+bool SpotifyConnection::fetchArtwork(uint16_t *buffer, size_t maxPixels, int targetSize) {
+    if (!ensureWiFiConnected() || !buffer) {
+        return false;
+    }
+
+    if (maxPixels < (size_t)(targetSize * targetSize)) {
+        return false;
+    }
+
+    char url[128];
+    snprintf(url, sizeof(url), "http://%s:%d/spotify/artwork?size=%d", SPOTIFY_BRIDGE_HOST, SPOTIFY_BRIDGE_PORT, targetSize);
+
+    HTTPClient http;
+    http.begin(url);
+    http.setTimeout(4000);
+
+    int httpCode = http.GET();
+    if (httpCode != 200) {
+        http.end();
+        return false;
+    }
+
+    int expectedBytes = targetSize * targetSize * 2;
+    int totalBytes = 0;
+    WiFiClient *stream = http.getStreamPtr();
+
+    uint8_t *bytePtr = (uint8_t*)buffer;
+    unsigned long start = millis();
+
+    while (http.connected() && (totalBytes < expectedBytes) && (millis() - start < 3000)) {
+        size_t available = stream->available();
+        if (available) {
+            int toRead = min((int)available, expectedBytes - totalBytes);
+            int bytesRead = stream->readBytes(bytePtr + totalBytes, toRead);
+            totalBytes += bytesRead;
+        }
+        delay(1);
+    }
+    http.end();
+
+    if (totalBytes == expectedBytes) {
+        // Convert big-endian network bytes to native uint16_t format
+        for (int i = 0; i < targetSize * targetSize; i++) {
+            uint8_t high = bytePtr[i * 2];
+            uint8_t low  = bytePtr[i * 2 + 1];
+            buffer[i] = (uint16_t)((high << 8) | low);
+        }
+        return true;
+    }
+
+    return false;
 }

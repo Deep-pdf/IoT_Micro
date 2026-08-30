@@ -274,6 +274,57 @@ def previous_track():
     res = spotify_client.previous_track()
     return jsonify(res)
 
+import io
+import struct
+from PIL import Image
+import requests
+from flask import Response
+
+_artwork_cache = {}
+
+def get_artwork_rgb565(url: str, size: int = 40) -> bytes:
+    cache_key = (url, size)
+    if cache_key in _artwork_cache:
+        return _artwork_cache[cache_key]
+
+    resp = requests.get(url, timeout=5)
+    if resp.status_code != 200:
+        return b""
+
+    img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+    img = img.resize((size, size), Image.Resampling.LANCZOS)
+
+    rgb565_data = bytearray()
+    for y in range(size):
+        for x in range(size):
+            r, g, b = img.getpixel((x, y))
+            r5 = (r >> 3) & 0x1F
+            g6 = (g >> 2) & 0x3F
+            b5 = (b >> 3) & 0x1F
+            pixel565 = (r5 << 11) | (g6 << 5) | b5
+            rgb565_data.extend(struct.pack(">H", pixel565))
+
+    raw_bytes = bytes(rgb565_data)
+    _artwork_cache[cache_key] = raw_bytes
+    return raw_bytes
+
+@app.route("/spotify/artwork", methods=["GET"])
+def get_spotify_artwork():
+    size = int(request.args.get("size", 40))
+    state = spotify_client.get_state()
+    artwork_url = state.get("artwork_url")
+    if not artwork_url:
+        return ("No artwork available", 404)
+
+    try:
+        data = get_artwork_rgb565(artwork_url, size)
+        if not data:
+            return ("Failed to fetch artwork", 500)
+        return Response(data, mimetype="application/octet-stream")
+    except Exception as e:
+        print(f"[SpotifyBridge] Artwork error: {e}")
+        return (f"Error: {e}", 500)
+
 if __name__ == "__main__":
     host = os.getenv("SPOTIFY_BRIDGE_HOST", "0.0.0.0")
     port = int(os.getenv("SPOTIFY_BRIDGE_PORT", "8888"))

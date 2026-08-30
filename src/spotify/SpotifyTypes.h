@@ -3,6 +3,12 @@
 
 #include <Arduino.h>
 
+enum SpotifyControlSelection {
+    CTRL_PREV = 0,
+    CTRL_PLAYPAUSE = 1,
+    CTRL_NEXT = 2
+};
+
 struct SpotifyTrackState {
     bool ok = false;
     bool connected = false;

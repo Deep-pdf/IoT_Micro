@@ -1,24 +1,26 @@
 #include "SpotifyUI.h"
-#include "BLADRMF_4pt7b.h"
 #include <math.h>
 
 // Color Palette (RGB565)
 #define COL_BG          0x0000  // Pure Black
 #define COL_CARD_BG     0x1082  // Deep Slate (#121212)
 #define COL_GREEN       0x1DB2  // Spotify Green (#1DB954)
+#define COL_GREEN_DIM   0x0B88  // Dim Green
 #define COL_WHITE       0xFFFF  // Crisp White
 #define COL_GRAY_LIGHT  0xAD55  // Light Gray
-#define COL_GRAY_DARK   0x3186  // Dark Gray Border/Track
+#define COL_GRAY_DARK   0x3186  // Dark Gray Track / Border
 #define COL_RED         0xF800  // Red for Offline Warning
-#define COL_PAUSED      0xFEA0  // Amber / Warm Yellow
+#define COL_PAUSED      0xFEA0  // Warm Amber / Yellow
 
 // Cached variables for dirty tracking
 static String   lastRenderedTitle = "";
 static String   lastRenderedArtist = "";
 static bool     lastRenderedPlaying = false;
 static bool     lastRenderedConnected = true;
+static bool     lastRenderedHasArtwork = false;
 static uint32_t lastRenderedProgSec = 0xFFFFFFFF;
 static uint32_t lastRenderedDurSec = 0xFFFFFFFF;
+static SpotifyControlSelection lastRenderedSelection = (SpotifyControlSelection)99;
 static unsigned long lastWaveMillis = 0;
 
 void SpotifyUI::init(Adafruit_ST7735 &tft) {
@@ -29,8 +31,10 @@ void SpotifyUI::init(Adafruit_ST7735 &tft) {
     lastRenderedArtist = "\t";
     lastRenderedPlaying = false;
     lastRenderedConnected = false;
+    lastRenderedHasArtwork = false;
     lastRenderedProgSec = 0xFFFFFFFF;
     lastRenderedDurSec = 0xFFFFFFFF;
+    lastRenderedSelection = (SpotifyControlSelection)99;
     lastWaveMillis = 0;
 }
 
@@ -41,41 +45,22 @@ void SpotifyUI::formatTime(uint32_t ms, char *outBuffer, size_t bufSize) {
     snprintf(outBuffer, bufSize, "%02u:%02u", (unsigned int)minutes, (unsigned int)seconds);
 }
 
-// Safely fits text to maxWidth using exact GFX font metrics
-static String fitTextToBounds(Adafruit_ST7735 &tft, const String &text, int16_t maxWidth) {
-    if (text.isEmpty()) return "";
-    int16_t x1, y1;
-    uint16_t w, h;
-    tft.getTextBounds(text.c_str(), 0, 0, &x1, &y1, &w, &h);
-    if (w <= maxWidth) return text;
+static void drawCenteredSimpleText(Adafruit_ST7735 &tft, const String &text, int16_t y, uint16_t color, int maxChars = 20) {
+    tft.setFont(NULL);
+    tft.setTextSize(1);
+    tft.setTextColor(color, COL_BG);
 
-    String truncated = text;
-    while (truncated.length() > 0) {
-        truncated.remove(truncated.length() - 1);
-        String testStr = truncated + "..";
-        tft.getTextBounds(testStr.c_str(), 0, 0, &x1, &y1, &w, &h);
-        if (w <= maxWidth) {
-            return testStr;
-        }
+    String display = text;
+    if ((int)display.length() > maxChars) {
+        display = display.substring(0, maxChars - 2) + "..";
     }
-    return "..";
-}
 
-// Draws centered text using BLADRMF_4pt7b font metrics
-static void drawCenteredGfxText(Adafruit_ST7735 &tft, const String &text, int16_t baselineY, uint16_t color, int16_t maxWidth = 120) {
-    tft.setFont(&BLADRMF_4pt7b);
-    String fitted = fitTextToBounds(tft, text, maxWidth);
-
-    int16_t x1, y1;
-    uint16_t w, h;
-    tft.getTextBounds(fitted.c_str(), 0, baselineY, &x1, &y1, &w, &h);
-
-    int16_t drawX = (128 - (int16_t)w) / 2 - x1;
+    int16_t textW = (int16_t)display.length() * 6;
+    int16_t drawX = (128 - textW) / 2;
     if (drawX < 2) drawX = 2;
 
-    tft.setTextColor(color);
-    tft.setCursor(drawX, baselineY);
-    tft.print(fitted);
+    tft.setCursor(drawX, y);
+    tft.print(display);
 }
 
 void SpotifyUI::drawHeader(Adafruit_ST7735 &tft, bool isConnected) {
@@ -84,10 +69,11 @@ void SpotifyUI::drawHeader(Adafruit_ST7735 &tft, bool isConnected) {
     // Spotify Green Logo Dot on left
     tft.fillCircle(8, 7, 3, COL_GREEN);
 
-    // Header title "SPOTIFY" in BLADRMF_4pt7b font
-    tft.setFont(&BLADRMF_4pt7b);
-    tft.setTextColor(COL_WHITE);
-    tft.setCursor(16, 9);
+    // Clean, readable "SPOTIFY" title
+    tft.setFont(NULL);
+    tft.setTextSize(1);
+    tft.setTextColor(COL_WHITE, COL_BG);
+    tft.setCursor(18, 4);
     tft.print("SPOTIFY");
 
     // Right Connection Indicator Dot
@@ -98,73 +84,77 @@ void SpotifyUI::drawHeader(Adafruit_ST7735 &tft, bool isConnected) {
     tft.drawFastHLine(0, 14, 128, COL_GRAY_DARK);
 }
 
-void SpotifyUI::drawArtworkPlaceholder(Adafruit_ST7735 &tft, bool isPlaying) {
-    int16_t boxX = 43;
-    int16_t boxY = 18;
-    int16_t boxW = 42;
-    int16_t boxH = 42;
+void SpotifyUI::drawArtwork(Adafruit_ST7735 &tft, const uint16_t *artworkBuffer, bool hasArtwork, bool isPlaying) {
+    int16_t boxX = 44;
+    int16_t boxY = 16;
+    int16_t boxSize = 40;
 
-    // Artwork Box Background & Rounded Frame
-    tft.fillRoundRect(boxX, boxY, boxW, boxH, 4, COL_CARD_BG);
-    tft.drawRoundRect(boxX, boxY, boxW, boxH, 4, isPlaying ? COL_GREEN : COL_GRAY_DARK);
+    if (hasArtwork && artworkBuffer != nullptr) {
+        // Draw real album artwork bitmap
+        tft.drawRGBBitmap(boxX, boxY, (uint16_t*)artworkBuffer, boxSize, boxSize);
+        // Outer glowing border
+        tft.drawRect(boxX - 1, boxY - 1, boxSize + 2, boxSize + 2, isPlaying ? COL_GREEN : COL_GRAY_DARK);
+    } else {
+        // Fallback Retro Vinyl Disc
+        tft.fillRoundRect(boxX, boxY, boxSize, boxSize, 3, COL_CARD_BG);
+        tft.drawRoundRect(boxX - 1, boxY - 1, boxSize + 2, boxSize + 2, 3, isPlaying ? COL_GREEN : COL_GRAY_DARK);
 
-    // Inner Retro Vinyl Disc Graphic
-    int16_t centerX = boxX + boxW / 2; // 64
-    int16_t centerY = boxY + boxH / 2; // 39
+        int16_t centerX = boxX + boxSize / 2; // 64
+        int16_t centerY = boxY + boxSize / 2; // 36
 
-    tft.fillCircle(centerX, centerY, 15, 0x18C3); // Outer Vinyl
-    tft.drawCircle(centerX, centerY, 15, COL_GRAY_DARK);
-    tft.drawCircle(centerX, centerY, 11, 0x2104); // Vinyl Groove
-    tft.drawCircle(centerX, centerY, 7,  0x2945);
+        tft.fillCircle(centerX, centerY, 13, 0x18C3);
+        tft.drawCircle(centerX, centerY, 13, COL_GRAY_DARK);
+        tft.drawCircle(centerX, centerY, 9, 0x2104);
+        tft.drawCircle(centerX, centerY, 6, 0x2945);
 
-    // Center Spindle Hub
-    tft.fillCircle(centerX, centerY, 4, isPlaying ? COL_GREEN : COL_GRAY_LIGHT);
-    tft.fillCircle(centerX, centerY, 1, COL_BG);  // Spindle Hole
+        tft.fillCircle(centerX, centerY, 3, isPlaying ? COL_GREEN : COL_GRAY_LIGHT);
+        tft.fillCircle(centerX, centerY, 1, COL_BG);
+    }
 }
 
 void SpotifyUI::drawTrackInfo(Adafruit_ST7735 &tft, const String &title, const String &artist, const String &album, bool isPlaying) {
-    // 1. Title Area (Y = 64..76)
-    tft.fillRect(0, 64, 128, 13, COL_BG);
+    // 1. Title Area (Y = 59..69)
+    tft.fillRect(0, 59, 128, 11, COL_BG);
     String displayTitle = title.isEmpty() ? "No Track Playing" : title;
-    drawCenteredGfxText(tft, displayTitle, 73, COL_WHITE, 120);
+    drawCenteredSimpleText(tft, displayTitle, 60, COL_WHITE, 20);
 
-    // 2. Artist Area (Y = 78..89)
-    tft.fillRect(0, 78, 128, 12, COL_BG);
+    // 2. Artist Area (Y = 71..81)
+    tft.fillRect(0, 71, 128, 11, COL_BG);
     String displayArtist = artist.isEmpty() ? "Spotify Idle" : artist;
-    drawCenteredGfxText(tft, displayArtist, 86, COL_GRAY_LIGHT, 120);
+    drawCenteredSimpleText(tft, displayArtist, 72, COL_GRAY_LIGHT, 20);
 
-    // 3. Playback State / Album Area (Y = 91..101)
-    tft.fillRect(0, 91, 128, 11, COL_BG);
+    // 3. Playback State / Album Area (Y = 83..92)
+    tft.fillRect(0, 83, 128, 10, COL_BG);
     if (!isPlaying && !title.isEmpty()) {
-        drawCenteredGfxText(tft, "PAUSED", 98, COL_PAUSED, 120);
+        drawCenteredSimpleText(tft, "PAUSED", 84, COL_PAUSED, 20);
     } else if (!album.isEmpty()) {
-        drawCenteredGfxText(tft, album, 98, COL_GRAY_DARK, 116);
+        drawCenteredSimpleText(tft, album, 84, COL_GRAY_DARK, 20);
     }
 }
 
 void SpotifyUI::drawProgressBar(Adafruit_ST7735 &tft, uint32_t progressMs, uint32_t durationMs) {
     char timeStr[10];
 
-    // Elapsed Time String (Left)
+    // Elapsed Time (Left)
     formatTime(progressMs, timeStr, sizeof(timeStr));
     tft.setFont(NULL);
     tft.setTextSize(1);
-    tft.fillRect(2, 107, 30, 9, COL_BG);
+    tft.fillRect(2, 95, 32, 9, COL_BG);
     tft.setTextColor(COL_WHITE, COL_BG);
-    tft.setCursor(3, 108);
+    tft.setCursor(3, 96);
     tft.print(timeStr);
 
-    // Total Duration String (Right)
+    // Total Duration (Right)
     formatTime(durationMs, timeStr, sizeof(timeStr));
-    tft.fillRect(96, 107, 30, 9, COL_BG);
+    tft.fillRect(94, 95, 32, 9, COL_BG);
     tft.setTextColor(COL_GRAY_LIGHT, COL_BG);
-    tft.setCursor(97, 108);
+    tft.setCursor(96, 96);
     tft.print(timeStr);
 
-    // Progress Bar Track (X = 35 to X = 93, W = 58, H = 3)
-    int16_t trackX = 35;
-    int16_t trackY = 110;
-    int16_t trackW = 58;
+    // Progress Bar Track (X = 36 to X = 92, W = 56, H = 3)
+    int16_t trackX = 36;
+    int16_t trackY = 98;
+    int16_t trackW = 56;
     int16_t trackH = 3;
 
     int16_t fillW = 0;
@@ -184,34 +174,55 @@ void SpotifyUI::drawProgressBar(Adafruit_ST7735 &tft, uint32_t progressMs, uint3
     tft.drawFastVLine(thumbX, trackY - 1, 5, COL_WHITE);
 }
 
-void SpotifyUI::drawControlsVisual(Adafruit_ST7735 &tft, bool isPlaying) {
-    // Clear Controls Area (Y = 120 .. 138)
-    tft.fillRect(0, 120, 128, 19, COL_BG);
+void SpotifyUI::drawControls(Adafruit_ST7735 &tft, bool isPlaying, SpotifyControlSelection selection) {
+    // Clear Controls Area (Y = 110 .. 138)
+    tft.fillRect(0, 110, 128, 29, COL_BG);
 
-    // 1. Previous Icon (|<<) at X=28, Y=129
+    // 1. Previous Button (Center X = 28, Center Y = 123)
     int16_t prevX = 28;
-    int16_t prevY = 129;
-    tft.drawFastVLine(prevX - 6, prevY - 4, 9, COL_WHITE);
-    tft.fillTriangle(prevX + 4, prevY - 4, prevX + 4, prevY + 4, prevX - 4, prevY, COL_WHITE);
+    int16_t prevY = 123;
+    uint16_t prevColor = (selection == CTRL_PREV) ? COL_GREEN : COL_WHITE;
 
-    // 2. Play/Pause Icon at X=64, Y=129
+    tft.drawFastVLine(prevX - 6, prevY - 4, 9, prevColor);
+    tft.fillTriangle(prevX + 4, prevY - 4, prevX + 4, prevY + 4, prevX - 4, prevY, prevColor);
+
+    if (selection == CTRL_PREV) {
+        tft.drawRoundRect(prevX - 10, prevY - 8, 21, 17, 3, COL_GREEN);
+    }
+
+    // 2. Play/Pause Button (Center X = 64, Center Y = 123)
     int16_t playX = 64;
-    int16_t playY = 129;
+    int16_t playY = 123;
+    uint16_t playBtnBg = (selection == CTRL_PLAYPAUSE) ? COL_GREEN : COL_WHITE;
+    uint16_t playIconCol = COL_BG;
+
+    // Circular Play/Pause button
+    tft.fillCircle(playX, playY, 10, playBtnBg);
 
     if (isPlaying) {
         // Pause icon: Two vertical bars
-        tft.fillRect(playX - 4, playY - 5, 3, 10, COL_WHITE);
-        tft.fillRect(playX + 1, playY - 5, 3, 10, COL_WHITE);
+        tft.fillRect(playX - 4, playY - 4, 3, 9, playIconCol);
+        tft.fillRect(playX + 1, playY - 4, 3, 9, playIconCol);
     } else {
         // Play icon: Right triangle
-        tft.fillTriangle(playX - 4, playY - 5, playX - 4, playY + 5, playX + 5, playY, COL_WHITE);
+        tft.fillTriangle(playX - 3, playY - 4, playX - 3, playY + 4, playX + 4, playY, playIconCol);
     }
 
-    // 3. Next Icon (>>|) at X=100, Y=129
+    if (selection == CTRL_PLAYPAUSE) {
+        tft.drawCircle(playX, playY, 12, COL_GREEN);
+    }
+
+    // 3. Next Button (Center X = 100, Center Y = 123)
     int16_t nextX = 100;
-    int16_t nextY = 129;
-    tft.fillTriangle(nextX - 4, nextY - 4, nextX - 4, nextY + 4, nextX + 4, nextY, COL_WHITE);
-    tft.drawFastVLine(nextX + 6, nextY - 4, 9, COL_WHITE);
+    int16_t nextY = 123;
+    uint16_t nextColor = (selection == CTRL_NEXT) ? COL_GREEN : COL_WHITE;
+
+    tft.fillTriangle(nextX - 4, nextY - 4, nextX - 4, nextY + 4, nextX + 4, nextY, nextColor);
+    tft.drawFastVLine(nextX + 6, nextY - 4, 9, nextColor);
+
+    if (selection == CTRL_NEXT) {
+        tft.drawRoundRect(nextX - 10, nextY - 8, 21, 17, 3, COL_GREEN);
+    }
 }
 
 void SpotifyUI::drawEqualizerWaves(Adafruit_ST7735 &tft, bool isPlaying) {
@@ -252,25 +263,25 @@ void SpotifyUI::drawOfflineState(Adafruit_ST7735 &tft) {
     tft.fillRoundRect(10, 48, 108, 64, 6, COL_CARD_BG);
     tft.drawRoundRect(10, 48, 108, 64, 6, COL_RED);
 
-    drawCenteredGfxText(tft, "BRIDGE OFFLINE", 66, COL_RED, 100);
-    drawCenteredGfxText(tft, "Check PC Server", 82, COL_WHITE, 100);
-    drawCenteredGfxText(tft, "Press BACK to exit", 98, COL_GRAY_LIGHT, 100);
+    drawCenteredSimpleText(tft, "BRIDGE OFFLINE", 58, COL_RED, 18);
+    drawCenteredSimpleText(tft, "Check PC Bridge", 74, COL_WHITE, 18);
+    drawCenteredSimpleText(tft, "[BACK] Return Home", 92, COL_GRAY_LIGHT, 18);
 }
 
 void SpotifyUI::drawIdleState(Adafruit_ST7735 &tft) {
     tft.fillScreen(COL_BG);
     drawHeader(tft, true);
-    drawArtworkPlaceholder(tft, false);
+    drawArtwork(tft, nullptr, false, false);
 
-    drawCenteredGfxText(tft, "NO MUSIC PLAYING", 74, COL_WHITE, 116);
-    drawCenteredGfxText(tft, "Start Spotify on PC", 88, COL_GRAY_LIGHT, 116);
+    drawCenteredSimpleText(tft, "NO MUSIC PLAYING", 64, COL_WHITE, 18);
+    drawCenteredSimpleText(tft, "Open Spotify on PC", 78, COL_GRAY_LIGHT, 18);
 
     drawProgressBar(tft, 0, 0);
-    drawControlsVisual(tft, false);
+    drawControls(tft, false, CTRL_PLAYPAUSE);
     drawEqualizerWaves(tft, false);
 }
 
-void SpotifyUI::drawFullUI(Adafruit_ST7735 &tft, const SpotifyTrackState &state) {
+void SpotifyUI::drawFullUI(Adafruit_ST7735 &tft, const SpotifyTrackState &state, SpotifyControlSelection selection, const uint16_t *artworkBuffer, bool hasArtwork) {
     if (!state.connected) {
         drawOfflineState(tft);
         lastRenderedConnected = false;
@@ -283,27 +294,31 @@ void SpotifyUI::drawFullUI(Adafruit_ST7735 &tft, const SpotifyTrackState &state)
         lastRenderedArtist = "";
         lastRenderedPlaying = false;
         lastRenderedConnected = true;
+        lastRenderedSelection = selection;
+        lastRenderedHasArtwork = false;
         return;
     }
 
     tft.fillScreen(COL_BG);
 
     drawHeader(tft, state.connected);
-    drawArtworkPlaceholder(tft, state.playing);
+    drawArtwork(tft, artworkBuffer, hasArtwork, state.playing);
     drawTrackInfo(tft, state.title, state.artist, state.album, state.playing);
     drawProgressBar(tft, state.estimatedProgressMs(), state.durationMs);
-    drawControlsVisual(tft, state.playing);
+    drawControls(tft, state.playing, selection);
     drawEqualizerWaves(tft, state.playing);
 
     lastRenderedTitle = state.title;
     lastRenderedArtist = state.artist;
     lastRenderedPlaying = state.playing;
     lastRenderedConnected = state.connected;
+    lastRenderedHasArtwork = hasArtwork;
     lastRenderedProgSec = state.estimatedProgressMs() / 1000;
     lastRenderedDurSec = state.durationMs / 1000;
+    lastRenderedSelection = selection;
 }
 
-void SpotifyUI::updateDynamicUI(Adafruit_ST7735 &tft, const SpotifyTrackState &state, bool stateChanged) {
+void SpotifyUI::updateDynamicUI(Adafruit_ST7735 &tft, const SpotifyTrackState &state, SpotifyControlSelection selection, bool stateChanged, const uint16_t *artworkBuffer, bool hasArtwork) {
     if (!state.connected) {
         if (lastRenderedConnected) {
             drawOfflineState(tft);
@@ -312,10 +327,16 @@ void SpotifyUI::updateDynamicUI(Adafruit_ST7735 &tft, const SpotifyTrackState &s
         return;
     }
 
-    // Full UI Redraw if track changed or connection restored
-    if (stateChanged || !lastRenderedConnected || state.title != lastRenderedTitle || state.artist != lastRenderedArtist || state.playing != lastRenderedPlaying) {
-        drawFullUI(tft, state);
+    // Full UI Redraw if track changed, artwork loaded, or connection restored
+    if (stateChanged || !lastRenderedConnected || (hasArtwork != lastRenderedHasArtwork) || state.title != lastRenderedTitle || state.artist != lastRenderedArtist || state.playing != lastRenderedPlaying) {
+        drawFullUI(tft, state, selection, artworkBuffer, hasArtwork);
         return;
+    }
+
+    // Controls focus update if selection changed
+    if (selection != lastRenderedSelection) {
+        lastRenderedSelection = selection;
+        drawControls(tft, state.playing, selection);
     }
 
     // Dynamic Retro Equalizer Waves (every ~65ms when playing)
