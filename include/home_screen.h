@@ -20,7 +20,8 @@ enum ScreenState {
   STATE_PIXEL_WARS_COUNTDOWN,
   STATE_PIXEL_WARS_GAMEPLAY,
   STATE_PIXEL_WARS_HIGH_SCORE,
-  STATE_AI
+  STATE_AI,
+  STATE_SPOTIFY
 };
 
 // Sub-pages for Apps / Home Screen

@@ -9,6 +9,7 @@
 #include "pixel_wars/PixelWarsShared.h"
 #include "pixel_wars/PixelWarsMenu.h"
 #include "ai/AIApp.h"
+#include "spotify/SpotifyApp.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -304,8 +305,22 @@ void enterLostCrownPlaceholder() {
   Serial.println("Placeholder Action: Enter Lost Crown Game");
 }
 
-void enterSpotifyPlaceholder() {
-  Serial.println("Placeholder Action: Enter Spotify App");
+void enterSpotify() {
+  clearButtonEvents();
+  currentScreen = STATE_SPOTIFY;
+  SpotifyApp::init(tft);
+}
+
+void exitSpotify() {
+  clearButtonEvents();
+  currentScreen = STATE_HOME;
+
+  // Select a new random quote!
+  selectRandomQuote();
+  lastQuoteChangeTime = millis();
+
+  // Restore active page layout
+  redrawCurrentAppsPage();
 }
 
 void enterCalculatorPlaceholder() {
@@ -332,7 +347,7 @@ void handleCurrentSelection() {
         enterLostCrownPlaceholder();
         break;
       case FOCUS_PAGE2_SPOTIFY:
-        enterSpotifyPlaceholder();
+        enterSpotify();
         break;
       case FOCUS_PAGE2_CALCULATOR:
         enterCalculatorPlaceholder();
@@ -463,6 +478,11 @@ void loop() {
     AIApp::update(tft);
     if (AIApp::shouldExit()) {
       exitAI();
+    }
+  } else if (currentScreen == STATE_SPOTIFY) {
+    SpotifyApp::update(tft);
+    if (SpotifyApp::shouldExit()) {
+      exitSpotify();
     }
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)
