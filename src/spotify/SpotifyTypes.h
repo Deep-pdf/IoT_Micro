@@ -5,6 +5,7 @@
 
 struct SpotifyTrackState {
     bool ok = false;
+    bool connected = false;
     bool playing = false;
 
     String trackId = "";
@@ -16,6 +17,16 @@ struct SpotifyTrackState {
     uint32_t durationMs = 0;
 
     String artworkUrl = "";
+    unsigned long lastSyncMillis = 0;
+
+    uint32_t estimatedProgressMs() const {
+        if (durationMs == 0) return 0;
+        if (!playing) return progressMs;
+        unsigned long elapsed = millis() - lastSyncMillis;
+        uint32_t current = progressMs + (uint32_t)elapsed;
+        if (current > durationMs) current = durationMs;
+        return current;
+    }
 };
 
 #endif // SPOTIFY_TYPES_H

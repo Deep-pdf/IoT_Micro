@@ -5,50 +5,25 @@
 #include <ArduinoJson.h>
 
 #ifndef SPOTIFY_BRIDGE_HOST
-#define SPOTIFY_BRIDGE_HOST "192.168.1.100"
+#define SPOTIFY_BRIDGE_HOST "10.240.13.7"
 #endif
 
 #ifndef SPOTIFY_BRIDGE_PORT
 #define SPOTIFY_BRIDGE_PORT 8888
 #endif
 
+static const unsigned long HTTP_TIMEOUT_MS = 4000;
+static String lastLoggedTrackId = "";
+static bool lastLoggedPlaying = false;
+
 bool SpotifyConnection::ensureWiFiConnected() {
-    if (WiFi.status() == WL_CONNECTED) {
-        return true;
-    }
-    Serial.println("WiFi not connected");
-    return false;
+    return (WiFi.status() == WL_CONNECTED);
 }
 
 bool SpotifyConnection::getState(SpotifyTrackState &state) {
-    // Reset state to safe defaults
-    state.ok = false;
-    state.playing = false;
-    state.trackId = "";
-    state.title = "";
-    state.artist = "";
-    state.album = "";
-    state.progressMs = 0;
-    state.durationMs = 0;
-    state.artworkUrl = "";
-
-    Serial.println("================================");
-    Serial.println("SPOTIFY BRIDGE TEST");
-    Serial.println("================================");
-    Serial.println();
-    Serial.println("Bridge:");
-    Serial.print("http://");
-    Serial.print(SPOTIFY_BRIDGE_HOST);
-    Serial.print(":");
-    Serial.println(SPOTIFY_BRIDGE_PORT);
-    Serial.println();
-    Serial.println("Requesting Spotify state...");
-    Serial.println();
-
     if (!ensureWiFiConnected()) {
-        Serial.println("Spotify bridge connection FAILED");
-        Serial.println("WiFi not connected");
-        Serial.println("================================");
+        state.connected = false;
+        state.ok = false;
         return false;
     }
 
@@ -57,25 +32,21 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
 
     HTTPClient http;
     http.begin(url);
-    http.setTimeout(10000); // 10s timeout
+    http.setTimeout(HTTP_TIMEOUT_MS);
 
     int httpCode = http.GET();
 
     if (httpCode <= 0) {
-        Serial.println("Spotify bridge connection FAILED");
-        Serial.print("HTTP request failed: ");
-        Serial.println(http.errorToString(httpCode).c_str());
-        Serial.println("================================");
         http.end();
+        state.connected = false;
+        state.ok = false;
         return false;
     }
 
     if (httpCode != 200) {
-        Serial.println("Spotify bridge connection FAILED");
-        Serial.print("HTTP status: ");
-        Serial.println(httpCode);
-        Serial.println("================================");
         http.end();
+        state.connected = false;
+        state.ok = false;
         return false;
     }
 
@@ -83,9 +54,8 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
     http.end();
 
     if (payload.isEmpty()) {
-        Serial.println("Spotify bridge connection FAILED");
-        Serial.println("HTTP request failed: Empty response payload");
-        Serial.println("================================");
+        state.connected = false;
+        state.ok = false;
         return false;
     }
 
@@ -97,14 +67,14 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
 
     DeserializationError error = deserializeJson(doc, payload);
     if (error) {
-        Serial.println("Spotify bridge connection FAILED");
-        Serial.print("HTTP request failed: JSON parse error (");
-        Serial.print(error.c_str());
-        Serial.println(")");
-        Serial.println("================================");
+        Serial.print("[Spotify] JSON parse error: ");
+        Serial.println(error.c_str());
+        state.connected = true;
+        state.ok = false;
         return false;
     }
 
+    state.connected = true;
     state.ok = doc["ok"] | false;
     state.playing = doc["playing"] | false;
     state.trackId = doc["track_id"].is<const char*>() ? doc["track_id"].as<String>() : "";
@@ -114,32 +84,30 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
     state.progressMs = doc["progress_ms"] | 0;
     state.durationMs = doc["duration_ms"] | 0;
     state.artworkUrl = doc["artwork_url"].is<const char*>() ? doc["artwork_url"].as<String>() : "";
+    state.lastSyncMillis = millis();
 
-    Serial.println("Spotify bridge connected!");
-    Serial.println();
-    Serial.print("Playing: ");
-    Serial.println(state.playing ? "YES" : "NO");
-    Serial.println();
-    Serial.println("Title:");
-    Serial.println(state.title);
-    Serial.println();
-    Serial.println("Artist:");
-    Serial.println(state.artist);
-    Serial.println();
-    Serial.println("Album:");
-    Serial.println(state.album);
-    Serial.println();
-    Serial.println("Progress:");
-    Serial.print(state.progressMs);
-    Serial.println(" ms");
-    Serial.println();
-    Serial.println("Duration:");
-    Serial.print(state.durationMs);
-    Serial.println(" ms");
-    Serial.println();
-    Serial.println("Artwork:");
-    Serial.println(state.artworkUrl);
-    Serial.println("================================");
+    // Log to Serial only when track or playback state changes
+    if (state.trackId != lastLoggedTrackId || state.playing != lastLoggedPlaying) {
+        lastLoggedTrackId = state.trackId;
+        lastLoggedPlaying = state.playing;
+
+        Serial.println("================================");
+        Serial.println("Spotify State Synchronized");
+        Serial.print("Playing: ");
+        Serial.println(state.playing ? "YES" : "PAUSED / IDLE");
+        Serial.print("Title:   ");
+        Serial.println(state.title.isEmpty() ? "(No Track)" : state.title);
+        Serial.print("Artist:  ");
+        Serial.println(state.artist.isEmpty() ? "(None)" : state.artist);
+        Serial.print("Album:   ");
+        Serial.println(state.album.isEmpty() ? "(None)" : state.album);
+        Serial.print("Progress: ");
+        Serial.print(state.progressMs / 1000);
+        Serial.print("s / ");
+        Serial.print(state.durationMs / 1000);
+        Serial.println("s");
+        Serial.println("================================");
+    }
 
     return true;
 }
