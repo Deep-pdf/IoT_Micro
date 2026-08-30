@@ -359,6 +359,8 @@ void handleCurrentSelection() {
 }
 
 void setup() {
+  Serial.begin(115200);
+
   // 1. Pull display reset LOW immediately to blank the panel and hide previous RAM contents
   pinMode(TFT_RST, OUTPUT);
   digitalWrite(TFT_RST, LOW);

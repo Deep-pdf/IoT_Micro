@@ -7,17 +7,7 @@
 class SpotifyConnection {
 public:
     static bool ensureWiFiConnected();
-    static bool fetchState(SpotifyTrackState &outState);
-    static bool sendPlayPause();
-    static bool sendPlay();
-    static bool sendPause();
-    static bool sendNext();
-    static bool sendPrevious();
-
-private:
-    static String getEndpointUrl(const char* path);
-    static bool postEndpoint(const char* path, String &outResponse);
-    static bool getEndpoint(const char* path, String &outResponse);
+    static bool getState(SpotifyTrackState &state);
 };
 
 #endif // SPOTIFY_CONNECTION_H

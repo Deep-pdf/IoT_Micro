@@ -6,7 +6,7 @@
 #define WIFI_PASSWORD "43211234"
 
 // Configurable Spotify Bridge Settings
-#define SPOTIFY_BRIDGE_HOST "192.168.1.100"
+#define SPOTIFY_BRIDGE_HOST "10.240.13.7"
 #define SPOTIFY_BRIDGE_PORT 8888
 #define SPOTIFY_MOCK_MODE   true   // Set to false when connecting to live Python bridge
 

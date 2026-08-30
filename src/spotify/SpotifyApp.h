@@ -6,13 +6,13 @@
 
 class SpotifyApp {
 public:
-    // Called once when the user enters the Spotify app from Apps Page 2
+    // Called once when entering the Spotify screen
     static void init(Adafruit_ST7735 &tft);
 
-    // Called every loop() iteration while currentScreen == STATE_SPOTIFY
+    // Called in loop() while in Spotify screen
     static void update(Adafruit_ST7735 &tft);
 
-    // Returns true (and clears flag) when BACK is pressed to return to Home
+    // Returns true when user presses BACK to return to Home Screen
     static bool shouldExit();
 };
 
