@@ -100,7 +100,7 @@ const Quote* getCurrentQuote() {
 
 void drawHomeScreen(Adafruit_ST7735 &tft) {
   // Ensure we are in Rotation 2 (Portrait)
-  tft.setRotation(2);
+  tft.setRotation(0);
 
   // Exact orange color (#FF7A00)
   uint16_t myOrange = tft.color565(255, 122, 0);
@@ -240,7 +240,7 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
 
 void drawAppsPage2(Adafruit_ST7735 &tft) {
   // Ensure we are in Rotation 2 (Portrait)
-  tft.setRotation(2);
+  tft.setRotation(0);
 
   // Exact orange color (#FF7A00)
   uint16_t myOrange = tft.color565(255, 122, 0);

@@ -15,10 +15,10 @@ static SpotifyTrackState currentTrack;
 static SpotifyControlSelection currentSelection = CTRL_PLAYPAUSE;
 static bool wantsExit = false;
 static unsigned long lastPollMillis = 0;
-static const unsigned long POLL_INTERVAL_MS = 2500; // Poll bridge every 2.5s
+static const unsigned long POLL_INTERVAL_MS = 3000; // Poll bridge every 3s
 
-// Artwork Buffer (40x40 RGB565 = 1600 words = 3.2 KB)
-static uint16_t artworkBuffer[40 * 40];
+// Artwork Buffer (48x48 RGB565 = 2304 words = 4.6 KB)
+static uint16_t artworkBuffer[48 * 48];
 static bool hasArtwork = false;
 static String lastArtworkTrackId = "";
 
@@ -36,9 +36,9 @@ static void updateTrackArtwork() {
 
     if (currentTrack.trackId != lastArtworkTrackId) {
         lastArtworkTrackId = currentTrack.trackId;
-        hasArtwork = SpotifyConnection::fetchArtwork(artworkBuffer, 40 * 40, 40);
+        hasArtwork = SpotifyConnection::fetchArtwork(artworkBuffer, 48 * 48, 48);
         if (hasArtwork) {
-            Serial.println("[Spotify] Album artwork fetched (40x40 RGB565)");
+            Serial.println("[Spotify] Album artwork fetched (48x48 RGB565)");
         }
     }
 }
@@ -73,9 +73,10 @@ void SpotifyApp::init(Adafruit_ST7735 &tft) {
 }
 
 void SpotifyApp::update(Adafruit_ST7735 &tft) {
+    updateButton();
     unsigned long now = millis();
 
-    // 1. Process BACK button -> return to Home
+    // 1. Process BACK button -> return to Home immediately
     if (isBackPressed()) {
         wantsExit = true;
         return;
@@ -142,22 +143,20 @@ void SpotifyApp::update(Adafruit_ST7735 &tft) {
             currentTrack.playing = !currentTrack.playing;
             currentTrack.lastSyncMillis = now;
             SpotifyUI::drawControls(tft, currentTrack.playing, currentSelection);
-            lastPollMillis = now - (POLL_INTERVAL_MS - 400); // Trigger fast refresh
+            lastPollMillis = now - (POLL_INTERVAL_MS - 400); // Fast sync in 400ms
         } else if (currentSelection == CTRL_PREV) {
             SpotifyConnection::sendPrevious();
-            delay(150);
-            SpotifyConnection::getState(currentTrack);
-            updateTrackArtwork();
-            SpotifyUI::drawFullUI(tft, currentTrack, currentSelection, artworkBuffer, hasArtwork);
-            lastPollMillis = now;
+            lastPollMillis = now - (POLL_INTERVAL_MS - 300); // Fast sync in 300ms without blocking delay
         } else if (currentSelection == CTRL_NEXT) {
             SpotifyConnection::sendNext();
-            delay(150);
-            SpotifyConnection::getState(currentTrack);
-            updateTrackArtwork();
-            SpotifyUI::drawFullUI(tft, currentTrack, currentSelection, artworkBuffer, hasArtwork);
-            lastPollMillis = now;
+            lastPollMillis = now - (POLL_INTERVAL_MS - 300); // Fast sync in 300ms without blocking delay
         }
+    }
+
+    // Re-check BACK button after any action
+    if (isBackPressed()) {
+        wantsExit = true;
+        return;
     }
 
     // 5. Periodic Background State Synchronization
@@ -171,7 +170,7 @@ void SpotifyApp::update(Adafruit_ST7735 &tft) {
         }
     }
 
-    // 6. Dynamic UI Animation (Local progress estimation & retro equalizer waves)
+    // 6. Dynamic UI Animation (Local progress estimation & side equalizer waves)
     SpotifyUI::updateDynamicUI(tft, currentTrack, currentSelection, stateFetched, artworkBuffer, hasArtwork);
 }
 

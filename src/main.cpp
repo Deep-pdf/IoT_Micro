@@ -368,7 +368,7 @@ void setup() {
   // 2. Initialize display hardware and command it OFF to blank it cleanly
   tft.initR(INITR_BLACKTAB);
   tft.sendCommand(0x28);        // Display OFF
-  tft.setRotation(2);
+  tft.setRotation(0);
   tft.fillScreen(ST77XX_BLACK); // Clear display RAM to black while OFF
 
   // 3. Initialize joystick, button, random seed, and Pixel Wars preferences

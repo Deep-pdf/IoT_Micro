@@ -310,7 +310,7 @@ def get_artwork_rgb565(url: str, size: int = 40) -> bytes:
 
 @app.route("/spotify/artwork", methods=["GET"])
 def get_spotify_artwork():
-    size = int(request.args.get("size", 40))
+    size = int(request.args.get("size", 48))
     state = spotify_client.get_state()
     artwork_url = state.get("artwork_url")
     if not artwork_url:

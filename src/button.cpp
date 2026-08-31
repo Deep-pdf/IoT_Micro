@@ -51,14 +51,12 @@ void updateButton() {
     if (backReading != lastBackStableState) {
       lastBackStableState = backReading;
       if (lastBackStableState == LOW) {
-        // Transition to LOW -> Pressed down
+        // Transition to LOW -> Pressed down (immediate response)
         backPressStartTime = now;
         backLongPressHandled = false;
+        backPressedEvent = true;
       } else {
         // Transition to HIGH -> Released
-        if (!backLongPressHandled) {
-          backPressedEvent = true; // Short press click
-        }
       }
     }
   }

@@ -11,6 +11,8 @@ SPOTIFY_BASE_URL = "https://api.spotify.com/v1"
 class SpotifyApiClient:
     def __init__(self):
         self.session = requests.Session()
+        self.last_device_id: Optional[str] = None
+        self.last_known_track: Optional[Dict[str, Any]] = None
 
     def _get_auth_headers(self) -> Optional[Dict[str, str]]:
         token = auth_manager.get_valid_access_token()
@@ -59,38 +61,87 @@ class SpotifyApiClient:
         except requests.RequestException as e:
             return 503, {"error": f"Network error communicating with Spotify: {str(e)}"}
 
+    def get_devices(self) -> list[Dict[str, Any]]:
+        """Returns list of available Spotify Connect devices."""
+        status_code, data = self._request("GET", "/me/player/devices")
+        if status_code == 200 and isinstance(data, dict):
+            return data.get("devices", [])
+        return []
+
+    def get_target_device_id(self) -> Optional[str]:
+        """Finds the best device to send playback commands to."""
+        devices = self.get_devices()
+        if not devices:
+            return self.last_device_id
+
+        # 1. Prefer currently active device
+        for d in devices:
+            if d.get("is_active"):
+                self.last_device_id = d.get("id")
+                return self.last_device_id
+
+        # 2. Prefer previously used device if still present
+        if self.last_device_id:
+            for d in devices:
+                if d.get("id") == self.last_device_id:
+                    return self.last_device_id
+
+        # 3. Prefer Computer or Smartphone
+        for d in devices:
+            dev_type = str(d.get("type", "")).lower()
+            if dev_type in ("computer", "smartphone"):
+                self.last_device_id = d.get("id")
+                return self.last_device_id
+
+        # 4. Fallback to first available device
+        if devices:
+            self.last_device_id = devices[0].get("id")
+            return self.last_device_id
+
+        return self.last_device_id
+
     def get_state(self) -> Dict[str, Any]:
-        """Fetches normalized current playback state."""
+        """Fetches normalized current playback state with idle caching."""
         status_code, data = self._request("GET", "/me/player")
 
         if status_code == 401:
             return SpotifyState.error("Authentication required. Visit /login on the bridge.")
 
         if status_code == 204 or data is None:
-            # Player is idle (no active device or playback)
+            # Player is idle - check if we have cached track info from previous playback
+            if self.last_known_track:
+                state_dict = dict(self.last_known_track)
+                state_dict["playing"] = False
+                state_dict["ok"] = True
+                return state_dict
             return SpotifyState.idle().to_dict()
 
         if status_code != 200 or not isinstance(data, dict):
             err_msg = data.get("error") if isinstance(data, dict) else "Unknown Spotify error"
             return SpotifyState.error(str(err_msg))
 
+        # Cache active device
+        device_obj = data.get("device")
+        if isinstance(device_obj, dict) and device_obj.get("id"):
+            self.last_device_id = device_obj.get("id")
+
         is_playing = bool(data.get("is_playing", False))
         progress_ms = int(data.get("progress_ms") or 0)
         item = data.get("item")
 
         if not item or not isinstance(item, dict):
-            # E.g. playing a podcast episode or ad without track item
-            return SpotifyState(
+            state = SpotifyState(
                 ok=True,
                 playing=is_playing,
                 track_id=None,
-                title="Unknown Track",
-                artist="",
+                title="Ready to Play",
+                artist="Spotify",
                 album="",
                 duration_ms=0,
                 progress_ms=progress_ms,
                 artwork_url=None,
             ).to_dict()
+            return state
 
         track_id = item.get("id")
         title = item.get("name", "Unknown Title")
@@ -103,17 +154,16 @@ class SpotifyApiClient:
         album_obj = item.get("album", {})
         album_name = album_obj.get("name", "") if isinstance(album_obj, dict) else ""
 
-        # Artwork URL selection (prefer medium 300x300 or first available)
+        # Artwork URL selection
         artwork_url = None
         if isinstance(album_obj, dict):
             images = album_obj.get("images", [])
             if images and isinstance(images, list):
-                # Look for medium size image or fallback to first
                 artwork_url = images[0].get("url") if isinstance(images[0], dict) else None
 
         duration_ms = int(item.get("duration_ms") or 0)
 
-        return SpotifyState(
+        current_state = SpotifyState(
             ok=True,
             playing=is_playing,
             track_id=track_id,
@@ -125,12 +175,44 @@ class SpotifyApiClient:
             artwork_url=artwork_url,
         ).to_dict()
 
+        # Cache last known track
+        if track_id:
+            self.last_known_track = current_state
+
+        return current_state
+
     def play(self) -> Dict[str, Any]:
-        """Resumes Spotify playback."""
+        """Resumes or starts Spotify playback, waking idle devices automatically."""
+        # 1. Try standard resume
         status_code, data = self._request("PUT", "/me/player/play")
         if status_code in (200, 204):
             return {"ok": True}
-        err = data.get("error", "Failed to start playback") if isinstance(data, dict) else "Failed"
+
+        # 2. If no active device or player was idle, find target device
+        target_device = self.get_target_device_id()
+        if target_device:
+            # Try play with explicit device ID
+            status_code, data = self._request("PUT", f"/me/player/play?device_id={target_device}")
+            if status_code in (200, 204):
+                return {"ok": True}
+
+            # If that fails (e.g. restriction or no track context), transfer playback with play=True
+            status_code, data = self._request("PUT", "/me/player", json={"device_ids": [target_device], "play": True})
+            if status_code in (200, 204):
+                return {"ok": True}
+
+            # If still needed and we have a cached track URI, start track explicitly
+            if self.last_known_track and self.last_known_track.get("track_id"):
+                tid = self.last_known_track.get("track_id")
+                status_code, data = self._request(
+                    "PUT",
+                    f"/me/player/play?device_id={target_device}",
+                    json={"uris": [f"spotify:track:{tid}"]}
+                )
+                if status_code in (200, 204):
+                    return {"ok": True}
+
+        err = data.get("error", "No active Spotify device found. Please open Spotify.") if isinstance(data, dict) else "Failed"
         return {"ok": False, "error": str(err)}
 
     def pause(self) -> Dict[str, Any]:
@@ -138,6 +220,13 @@ class SpotifyApiClient:
         status_code, data = self._request("PUT", "/me/player/pause")
         if status_code in (200, 204):
             return {"ok": True}
+
+        target_device = self.get_target_device_id()
+        if target_device:
+            status_code, data = self._request("PUT", f"/me/player/pause?device_id={target_device}")
+            if status_code in (200, 204):
+                return {"ok": True}
+
         err = data.get("error", "Failed to pause playback") if isinstance(data, dict) else "Failed"
         return {"ok": False, "error": str(err)}
 
@@ -145,7 +234,8 @@ class SpotifyApiClient:
         """Toggles between play and pause based on current state."""
         state = self.get_state()
         if not state.get("ok"):
-            return {"ok": False, "error": state.get("error", "Cannot determine playback state")}
+            # If state check failed, attempt play anyway
+            return self.play()
 
         if state.get("playing"):
             return self.pause()
@@ -153,18 +243,32 @@ class SpotifyApiClient:
             return self.play()
 
     def next_track(self) -> Dict[str, Any]:
-        """Skips to the next track."""
+        """Skips to the next track, waking device if needed."""
         status_code, data = self._request("POST", "/me/player/next")
         if status_code in (200, 204):
             return {"ok": True}
+
+        target_device = self.get_target_device_id()
+        if target_device:
+            status_code, data = self._request("POST", f"/me/player/next?device_id={target_device}")
+            if status_code in (200, 204):
+                return {"ok": True}
+
         err = data.get("error", "Failed to skip to next track") if isinstance(data, dict) else "Failed"
         return {"ok": False, "error": str(err)}
 
     def previous_track(self) -> Dict[str, Any]:
-        """Skips to the previous track."""
+        """Skips to the previous track, waking device if needed."""
         status_code, data = self._request("POST", "/me/player/previous")
         if status_code in (200, 204):
             return {"ok": True}
+
+        target_device = self.get_target_device_id()
+        if target_device:
+            status_code, data = self._request("POST", f"/me/player/previous?device_id={target_device}")
+            if status_code in (200, 204):
+                return {"ok": True}
+
         err = data.get("error", "Failed to skip to previous track") if isinstance(data, dict) else "Failed"
         return {"ok": False, "error": str(err)}
 

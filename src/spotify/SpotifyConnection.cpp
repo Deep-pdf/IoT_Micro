@@ -12,9 +12,11 @@
 #define SPOTIFY_BRIDGE_PORT 8888
 #endif
 
-static const unsigned long HTTP_TIMEOUT_MS = 3000;
+// Fast non-blocking timeout: local Wi-Fi takes ~15ms; if no response within 800ms, don't stall the UI
+static const unsigned long HTTP_TIMEOUT_MS = 800;
 static String lastLoggedTrackId = "";
 static bool lastLoggedPlaying = false;
+static int consecutiveFailures = 0;
 
 bool SpotifyConnection::ensureWiFiConnected() {
     return (WiFi.status() == WL_CONNECTED);
@@ -31,6 +33,7 @@ bool SpotifyConnection::postEndpoint(const char* path) {
     HTTPClient http;
     http.begin(url);
     http.addHeader("Content-Type", "application/json");
+    http.addHeader("Connection", "close");
     http.setTimeout(HTTP_TIMEOUT_MS);
 
     int httpCode = http.POST("{}");
@@ -56,8 +59,10 @@ bool SpotifyConnection::sendPrevious() {
 
 bool SpotifyConnection::getState(SpotifyTrackState &state) {
     if (!ensureWiFiConnected()) {
-        state.connected = false;
-        state.ok = false;
+        consecutiveFailures++;
+        if (consecutiveFailures >= 3) {
+            state.connected = false;
+        }
         return false;
     }
 
@@ -66,21 +71,17 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
 
     HTTPClient http;
     http.begin(url);
+    http.addHeader("Connection", "close");
     http.setTimeout(HTTP_TIMEOUT_MS);
 
     int httpCode = http.GET();
 
-    if (httpCode <= 0) {
-        http.end();
-        state.connected = false;
-        state.ok = false;
-        return false;
-    }
-
     if (httpCode != 200) {
         http.end();
-        state.connected = false;
-        state.ok = false;
+        consecutiveFailures++;
+        if (consecutiveFailures >= 3) {
+            state.connected = false;
+        }
         return false;
     }
 
@@ -88,8 +89,10 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
     http.end();
 
     if (payload.isEmpty()) {
-        state.connected = false;
-        state.ok = false;
+        consecutiveFailures++;
+        if (consecutiveFailures >= 3) {
+            state.connected = false;
+        }
         return false;
     }
 
@@ -103,11 +106,15 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
     if (error) {
         Serial.print("[Spotify] JSON error: ");
         Serial.println(error.c_str());
-        state.connected = true;
-        state.ok = false;
+        consecutiveFailures++;
+        if (consecutiveFailures >= 3) {
+            state.connected = false;
+        }
         return false;
     }
 
+    // Successful fetch -> reset failure counter
+    consecutiveFailures = 0;
     state.connected = true;
     state.ok = doc["ok"] | false;
     state.playing = doc["playing"] | false;
@@ -152,7 +159,8 @@ bool SpotifyConnection::fetchArtwork(uint16_t *buffer, size_t maxPixels, int tar
 
     HTTPClient http;
     http.begin(url);
-    http.setTimeout(4000);
+    http.addHeader("Connection", "close");
+    http.setTimeout(1500); // 1.5s max for 4.6KB
 
     int httpCode = http.GET();
     if (httpCode != 200) {
@@ -167,7 +175,7 @@ bool SpotifyConnection::fetchArtwork(uint16_t *buffer, size_t maxPixels, int tar
     uint8_t *bytePtr = (uint8_t*)buffer;
     unsigned long start = millis();
 
-    while (http.connected() && (totalBytes < expectedBytes) && (millis() - start < 3000)) {
+    while (http.connected() && (totalBytes < expectedBytes) && (millis() - start < 1500)) {
         size_t available = stream->available();
         if (available) {
             int toRead = min((int)available, expectedBytes - totalBytes);
@@ -179,7 +187,7 @@ bool SpotifyConnection::fetchArtwork(uint16_t *buffer, size_t maxPixels, int tar
     http.end();
 
     if (totalBytes == expectedBytes) {
-        // Convert big-endian network bytes to native uint16_t format
+        // Convert big-endian network bytes to native uint16_t RGB565 format
         for (int i = 0; i < targetSize * targetSize; i++) {
             uint8_t high = bytePtr[i * 2];
             uint8_t low  = bytePtr[i * 2 + 1];
