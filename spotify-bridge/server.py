@@ -2,6 +2,14 @@
 Spotify Bridge HTTP Server for ESP32 micro_IoT remote control.
 """
 import os
+import sys
+
+# Ensure safe console output for Windows consoles
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, redirect, render_template_string
 

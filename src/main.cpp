@@ -10,6 +10,7 @@
 #include "pixel_wars/PixelWarsMenu.h"
 #include "ai/AIApp.h"
 #include "spotify/SpotifyApp.h"
+#include "lost_crown/LostCrownLoading.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -33,6 +34,7 @@ unsigned long lastQuoteChangeTime = 0;
 
 // Joystick control state
 bool joystickCentered = true;
+bool lostCrownLaunchSignalled = false;
 
 enum JoyDirection {
   DIR_NONE,
@@ -302,7 +304,22 @@ void exitAI() {
 }
 
 void enterLostCrownPlaceholder() {
-  Serial.println("Placeholder Action: Enter Lost Crown Game");
+  clearButtonEvents();
+  currentScreen = STATE_LOST_CROWN_LOADING;
+  lostCrownLaunchSignalled = false;
+  LostCrownLoading::begin(tft);
+}
+
+void exitLostCrownLoading() {
+  clearButtonEvents();
+  currentScreen = STATE_HOME;
+  redrawCurrentAppsPage();
+}
+
+void launchLostCrownGame() {
+  // This preserves the existing Lost Crown launch hook. A gameplay module has
+  // not yet been added to this project, so no second game implementation is created here.
+  Serial.println("Lost Crown loading complete: game launch hook reached");
 }
 
 void enterSpotify() {
@@ -485,6 +502,13 @@ void loop() {
     SpotifyApp::update(tft);
     if (SpotifyApp::shouldExit()) {
       exitSpotify();
+    }
+  } else if (currentScreen == STATE_LOST_CROWN_LOADING) {
+    if (isBackPressed()) {
+      exitLostCrownLoading();
+    } else if (!lostCrownLaunchSignalled && LostCrownLoading::update(tft)) {
+      launchLostCrownGame();
+      lostCrownLaunchSignalled = true;
     }
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)

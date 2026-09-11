@@ -21,7 +21,8 @@ enum ScreenState {
   STATE_PIXEL_WARS_GAMEPLAY,
   STATE_PIXEL_WARS_HIGH_SCORE,
   STATE_AI,
-  STATE_SPOTIFY
+  STATE_SPOTIFY,
+  STATE_LOST_CROWN_LOADING
 };
 
 // Sub-pages for Apps / Home Screen
