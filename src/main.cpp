@@ -11,6 +11,7 @@
 #include "ai/AIApp.h"
 #include "spotify/SpotifyApp.h"
 #include "lost_crown/LostCrownLoading.h"
+#include "lost_crown/LostCrownTitle.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -317,9 +318,16 @@ void exitLostCrownLoading() {
 }
 
 void launchLostCrownGame() {
-  // This preserves the existing Lost Crown launch hook. A gameplay module has
-  // not yet been added to this project, so no second game implementation is created here.
-  Serial.println("Lost Crown loading complete: game launch hook reached");
+  clearButtonEvents();
+  currentScreen = STATE_LOST_CROWN_TITLE;
+  LostCrownTitle::begin(tft);
+  Serial.println("Lost Crown loading complete: transitioned to main title screen");
+}
+
+void exitLostCrownTitle() {
+  clearButtonEvents();
+  currentScreen = STATE_HOME;
+  redrawCurrentAppsPage();
 }
 
 void enterSpotify() {
@@ -509,6 +517,12 @@ void loop() {
     } else if (!lostCrownLaunchSignalled && LostCrownLoading::update(tft)) {
       launchLostCrownGame();
       lostCrownLaunchSignalled = true;
+    }
+  } else if (currentScreen == STATE_LOST_CROWN_TITLE) {
+    if (isBackPressed()) {
+      exitLostCrownTitle();
+    } else {
+      LostCrownTitle::update(tft);
     }
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)

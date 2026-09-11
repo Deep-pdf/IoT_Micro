@@ -1,13 +1,17 @@
 /**
  * LostCrownConfig.h
  *
- * Centralized, developer-editable configuration for the Lost Crown loading screen.
- * Adjust timings, dimensions, colors, text, and sprite coordinates without modifying
- * the rendering engine.
+ * Centralized, developer-editable configuration for the Lost Crown loading
+ * and main title screens. Adjust timings, dimensions, colors, text, and sprite
+ * coordinates without modifying the rendering engine.
  */
 #pragma once
 
 #include <Arduino.h>
+
+// =====================================================================
+// LOADING SCREEN CONFIGURATION
+// =====================================================================
 
 // ===== 1. TIMINGS (in milliseconds) =====
 // Total duration for progress bar to fill from 0% to 100%
@@ -83,3 +87,38 @@ static constexpr int16_t  LC_CAPE_H              = 6;
 static constexpr int16_t  LC_MOON_CX             = 68;
 static constexpr int16_t  LC_MOON_CY             = 22;
 static constexpr int16_t  LC_MOON_R              = 6;
+
+
+// =====================================================================
+// MAIN TITLE SCREEN CONFIGURATION
+// =====================================================================
+
+// ===== 6. TITLE SCREEN MENU OPTIONS =====
+enum LostCrownMenuItem {
+  LC_MENU_CONTINUE = 0,
+  LC_MENU_NEW_GAME,
+  LC_MENU_SETTINGS,
+  LC_MENU_EXTRAS,
+  LC_MENU_QUIT,
+  LC_MENU_COUNT
+};
+
+static const char* const LC_MENU_LABELS[LC_MENU_COUNT] = {
+  "CONTINUE",
+  "NEW GAME",
+  "SETTINGS",
+  "EXTRAS",
+  "QUIT"
+};
+
+// Menu typography & position
+static constexpr int16_t  LC_TITLE_MENU_X        = 17; // Left-aligned text X
+static constexpr int16_t  LC_TITLE_MENU_Y        = 53; // First item (CONTINUE) Y
+static constexpr int16_t  LC_TITLE_MENU_SPACING  = 9;  // Vertical line pitch (padding between options)
+static constexpr int16_t  LC_TITLE_ARROW_X       = 7;  // Selection arrow indicator X
+
+// Menu colors (RGB565)
+static constexpr uint16_t LC_COLOR_SELECTED      = 0xFEA0; // Bright golden amber (matching "LOST")
+static constexpr uint16_t LC_COLOR_UNSELECTED    = 0xD6BA; // Cool silver/off-white (matching "CROWN")
+static constexpr uint16_t LC_COLOR_SHADOW        = 0x0821; // Dark contrast outline shadow
+
