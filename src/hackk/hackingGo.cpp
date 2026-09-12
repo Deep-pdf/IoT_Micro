@@ -29,8 +29,9 @@
 
 // ============ CONSTANTS & THEME ============
 #define MAX_NETWORKS 20
-#define SCREEN_W 160
-#define SCREEN_H 128
+// Vertical / Portrait dimensions (Matching Home screen and Apps grid)
+#define SCREEN_W 128
+#define SCREEN_H 160
 
 // Cyberpunk / Terminal Color Palette (RGB565)
 #define COLOR_BG        0x0843  // Deep dark blue/black
@@ -69,17 +70,17 @@ static const char* attackNames[] = {
     "Deauth Flood",
     "Beacon Spam",
     "Probe Flood",
-    "Clone Target AP",
+    "Clone AP",
     "Channel Chaos"
 };
 
 static const char* mainMenuItems[] = {
-    "1. WiFi Scan & Audit",
-    "2. Beacon Spam (SSIDs)",
-    "3. Probe Request Flood",
-    "4. BLE Spam / Flood",
-    "5. Channel Chaos",
-    "6. Exit to Home"
+    "1.WiFi Scanner",
+    "2.Beacon Spam",
+    "3.Probe Flood",
+    "4.BLE Spammer",
+    "5.Channel Chaos",
+    "6.Exit to Home"
 };
 #define MAIN_MENU_COUNT 6
 
@@ -144,66 +145,75 @@ static uint8_t probePacket[36] = {
     0x01, 0x08, 0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c // Supported Rates
 };
 
-// Fun SSID list for Beacon Spam
+// Fun SSID list for Beacon Spam (kept compact to avoid screen cutoff)
 static const char* fakeSSIDs[] = {
-    "Free_HighSpeed_WiFi",
-    "FBI_Surveillance_Van",
-    "Area_51_Alien_Lab",
-    "Totally_Not_A_Virus",
-    "Drop_It_Like_Its_Hotspot",
-    "Skynet_Global_Defense",
-    "ESP32_Cyber_Phantom",
-    "Pretty_Fly_For_A_WiFi",
+    "Free_WiFi",
+    "FBI_Surveillance",
+    "Area_51_Lab",
+    "Not_A_Virus",
+    "Drop_Hotspot",
+    "Skynet_Defense",
+    "ESP32_Phantom",
+    "Pretty_Fly_AP",
     "Connecting...",
-    "Error_404_No_Internet"
+    "Error_404_Net"
 };
 #define FAKE_SSID_COUNT 10
 
 // ==================================================
-// GRAPHICS & DRAWING HELPERS
+// GRAPHICS & DRAWING HELPERS (SIMPLE & SMALL FONT)
 // ==================================================
 
-static void drawHeader(const char* title, uint16_t accentColor) {
-    tft.fillRect(0, 0, SCREEN_W, 14, COLOR_PANEL);
-    tft.drawFastHLine(0, 14, SCREEN_W, accentColor);
+// Enforce simple built-in 5x7 font (size 1: 6x8 pixels per char)
+static inline void useSimpleFont() {
+    tft.setFont(NULL);
+    tft.setTextWrap(false);
+}
 
-    tft.setCursor(4, 3);
+static void drawHeader(const char* title, uint16_t accentColor) {
+    useSimpleFont();
+    tft.fillRect(0, 0, SCREEN_W, 13, COLOR_PANEL);
+    tft.drawFastHLine(0, 13, SCREEN_W, accentColor);
+
+    tft.setCursor(3, 3);
     tft.setTextColor(accentColor, COLOR_PANEL);
     tft.setTextSize(1);
     tft.print(title);
 
-    // Mini status tag on top right
-    tft.setCursor(SCREEN_W - 38, 3);
+    // Mini status tag on top right (x=96 to 126, fits comfortably)
+    tft.setCursor(SCREEN_W - 33, 3);
     tft.setTextColor(COLOR_CYAN, COLOR_PANEL);
     tft.print("AUDIT");
 }
 
 static void drawFooter(const char* hint) {
+    useSimpleFont();
     tft.fillRect(0, SCREEN_H - 12, SCREEN_W, 12, COLOR_PANEL);
     tft.drawFastHLine(0, SCREEN_H - 13, SCREEN_W, COLOR_DIM);
 
-    tft.setCursor(4, SCREEN_H - 9);
+    tft.setCursor(3, SCREEN_H - 10);
     tft.setTextColor(COLOR_DIM, COLOR_PANEL);
     tft.setTextSize(1);
     tft.print(hint);
 }
 
-// Draw a formatted string with automatic background erase
+// Draw a formatted string with automatic background erase using simple font
 static void drawString(int x, int y, const char* str, uint16_t fg, uint16_t bg, uint8_t size = 1) {
+    useSimpleFont();
     tft.setCursor(x, y);
     tft.setTextColor(fg, bg);
     tft.setTextSize(size);
     tft.print(str);
 }
 
-// Convert encryption type to readable string
+// Convert encryption type to readable string (compact 4 chars max)
 static const char* getEncTypeStr(uint8_t enc) {
     switch (enc) {
         case WIFI_AUTH_OPEN: return "OPEN";
         case WIFI_AUTH_WEP:  return "WEP";
         case WIFI_AUTH_WPA_PSK: return "WPA";
         case WIFI_AUTH_WPA2_PSK: return "WPA2";
-        case WIFI_AUTH_WPA_WPA2_PSK: return "WPA/2";
+        case WIFI_AUTH_WPA_WPA2_PSK: return "WPA2";
         case WIFI_AUTH_WPA2_ENTERPRISE: return "ENT";
         case WIFI_AUTH_WPA3_PSK: return "WPA3";
         default: return "SEC";
@@ -215,25 +225,29 @@ static const char* getEncTypeStr(uint8_t enc) {
 // ==================================================
 
 static void performWiFiScan() {
+    useSimpleFont();
     tft.fillScreen(COLOR_BG);
     drawHeader("WIFI SCANNER", COLOR_CYAN);
-    drawFooter("Scanning 2.4GHz bands...");
+    drawFooter("Scanning 2.4GHz...");
 
-    drawString(18, 38, "SCANNING AIRWAVES...", COLOR_CYAN, COLOR_BG, 1);
-    tft.drawRect(16, 55, 128, 14, COLOR_CYAN);
-    tft.fillRect(18, 57, 30, 10, COLOR_GREEN);
+    drawString(13, 40, "SCANNING AIRWAVES", COLOR_CYAN, COLOR_BG, 1);
+    drawString(22, 54, "Please wait...", COLOR_DIM, COLOR_BG, 1);
+
+    // Progress bar frame
+    tft.drawRect(14, 72, 100, 12, COLOR_CYAN);
+    tft.fillRect(16, 74, 25, 8, COLOR_GREEN);
 
     // Disconnect any active client session and set station mode
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
     delay(100);
 
-    tft.fillRect(18, 57, 75, 10, COLOR_GREEN);
+    tft.fillRect(16, 74, 60, 8, COLOR_GREEN);
 
     // Perform active/passive scan
     int n = WiFi.scanNetworks(false, true, false, 250);
 
-    tft.fillRect(18, 57, 124, 10, COLOR_GREEN);
+    tft.fillRect(16, 74, 96, 8, COLOR_GREEN);
     delay(150);
 
     networkCount = 0;
@@ -257,7 +271,7 @@ static void performWiFiScan() {
 
     // If no networks discovered (shielded room / offline test), populate realistic samples
     if (networkCount == 0) {
-        const char* sampleSSIDs[] = {"Office_5G_Guest", "Lab_Secure_Net", "Home_Gateway_9B", "IoT_Smart_Hub", "Coffee_Free_WiFi"};
+        const char* sampleSSIDs[] = {"Office_5G", "Lab_Secure", "Home_Gateway", "Smart_Hub", "Free_Coffee"};
         for (int i = 0; i < 5; i++) {
             strncpy(networks[i].ssid, sampleSSIDs[i], 32);
             networks[i].ssid[32] = '\0';
@@ -466,7 +480,7 @@ static void startBLEFlood() {
     BLEAdvertisementData advData;
     advData.setFlags(0x06); // General Discoverable + BR/EDR Not Supported
     advData.setCompleteServices(BLEUUID((uint16_t)0xFE9F)); // Google Fast Pair Service UUID
-    advData.setName("Pixel Buds Pro");
+    advData.setName("Pixel Buds");
 
     pBLEAdvertising->setAdvertisementData(advData);
     pBLEAdvertising->setScanResponse(true);
@@ -501,37 +515,38 @@ static void updateBLEFlood() {
 }
 
 // ==================================================
-// RENDERING FUNCTIONS (FLICKER-FREE)
+// RENDERING FUNCTIONS (SIMPLE FONT, VISIBLE & FIT)
 // ==================================================
 
 static void renderMainMenu() {
+    useSimpleFont();
     if (needFullRedraw) {
         tft.fillScreen(COLOR_BG);
-        drawHeader("HACKING-GO v1.0", COLOR_GREEN);
-        drawFooter("[JOY] Move  [ENT] Select");
+        drawHeader("HACKING-GO", COLOR_GREEN);
+        drawFooter("[JOY]Nav  [ENT]OK");
 
-        // Menu container border
-        tft.drawRoundRect(4, 18, SCREEN_W - 8, SCREEN_H - 33, 4, COLOR_PANEL);
+        // Menu container border (x=2, y=16, w=124, h=128)
+        tft.drawRoundRect(2, 16, SCREEN_W - 4, 128, 3, COLOR_PANEL);
         needFullRedraw = false;
     }
 
-    int startY = 22;
-    int lineH = 14;
+    int startY = 20;
+    int lineH = 20;
 
     for (int i = 0; i < MAIN_MENU_COUNT; i++) {
         int y = startY + i * lineH;
         bool selected = (i == mainMenuIndex);
 
         if (selected) {
-            tft.fillRect(6, y - 1, SCREEN_W - 12, lineH, COLOR_HIGHLIGHT);
+            tft.fillRect(4, y - 2, SCREEN_W - 8, lineH - 2, COLOR_HIGHLIGHT);
             tft.setTextColor(COLOR_TEXT, COLOR_HIGHLIGHT);
-            tft.setCursor(10, y + 2);
+            tft.setCursor(6, y + 2);
             tft.print("> ");
             tft.print(mainMenuItems[i]);
         } else {
-            tft.fillRect(6, y - 1, SCREEN_W - 12, lineH, COLOR_BG);
+            tft.fillRect(4, y - 2, SCREEN_W - 8, lineH - 2, COLOR_BG);
             tft.setTextColor(COLOR_DIM, COLOR_BG);
-            tft.setCursor(10, y + 2);
+            tft.setCursor(6, y + 2);
             tft.print("  ");
             tft.print(mainMenuItems[i]);
         }
@@ -539,21 +554,22 @@ static void renderMainMenu() {
 }
 
 static void renderWiFiList() {
-    const int VISIBLE_ITEMS = 3; // 3 detailed network cards
-    const int CARD_H = 30;
+    useSimpleFont();
+    const int VISIBLE_ITEMS = 4; // 4 cards fit cleanly inside 128x160
+    const int CARD_H = 29;
 
     if (needFullRedraw) {
         tft.fillScreen(COLOR_BG);
-        char hdr[32];
-        snprintf(hdr, sizeof(hdr), "FOUND APs (%d)", networkCount);
+        char hdr[20];
+        snprintf(hdr, sizeof(hdr), "APS (%d)", networkCount);
         drawHeader(hdr, COLOR_CYAN);
-        drawFooter("[ENT] Audit  [BCK] Menu");
+        drawFooter("[ENT]Pick [BCK]Exit");
         needFullRedraw = false;
     }
 
     if (networkCount == 0) {
-        drawString(20, 50, "No networks found.", COLOR_RED, COLOR_BG, 1);
-        drawString(20, 65, "Press BACK to return.", COLOR_DIM, COLOR_BG, 1);
+        drawString(6, 50, "No networks found.", COLOR_RED, COLOR_BG, 1);
+        drawString(6, 66, "Press BACK to menu.", COLOR_DIM, COLOR_BG, 1);
         return;
     }
 
@@ -564,90 +580,91 @@ static void renderWiFiList() {
         wifiListScroll = wifiListIndex - VISIBLE_ITEMS + 1;
     }
 
-    int startY = 18;
+    int startY = 17;
     for (int i = 0; i < VISIBLE_ITEMS; i++) {
         int netIdx = wifiListScroll + i;
-        int y = startY + i * (CARD_H + 2);
+        int y = startY + i * (CARD_H + 3);
 
         if (netIdx < networkCount) {
             bool selected = (netIdx == wifiListIndex);
             uint16_t cardBg = selected ? COLOR_HIGHLIGHT : COLOR_PANEL;
             uint16_t borderCol = selected ? COLOR_CYAN : COLOR_BG;
 
-            tft.fillRoundRect(4, y, SCREEN_W - 8, CARD_H, 3, cardBg);
-            tft.drawRoundRect(4, y, SCREEN_W - 8, CARD_H, 3, borderCol);
+            tft.fillRoundRect(3, y, SCREEN_W - 9, CARD_H, 3, cardBg);
+            tft.drawRoundRect(3, y, SCREEN_W - 9, CARD_H, 3, borderCol);
 
-            // Row 1: Index + SSID
-            char ssidBuf[19];
-            strncpy(ssidBuf, networks[netIdx].ssid, 18);
-            ssidBuf[18] = '\0';
+            // Row 1: Index + Truncated SSID (Max 13 chars so it never overflows)
+            char ssidBuf[14];
+            strncpy(ssidBuf, networks[netIdx].ssid, 13);
+            ssidBuf[13] = '\0';
 
-            tft.setCursor(8, y + 4);
+            tft.setCursor(6, y + 4);
             tft.setTextSize(1);
             tft.setTextColor(selected ? COLOR_TEXT : COLOR_CYAN, cardBg);
             tft.printf("%d.%s", netIdx + 1, ssidBuf);
 
-            // Row 2: Channel, RSSI, Security
-            tft.setCursor(8, y + 17);
+            // Row 2: Channel, RSSI, Security (Exact 15 chars = 90 px, fits inside 119px)
+            tft.setCursor(6, y + 16);
             tft.setTextColor(selected ? COLOR_TEXT : COLOR_DIM, cardBg);
-            tft.printf("CH:%02d %ddBm %s", networks[netIdx].channel, networks[netIdx].rssi, getEncTypeStr(networks[netIdx].encType));
+            tft.printf("C:%-2d %3ddB %s", networks[netIdx].channel, networks[netIdx].rssi, getEncTypeStr(networks[netIdx].encType));
         } else {
             // Clear empty slots
-            tft.fillRect(4, y, SCREEN_W - 8, CARD_H + 2, COLOR_BG);
+            tft.fillRect(3, y, SCREEN_W - 9, CARD_H + 3, COLOR_BG);
         }
     }
 
     // Scrollbar indicator
-    int sbHeight = SCREEN_H - 40;
-    int thumbH = max(8, sbHeight / max(1, networkCount));
-    int thumbY = 18 + (wifiListIndex * (sbHeight - thumbH)) / max(1, networkCount - 1);
-    tft.drawFastVLine(SCREEN_W - 2, 18, sbHeight, COLOR_PANEL);
-    tft.fillRect(SCREEN_W - 3, thumbY, 2, thumbH, COLOR_CYAN);
+    int sbHeight = 125;
+    int thumbH = max(10, sbHeight / max(1, networkCount));
+    int thumbY = 17 + (wifiListIndex * (sbHeight - thumbH)) / max(1, networkCount - 1);
+    tft.drawFastVLine(SCREEN_W - 4, 17, sbHeight, COLOR_PANEL);
+    tft.fillRect(SCREEN_W - 5, thumbY, 3, thumbH, COLOR_CYAN);
 }
 
 static void renderAttackMenu() {
+    useSimpleFont();
     if (needFullRedraw) {
         tft.fillScreen(COLOR_BG);
         drawHeader("AUDIT ACTION", COLOR_ORANGE);
-        drawFooter("[ENT] Execute  [BCK] List");
+        drawFooter("[ENT]Start [BCK]Back");
 
-        // Target summary box
-        tft.drawRoundRect(4, 18, SCREEN_W - 8, 30, 3, COLOR_PANEL);
-        tft.fillRect(5, 19, SCREEN_W - 10, 28, COLOR_PANEL);
+        // Target summary box (x=2, y=16, w=124, h=32)
+        tft.drawRoundRect(2, 16, SCREEN_W - 4, 32, 3, COLOR_PANEL);
+        tft.fillRect(3, 17, SCREEN_W - 6, 30, COLOR_PANEL);
 
-        char tgtSsid[20];
-        strncpy(tgtSsid, networks[selectedNetwork].ssid, 19);
-        tgtSsid[19] = '\0';
+        char tgtSsid[15];
+        strncpy(tgtSsid, networks[selectedNetwork].ssid, 14);
+        tgtSsid[14] = '\0';
 
-        tft.setCursor(8, 22);
+        tft.setCursor(5, 20);
         tft.setTextSize(1);
         tft.setTextColor(COLOR_CYAN, COLOR_PANEL);
         tft.printf("TGT: %s", tgtSsid);
 
-        tft.setCursor(8, 34);
+        tft.setCursor(5, 33);
         tft.setTextColor(COLOR_DIM, COLOR_PANEL);
-        tft.printf("CH:%02d RSSI:%ddBm", networks[selectedNetwork].channel, networks[selectedNetwork].rssi);
+        tft.printf("CH:%-2d  RSSI:%ddBm", networks[selectedNetwork].channel, networks[selectedNetwork].rssi);
 
         needFullRedraw = false;
     }
 
     int startY = 52;
-    int lineH = 12;
+    int lineH = 18;
 
     for (int i = 0; i < ATTACK_TYPE_COUNT; i++) {
         int y = startY + i * lineH;
         bool selected = (i == attackMenuIndex);
 
         if (selected) {
-            tft.fillRect(6, y - 1, SCREEN_W - 12, lineH, COLOR_HIGHLIGHT);
+            tft.fillRect(4, y - 2, SCREEN_W - 8, lineH - 2, COLOR_HIGHLIGHT);
             tft.setTextColor(COLOR_TEXT, COLOR_HIGHLIGHT);
-            tft.setCursor(10, y + 2);
+            tft.setCursor(6, y + 2);
             tft.print("> ");
             tft.print(attackNames[i]);
         } else {
-            tft.fillRect(6, y - 1, SCREEN_W - 12, lineH, COLOR_BG);
+            tft.fillRect(4, y - 2, SCREEN_W - 8, lineH - 2, COLOR_BG);
             tft.setTextColor(COLOR_DIM, COLOR_BG);
-            tft.setCursor(10, y + 2);
+            tft.setCursor(6, y + 2);
             tft.print("  ");
             tft.print(attackNames[i]);
         }
@@ -655,88 +672,105 @@ static void renderAttackMenu() {
 }
 
 static void renderAttackRunning() {
+    useSimpleFont();
     if (needFullRedraw) {
         tft.fillScreen(COLOR_BG);
-        drawHeader("AUDIT IN PROGRESS", COLOR_RED);
-        drawFooter("[BACK] ABORT ATTACK");
+        drawHeader("AUDIT ACTIVE", COLOR_RED);
+        drawFooter("[BACK] Stop Attack");
 
-        // Info card container
-        tft.drawRoundRect(4, 18, SCREEN_W - 8, SCREEN_H - 33, 4, COLOR_PANEL);
+        // Main info container (x=2, y=16, w=124, h=128)
+        tft.drawRoundRect(2, 16, SCREEN_W - 4, 128, 3, COLOR_PANEL);
 
-        tft.setCursor(8, 24);
+        tft.setCursor(5, 20);
         tft.setTextColor(COLOR_DIM, COLOR_BG);
         tft.setTextSize(1);
         tft.print("TYPE: ");
         tft.setTextColor(COLOR_ORANGE, COLOR_BG);
-        tft.print(attackNames[currentAttack]);
+        char aBuf[13];
+        strncpy(aBuf, attackNames[currentAttack], 12);
+        aBuf[12] = '\0';
+        tft.print(aBuf);
 
-        tft.setCursor(8, 36);
+        tft.setCursor(5, 32);
         tft.setTextColor(COLOR_DIM, COLOR_BG);
-        tft.print("TARGET: ");
+        tft.print("TGT : ");
         tft.setTextColor(COLOR_CYAN, COLOR_BG);
-        char sBuf[18];
+        char sBuf[13];
         if (currentAttack == ATTACK_BEACON_SPAM || currentAttack == ATTACK_CHANNEL_CHAOS) {
-            strncpy(sBuf, "BROADCAST/MULTI", 17);
+            strncpy(sBuf, "BROADCAST", 12);
         } else {
-            strncpy(sBuf, networks[selectedNetwork].ssid, 17);
+            strncpy(sBuf, networks[selectedNetwork].ssid, 12);
         }
-        sBuf[17] = '\0';
+        sBuf[12] = '\0';
         tft.print(sBuf);
 
-        // Grid lines for stats
-        tft.drawFastHLine(6, 49, SCREEN_W - 12, COLOR_PANEL);
+        // Dividers & Stat Labels
+        tft.drawFastHLine(4, 44, SCREEN_W - 8, COLOR_PANEL);
 
-        drawString(8, 54, "PACKETS SENT:", COLOR_DIM, COLOR_BG, 1);
-        drawString(8, 76, "SPEED (PPS):", COLOR_DIM, COLOR_BG, 1);
-        drawString(8, 98, "TIME ACTIVE :", COLOR_DIM, COLOR_BG, 1);
+        drawString(5, 48, "PACKETS SENT:", COLOR_DIM, COLOR_BG, 1);
+        tft.drawFastHLine(4, 73, SCREEN_W - 8, COLOR_PANEL);
+
+        drawString(5, 77, "SPEED (PPS):", COLOR_DIM, COLOR_BG, 1);
+        tft.drawFastHLine(4, 102, SCREEN_W - 8, COLOR_PANEL);
+
+        drawString(5, 106, "ELAPSED TIME:", COLOR_DIM, COLOR_BG, 1);
+        tft.drawFastHLine(4, 130, SCREEN_W - 8, COLOR_PANEL);
+
+        drawString(5, 133, "STATUS: TRANSMITTING", COLOR_GREEN, COLOR_BG, 1);
 
         needFullRedraw = false;
     }
 
-    // Dynamic stats update (no flicker, drawing with explicit background color)
+    // Dynamic stats update (zero flicker, background erase)
     unsigned long elapsedSec = (millis() - attackStartTime) / 1000;
     unsigned int mins = elapsedSec / 60;
     unsigned int secs = elapsedSec % 60;
 
-    // Packets
-    tft.setCursor(95, 54);
+    // Packets Sent
+    tft.setCursor(7, 59);
     tft.setTextSize(1);
     tft.setTextColor(COLOR_GREEN, COLOR_BG);
-    tft.printf("%-7lu", packetCount);
+    tft.printf("%-12lu", packetCount);
 
-    // Speed
-    tft.setCursor(95, 76);
+    // Speed (PPS)
+    tft.setCursor(7, 88);
     tft.setTextColor(COLOR_CYAN, COLOR_BG);
-    tft.printf("%-7.1f", currentPps);
+    tft.printf("%-8.1f", currentPps);
 
     // Time
-    tft.setCursor(95, 98);
+    tft.setCursor(7, 117);
     tft.setTextColor(COLOR_TEXT, COLOR_BG);
-    tft.printf("%02u:%02u  ", mins, secs);
+    tft.printf("%02u:%02u mins  ", mins, secs);
 
-    // Animated Activity Blip
+    // Animated Activity Blip at top right
     static uint8_t blipFrame = 0;
     blipFrame = (blipFrame + 1) % 4;
     uint16_t blipCol = (blipFrame == 0) ? COLOR_RED : ((blipFrame == 1) ? COLOR_ORANGE : COLOR_GREEN);
-    tft.fillCircle(SCREEN_W - 14, 28, 3, blipCol);
+    tft.fillCircle(SCREEN_W - 10, 24, 3, blipCol);
 }
 
 static void renderBLEFlood() {
+    useSimpleFont();
     if (needFullRedraw) {
         tft.fillScreen(COLOR_BG);
-        drawHeader("BLE ADVERTISER SPAM", COLOR_CYAN);
-        drawFooter("[BACK] STOP BLE");
+        drawHeader("BLE FLOODER", COLOR_CYAN);
+        drawFooter("[BACK] Stop BLE");
 
-        tft.drawRoundRect(4, 18, SCREEN_W - 8, SCREEN_H - 33, 4, COLOR_PANEL);
+        tft.drawRoundRect(2, 16, SCREEN_W - 4, 128, 3, COLOR_PANEL);
 
-        drawString(8, 24, "PAYLOAD : Google FastPair", COLOR_TEXT, COLOR_BG, 1);
-        drawString(8, 38, "DEVICE  : Pixel Buds Pro", COLOR_CYAN, COLOR_BG, 1);
-        drawString(8, 52, "STATE   : TRANSMITTING", COLOR_GREEN, COLOR_BG, 1);
+        drawString(5, 20, "PAYLOAD: FastPair", COLOR_TEXT, COLOR_BG, 1);
+        drawString(5, 32, "DEVICE : Pixel Buds", COLOR_CYAN, COLOR_BG, 1);
+        drawString(5, 44, "STATUS : ACTIVE", COLOR_GREEN, COLOR_BG, 1);
 
-        tft.drawFastHLine(6, 68, SCREEN_W - 12, COLOR_PANEL);
+        tft.drawFastHLine(4, 56, SCREEN_W - 8, COLOR_PANEL);
 
-        drawString(8, 76, "BURSTS SENT :", COLOR_DIM, COLOR_BG, 1);
-        drawString(8, 94, "ACTIVE TIME :", COLOR_DIM, COLOR_BG, 1);
+        drawString(5, 62, "BURSTS SENT:", COLOR_DIM, COLOR_BG, 1);
+        tft.drawFastHLine(4, 88, SCREEN_W - 8, COLOR_PANEL);
+
+        drawString(5, 94, "ELAPSED TIME:", COLOR_DIM, COLOR_BG, 1);
+        tft.drawFastHLine(4, 120, SCREEN_W - 8, COLOR_PANEL);
+
+        drawString(5, 126, "BEACON : 2.4GHz BLE", COLOR_CYAN, COLOR_BG, 1);
 
         needFullRedraw = false;
     }
@@ -745,19 +779,19 @@ static void renderBLEFlood() {
     unsigned int mins = elapsedSec / 60;
     unsigned int secs = elapsedSec % 60;
 
-    tft.setCursor(95, 76);
+    tft.setCursor(7, 74);
     tft.setTextSize(1);
     tft.setTextColor(COLOR_GREEN, COLOR_BG);
-    tft.printf("%-7lu", packetCount);
+    tft.printf("%-12lu", packetCount);
 
-    tft.setCursor(95, 94);
+    tft.setCursor(7, 106);
     tft.setTextColor(COLOR_TEXT, COLOR_BG);
-    tft.printf("%02u:%02u  ", mins, secs);
+    tft.printf("%02u:%02u mins  ", mins, secs);
 
-    // Animated BLE icon
+    // Animated BLE icon pulse
     static uint8_t blePulse = 0;
     blePulse = (blePulse + 1) % 3;
-    tft.drawCircle(SCREEN_W - 16, 32, 2 + blePulse * 2, (blePulse == 0) ? COLOR_CYAN : COLOR_PANEL);
+    tft.drawCircle(SCREEN_W - 10, 24, 2 + blePulse * 2, (blePulse == 0) ? COLOR_CYAN : COLOR_PANEL);
 }
 
 // ==================================================
@@ -792,8 +826,11 @@ static int readJoystickStepY() {
 // ==================================================
 
 void radioAuditApp() {
-    // Switch to 160x128 Landscape for rich terminal display
-    tft.setRotation(1);
+    // 1. Standard Portrait / Vertical rotation (128x160) matching Home & Apps screens
+    tft.setRotation(0);
+
+    // 2. Clear any active custom fonts, use simple, small, crisp GFX default 5x7 font
+    useSimpleFont();
 
     pinMode(JOY_BTN, INPUT_PULLUP);
     pinMode(BTN_ENTER, INPUT_PULLUP);
@@ -972,6 +1009,6 @@ void radioAuditApp() {
     delay(50);
     WiFi.mode(WIFI_STA);
 
-    // Restore default portrait rotation for Home & Apps pages
+    // Restore portrait rotation for Home & Apps pages
     tft.setRotation(0);
 }
