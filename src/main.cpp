@@ -12,6 +12,7 @@
 #include "spotify/SpotifyApp.h"
 #include "lost_crown/LostCrownLoading.h"
 #include "lost_crown/LostCrownTitle.h"
+#include "hackk/HackingGoApp.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -196,9 +197,8 @@ void handleNavigation(JoyDirection dir) {
         currentFocus = FOCUS_PAGE2_AI;
         drawFocusHighlight(tft, currentFocus, true);
       } else if (dir == DIR_DOWN) {
-        // Col 2 on Row 1 is empty, move to nearest valid item: Calculator (Col 1)
         drawFocusHighlight(tft, currentFocus, false);
-        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        currentFocus = FOCUS_PAGE2_HACKING_GO;
         drawFocusHighlight(tft, currentFocus, true);
       }
     } else if (currentFocus == FOCUS_PAGE2_SPOTIFY) {
@@ -219,6 +219,20 @@ void handleNavigation(JoyDirection dir) {
       } else if (dir == DIR_LEFT) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_PAGE2_SPOTIFY;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_HACKING_GO;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_HACKING_GO) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_LOST_CROWN;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
         drawFocusHighlight(tft, currentFocus, true);
       }
     }
@@ -352,6 +366,29 @@ void enterCalculatorPlaceholder() {
   Serial.println("Placeholder Action: Enter Calculator App");
 }
 
+void exitHackingGo() {
+  clearButtonEvents();
+  currentScreen = STATE_HOME;
+
+  // Restore regular WiFi connection
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.setAutoReconnect(true);
+
+  // Select a new random quote!
+  selectRandomQuote();
+  lastQuoteChangeTime = millis();
+
+  // Restore active page layout
+  redrawCurrentAppsPage();
+}
+
+void enterHackingGo() {
+  clearButtonEvents();
+  currentScreen = STATE_HACKING_GO;
+  radioAuditApp();
+  exitHackingGo();
+}
+
 // Dispatches action based on the current focused menu item
 void handleCurrentSelection() {
   if (currentScreen == STATE_HOME) {
@@ -376,6 +413,9 @@ void handleCurrentSelection() {
         break;
       case FOCUS_PAGE2_CALCULATOR:
         enterCalculatorPlaceholder();
+        break;
+      case FOCUS_PAGE2_HACKING_GO:
+        enterHackingGo();
         break;
     }
   } else if (currentScreen == STATE_QUOTE) {
@@ -524,6 +564,8 @@ void loop() {
     } else {
       LostCrownTitle::update(tft);
     }
+  } else if (currentScreen == STATE_HACKING_GO) {
+    exitHackingGo();
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)
     if (isEnterPressed()) {

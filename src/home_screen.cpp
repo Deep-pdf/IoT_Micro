@@ -266,9 +266,10 @@ void drawAppsPage2(Adafruit_ST7735 &tft) {
   tft.drawRGBBitmap(48, 34, icon_gpt, 32, 32);
   tft.drawRGBBitmap(88, 34, icon_lostcrown, 32, 32);
 
-  // Row 1 (Y = 74): Spotify (X=8), Calculator (X=48)
+  // Row 1 (Y = 74): Spotify (X=8), Calculator (X=48), HackingGo (X=88)
   tft.drawRGBBitmap(8, 74, icon_spotify, 32, 32);
   tft.drawRGBBitmap(48, 74, icon_calculator, 32, 32);
+  tft.drawRGBBitmap(88, 74, icon_hackinggo, 32, 32);
 }
 
 void updateWiFiIconPage2(Adafruit_ST7735 &tft, bool connected) {
@@ -306,6 +307,7 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
     else if (element == FOCUS_PAGE2_LOST_CROWN) { x = 88; y = 34; }
     else if (element == FOCUS_PAGE2_SPOTIFY)    { x = 8;  y = 74; }
     else if (element == FOCUS_PAGE2_CALCULATOR) { x = 48; y = 74; }
+    else if (element == FOCUS_PAGE2_HACKING_GO) { x = 88; y = 74; }
 
     uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
     tft.drawRect(x - 2, y - 2, 36, 36, color);

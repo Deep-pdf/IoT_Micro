@@ -23,7 +23,8 @@ enum ScreenState {
   STATE_AI,
   STATE_SPOTIFY,
   STATE_LOST_CROWN_LOADING,
-  STATE_LOST_CROWN_TITLE
+  STATE_LOST_CROWN_TITLE,
+  STATE_HACKING_GO
 };
 
 // Sub-pages for Apps / Home Screen
@@ -45,7 +46,8 @@ enum FocusedElement {
   FOCUS_PAGE2_AI         = 5,
   FOCUS_PAGE2_LOST_CROWN = 6,
   FOCUS_PAGE2_SPOTIFY    = 7,
-  FOCUS_PAGE2_CALCULATOR = 8
+  FOCUS_PAGE2_CALCULATOR = 8,
+  FOCUS_PAGE2_HACKING_GO = 9
 };
 
 // Draws the static home screen elements in landscape orientation (Rotation 1)
