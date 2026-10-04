@@ -12,7 +12,7 @@
 #include "spotify/SpotifyApp.h"
 #include "lost_crown/LostCrownLoading.h"
 #include "lost_crown/LostCrownTitle.h"
-#include "hackk/HackingGoApp.h"
+#include "hackk/HackkApp.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -46,7 +46,7 @@ enum JoyDirection {
   DIR_RIGHT
 };
 
-// Redraws the current active apps page (Page 1 or Page 2)
+
 void redrawCurrentAppsPage() {
   if (currentAppsPage == APPS_PAGE_2) {
     drawAppsPage2(tft);
@@ -366,6 +366,17 @@ void enterCalculatorPlaceholder() {
   Serial.println("Placeholder Action: Enter Calculator App");
 }
 
+void enterHackingGo() {
+  clearButtonEvents();
+  currentScreen = STATE_HACKING_GO;
+
+  // Disconnect regular WiFi — the deauth subsystem will take over the radio
+  WiFi.disconnect(true);
+  WiFi.setAutoReconnect(false);
+
+  HackkApp::init(tft);
+}
+
 void exitHackingGo() {
   clearButtonEvents();
   currentScreen = STATE_HOME;
@@ -380,13 +391,6 @@ void exitHackingGo() {
 
   // Restore active page layout
   redrawCurrentAppsPage();
-}
-
-void enterHackingGo() {
-  clearButtonEvents();
-  currentScreen = STATE_HACKING_GO;
-  radioAuditApp();
-  exitHackingGo();
 }
 
 // Dispatches action based on the current focused menu item
@@ -551,6 +555,11 @@ void loop() {
     if (SpotifyApp::shouldExit()) {
       exitSpotify();
     }
+  } else if (currentScreen == STATE_HACKING_GO) {
+    HackkApp::update(tft);
+    if (HackkApp::shouldExit()) {
+      exitHackingGo();
+    }
   } else if (currentScreen == STATE_LOST_CROWN_LOADING) {
     if (isBackPressed()) {
       exitLostCrownLoading();
@@ -564,10 +573,9 @@ void loop() {
     } else {
       LostCrownTitle::update(tft);
     }
-  } else if (currentScreen == STATE_HACKING_GO) {
-    exitHackingGo();
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)
+
     if (isEnterPressed()) {
       handleCurrentSelection();
     }
