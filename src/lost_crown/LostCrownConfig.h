@@ -141,4 +141,17 @@ static constexpr int16_t  LC_VEERA_MAX_X            = 92; // 128 - 36
 static constexpr int16_t  LC_VEERA_SPAWN_X          = 46;
 static constexpr int16_t  LC_VEERA_SPAWN_Y          = 102; // Feet anchored to y=135
 
+// ===== JUMPING CONFIGURATION =====
+// Joystick UP threshold to trigger jump (analog 0..4095, typically < 1000 when pushed UP)
+static constexpr int      LC_JOYSTICK_UP_THRESHOLD   = 1200;
+
+// Jump physics parameters
+static constexpr float    LC_JUMP_FORCE              = 0.20f;    // Initial upward velocity (pixels/ms)
+static constexpr float    LC_GRAVITY                 = 0.00072f; // Downward acceleration (pixels/ms^2)
+static constexpr float    LC_JUMP_HORIZONTAL_SPEED   = 0.055f;   // Horizontal speed during diagonal jump (pixels/ms)
+
+// Animation timing for jump frames (millis per frame during jump)
+static constexpr uint32_t LC_JUMP_FRAME_TIME_MS      = 140;
+
+
 

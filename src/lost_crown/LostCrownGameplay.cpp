@@ -5,11 +5,16 @@
  *
  * Features:
  *  - 128x160 Static Training Ground background drawn once on begin().
- *  - Veera Idle and 6-frame running cycle (run1 -> run2 -> ... -> run6 -> repeat).
- *  - Clean non-blocking millis() animation timing (RUN_FRAME_TIME).
- *  - Analog joystick horizontal control with deadzone filtering.
- *  - Real-time horizontal mirroring when facing LEFT.
- *  - Guaranteed foot anchoring to the grass ground line.
+ *  - Veera Idle (Veera_IDLE) and 5-frame running cycle (run1 -> run2 -> ... -> run5 -> repeat).
+ *  - Veera 3-frame jumping animation (jump1 -> jump2 -> jump3).
+ *  - Full 2D platformer jump physics:
+ *      - Vertical jump on UP
+ *      - Diagonal jump on UP + LEFT / UP + RIGHT with horizontal momentum
+ *      - Gravity and vertical velocity integration with smooth parabolic arc
+ *      - Automatic landing and transition to IDLE or RUNNING
+ *      - No double jump while airborne
+ *  - Real-time horizontal mirroring when facing LEFT (runs and jumps).
+ *  - Guaranteed foot anchoring to the grass ground line across all animations.
  *  - Zero-flicker dirty-rectangle background restoration and transparent sprite composition.
  */
 
@@ -27,22 +32,29 @@ namespace LostCrownGameplay {
 static float          veeraX               = LC_VEERA_SPAWN_X;
 static float          veeraY               = LC_VEERA_SPAWN_Y;
 
-static int16_t        prevRenderX          = -999;
-static int16_t        prevRenderY          = -999;
-static VeeraState     prevRenderState      = (VeeraState)255;
-static VeeraDirection prevRenderDirection  = (VeeraDirection)255;
-static uint8_t        prevRenderFrame      = 255;
+static float          velocityX            = 0.0f;
+static float          velocityY            = 0.0f;
+static bool           isGroundedState      = true;
+
+static int16_t        prevBoxX             = -999;
+static int16_t        prevBoxY             = -999;
+static int16_t        prevBoxW             = 0;
+static int16_t        prevBoxH             = 0;
 
 static VeeraState     currentState         = VEERA_STATE_IDLE;
 static VeeraDirection currentDirection     = VEERA_DIR_RIGHT;
 static uint8_t        currentRunFrame      = 0;
+static uint8_t        currentJumpFrame     = 0;
 
 static uint32_t       lastAnimTick         = 0;
 static uint32_t       lastPhysicsTick      = 0;
 
-// RAM buffer for zero-flicker composite rendering (36 x 34 = 1,224 words = 2,448 bytes)
-static uint16_t       spriteCompositeBuffer[VEERA_SPRITE_W * VEERA_SPRITE_H];
-static uint16_t       stripBuffer[VEERA_SPRITE_W * VEERA_SPRITE_H];
+// Maximum dimensions among all sprites (Jump is 38 x 42 = 1,596 words = 3,192 bytes)
+static constexpr int16_t MAX_SPRITE_W = VEERA_JUMP_SPRITE_W;
+static constexpr int16_t MAX_SPRITE_H = VEERA_JUMP_SPRITE_H;
+
+static uint16_t       spriteCompositeBuffer[MAX_SPRITE_W * MAX_SPRITE_H];
+static uint16_t       stripBuffer[MAX_SPRITE_W * MAX_SPRITE_H];
 
 // ─── Background & Sprite Rendering Helpers ───────────────────────────────────
 
@@ -72,17 +84,60 @@ static void restoreBackgroundRect(Adafruit_ST7735 &tft, int16_t rx, int16_t ry, 
   tft.drawRGBBitmap(x0, y0, stripBuffer, w, h);
 }
 
-static void renderVeeraComposite(Adafruit_ST7735 &tft, int16_t currX, int16_t currY) {
-  // Select active sprite frame
-  const uint16_t *frameData = (currentState == VEERA_STATE_IDLE)
-                                ? veera_idle_pixels
-                                : veera_run_frames[currentRunFrame];
+static void drawVeera(Adafruit_ST7735 &tft) {
+  int16_t currX = (int16_t)roundf(veeraX);
+  int16_t currY = (int16_t)roundf(veeraY);
 
-  // Composite sprite over the background in local RAM buffer
-  for (int16_t r = 0; r < VEERA_SPRITE_H; r++) {
-    int16_t py = currY + r;
-    for (int16_t c = 0; c < VEERA_SPRITE_W; c++) {
-      int16_t px = currX + c;
+  int16_t spriteW;
+  int16_t spriteH;
+  int16_t drawX;
+  int16_t drawY;
+  const uint16_t *frameData;
+
+  if (currentState == VEERA_STATE_JUMPING) {
+    spriteW   = VEERA_JUMP_SPRITE_W;
+    spriteH   = VEERA_JUMP_SPRITE_H;
+    drawX     = currX + VEERA_JUMP_OFFSET_X;
+    drawY     = currY + VEERA_JUMP_OFFSET_Y;
+    frameData = veera_jump_frames[currentJumpFrame];
+  } else if (currentState == VEERA_STATE_RUNNING) {
+    spriteW   = VEERA_SPRITE_W;
+    spriteH   = VEERA_SPRITE_H;
+    drawX     = currX;
+    drawY     = currY;
+    frameData = veera_run_frames[currentRunFrame];
+  } else {
+    // VEERA_STATE_IDLE
+    spriteW   = VEERA_SPRITE_W;
+    spriteH   = VEERA_SPRITE_H;
+    drawX     = currX;
+    drawY     = currY;
+    frameData = veera_idle_pixels;
+  }
+
+  // 1. Clean previous frame area to eliminate trails and ghosting
+  if (prevBoxX != -999) {
+    if (drawY == prevBoxY && spriteW == prevBoxW && spriteH == prevBoxH) {
+      // Ground running at same Y: single sliver dirty-rectangle optimization
+      if (drawX > prevBoxX) {
+        int16_t uncoveredW = drawX - prevBoxX;
+        restoreBackgroundRect(tft, prevBoxX, prevBoxY, uncoveredW, prevBoxH);
+      } else if (drawX < prevBoxX) {
+        int16_t uncoveredX = drawX + spriteW;
+        int16_t uncoveredW = prevBoxX - drawX;
+        restoreBackgroundRect(tft, uncoveredX, prevBoxY, uncoveredW, prevBoxH);
+      }
+    } else {
+      // Airborne jumping, landing, or sprite dimension shift: restore previous bounding box
+      restoreBackgroundRect(tft, prevBoxX, prevBoxY, prevBoxW, prevBoxH);
+    }
+  }
+
+  // 2. Composite sprite over background in local RAM buffer
+  for (int16_t r = 0; r < spriteH; r++) {
+    int16_t py = drawY + r;
+    for (int16_t c = 0; c < spriteW; c++) {
+      int16_t px = drawX + c;
 
       // Sample background pixel
       uint16_t bgPixel = 0x0000;
@@ -91,50 +146,26 @@ static void renderVeeraComposite(Adafruit_ST7735 &tft, int16_t currX, int16_t cu
       }
 
       // Sample sprite pixel with horizontal flip if facing left
-      int16_t sc = (currentDirection == VEERA_DIR_LEFT) ? (VEERA_SPRITE_W - 1 - c) : c;
-      uint16_t spritePixel = pgm_read_word(&frameData[r * VEERA_SPRITE_W + sc]);
+      int16_t sc = (currentDirection == VEERA_DIR_LEFT) ? (spriteW - 1 - c) : c;
+      uint16_t spritePixel = pgm_read_word(&frameData[r * spriteW + sc]);
 
       // Transparent keying
       if (spritePixel != VEERA_TRANSPARENT_COLOR) {
-        spriteCompositeBuffer[r * VEERA_SPRITE_W + c] = spritePixel;
+        spriteCompositeBuffer[r * spriteW + c] = spritePixel;
       } else {
-        spriteCompositeBuffer[r * VEERA_SPRITE_W + c] = bgPixel;
+        spriteCompositeBuffer[r * spriteW + c] = bgPixel;
       }
     }
   }
 
-  // Blit the composited buffer in a single hardware transaction
-  tft.drawRGBBitmap(currX, currY, spriteCompositeBuffer, VEERA_SPRITE_W, VEERA_SPRITE_H);
+  // 3. Blit the composited buffer in a single hardware transaction
+  tft.drawRGBBitmap(drawX, drawY, spriteCompositeBuffer, spriteW, spriteH);
 
-  // Update render cache
-  prevRenderX         = currX;
-  prevRenderY         = currY;
-  prevRenderState     = currentState;
-  prevRenderDirection = currentDirection;
-  prevRenderFrame     = currentRunFrame;
-}
-
-static void drawVeera(Adafruit_ST7735 &tft) {
-  int16_t currX = (int16_t)roundf(veeraX);
-  int16_t currY = (int16_t)roundf(veeraY);
-
-  if (prevRenderX != -999) {
-    if (currY != prevRenderY) {
-      // Y changed (for future jumps/falls): restore full previous box
-      restoreBackgroundRect(tft, prevRenderX, prevRenderY, VEERA_SPRITE_W, VEERA_SPRITE_H);
-    } else if (currX > prevRenderX) {
-      // Moved right: restore only the uncovered sliver on the left
-      int16_t uncoveredW = currX - prevRenderX;
-      restoreBackgroundRect(tft, prevRenderX, prevRenderY, uncoveredW, VEERA_SPRITE_H);
-    } else if (currX < prevRenderX) {
-      // Moved left: restore only the uncovered sliver on the right
-      int16_t uncoveredX = currX + VEERA_SPRITE_W;
-      int16_t uncoveredW = prevRenderX - currX;
-      restoreBackgroundRect(tft, uncoveredX, prevRenderY, uncoveredW, VEERA_SPRITE_H);
-    }
-  }
-
-  renderVeeraComposite(tft, currX, currY);
+  // 4. Update previous render tracking
+  prevBoxX = drawX;
+  prevBoxY = drawY;
+  prevBoxW = spriteW;
+  prevBoxH = spriteH;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -146,14 +177,17 @@ void begin(Adafruit_ST7735 &tft) {
   // 2. Set Veera's starting position and state
   veeraX              = LC_VEERA_SPAWN_X;
   veeraY              = LC_VEERA_SPAWN_Y;
+  velocityX           = 0.0f;
+  velocityY           = 0.0f;
+  isGroundedState     = true;
   currentState        = VEERA_STATE_IDLE;
   currentDirection    = VEERA_DIR_RIGHT;
   currentRunFrame     = 0;
-  prevRenderX         = -999;
-  prevRenderY         = -999;
-  prevRenderState     = (VeeraState)255;
-  prevRenderDirection = (VeeraDirection)255;
-  prevRenderFrame     = 255;
+  currentJumpFrame    = 0;
+  prevBoxX            = -999;
+  prevBoxY            = -999;
+  prevBoxW            = 0;
+  prevBoxH            = 0;
 
   uint32_t now        = millis();
   lastAnimTick        = now;
@@ -171,69 +205,160 @@ void update(Adafruit_ST7735 &tft) {
 
   // 1. Read joystick input
   int vrx = analogRead(JOY_X);
+  int vry = analogRead(JOY_Y);
 
   bool needsRedraw = false;
   VeeraState oldState = currentState;
   VeeraDirection oldDir = currentDirection;
+  uint8_t oldRunFrame = currentRunFrame;
+  uint8_t oldJumpFrame = currentJumpFrame;
+  int16_t oldPixelX = (int16_t)roundf(veeraX);
+  int16_t oldPixelY = (int16_t)roundf(veeraY);
 
-  // 2. Process horizontal movement & dead zone
-  if (vrx > LC_JOYSTICK_DEADZONE_HIGH) {
-    // Joystick RIGHT: Move right, running animation
-    currentState = VEERA_STATE_RUNNING;
-    currentDirection = VEERA_DIR_RIGHT;
+  // 2. Process Jump Trigger (Only when grounded)
+  bool isUpPushed = (vry < LC_JOYSTICK_UP_THRESHOLD);
 
-    float dx = LC_VEERA_MOVE_SPEED * (float)dt;
-    veeraX += dx;
+  if (isGroundedState && isUpPushed) {
+    // Jump initiates!
+    isGroundedState = false;
+    currentState = VEERA_STATE_JUMPING;
+    velocityY = -LC_JUMP_FORCE;
+    currentJumpFrame = 0;
+    lastAnimTick = now;
+
+    // Determine jump horizontal direction (vertical vs diagonal)
+    if (vrx > LC_JOYSTICK_DEADZONE_HIGH) {
+      // UP + RIGHT: diagonal jump right
+      velocityX = LC_JUMP_HORIZONTAL_SPEED;
+      currentDirection = VEERA_DIR_RIGHT;
+    } else if (vrx < LC_JOYSTICK_DEADZONE_LOW) {
+      // UP + LEFT: diagonal jump left
+      velocityX = -LC_JUMP_HORIZONTAL_SPEED;
+      currentDirection = VEERA_DIR_LEFT;
+    } else {
+      // Straight UP: vertical jump
+      velocityX = 0.0f;
+    }
+  }
+
+  // 3. Update Physics & States
+  if (!isGroundedState) {
+    // ─── AIRBORNE STATE ──────────────────────────────────────────────────────
+    currentState = VEERA_STATE_JUMPING;
+
+    // Apply horizontal velocity
+    veeraX += velocityX * (float)dt;
+
+    // Apply gravity to vertical velocity
+    velocityY += LC_GRAVITY * (float)dt;
+    veeraY += velocityY * (float)dt;
+
+    // Jump animation frame mapping (takeoff -> apex/peak -> falling)
+    if (velocityY < -0.05f) {
+      currentJumpFrame = 0; // jump1: takeoff / rising
+    } else if (velocityY < 0.05f) {
+      currentJumpFrame = 1; // jump2: ascending peak / apex
+    } else {
+      currentJumpFrame = 2; // jump3: falling / preparing to land
+    }
+
+    // Clamp horizontal position within playable screen
     if (veeraX > (float)LC_VEERA_MAX_X) {
       veeraX = (float)LC_VEERA_MAX_X;
     }
-  } else if (vrx < LC_JOYSTICK_DEADZONE_LOW) {
-    // Joystick LEFT: Move left, mirrored running animation
-    currentState = VEERA_STATE_RUNNING;
-    currentDirection = VEERA_DIR_LEFT;
-
-    float dx = LC_VEERA_MOVE_SPEED * (float)dt;
-    veeraX -= dx;
     if (veeraX < (float)LC_VEERA_MIN_X) {
       veeraX = (float)LC_VEERA_MIN_X;
     }
+
+    // Ground collision check
+    if (veeraY >= (float)LC_VEERA_SPAWN_Y) {
+      // LANDING ON GROUND!
+      veeraY = (float)LC_VEERA_SPAWN_Y;
+      velocityY = 0.0f;
+      velocityX = 0.0f;
+      isGroundedState = true;
+
+      // Automatically transition to RUNNING or IDLE based on joystick
+      if (vrx > LC_JOYSTICK_DEADZONE_HIGH) {
+        currentState = VEERA_STATE_RUNNING;
+        currentDirection = VEERA_DIR_RIGHT;
+        currentRunFrame = 0;
+      } else if (vrx < LC_JOYSTICK_DEADZONE_LOW) {
+        currentState = VEERA_STATE_RUNNING;
+        currentDirection = VEERA_DIR_LEFT;
+        currentRunFrame = 0;
+      } else {
+        currentState = VEERA_STATE_IDLE;
+        currentRunFrame = 0;
+      }
+    }
   } else {
-    // Joystick CENTER: Idle state, stop movement immediately
-    currentState = VEERA_STATE_IDLE;
+    // ─── GROUNDED STATE ──────────────────────────────────────────────────────
+    // Ground horizontal movement & dead zone
+    if (vrx > LC_JOYSTICK_DEADZONE_HIGH) {
+      // Joystick RIGHT: Move right, running animation
+      currentState = VEERA_STATE_RUNNING;
+      currentDirection = VEERA_DIR_RIGHT;
+
+      float dx = LC_VEERA_MOVE_SPEED * (float)dt;
+      veeraX += dx;
+      if (veeraX > (float)LC_VEERA_MAX_X) {
+        veeraX = (float)LC_VEERA_MAX_X;
+      }
+    } else if (vrx < LC_JOYSTICK_DEADZONE_LOW) {
+      // Joystick LEFT: Move left, mirrored running animation
+      currentState = VEERA_STATE_RUNNING;
+      currentDirection = VEERA_DIR_LEFT;
+
+      float dx = LC_VEERA_MOVE_SPEED * (float)dt;
+      veeraX -= dx;
+      if (veeraX < (float)LC_VEERA_MIN_X) {
+        veeraX = (float)LC_VEERA_MIN_X;
+      }
+    } else {
+      // Joystick CENTER: Idle state, stop movement immediately
+      currentState = VEERA_STATE_IDLE;
+    }
+
+    // Running animation frame advancement
+    if (currentState == VEERA_STATE_RUNNING) {
+      if (now - lastAnimTick >= LC_RUN_FRAME_TIME_MS) {
+        lastAnimTick = now;
+        currentRunFrame = (currentRunFrame + 1) % VEERA_RUN_FRAME_COUNT;
+      }
+    }
   }
 
-  // 3. Handle state transitions
+  // 4. State transition handling
   if (currentState != oldState) {
+    needsRedraw = true;
     if (currentState == VEERA_STATE_IDLE) {
       currentRunFrame = 0;
-    } else {
+    } else if (currentState == VEERA_STATE_RUNNING && oldState != VEERA_STATE_RUNNING) {
       currentRunFrame = 0;
       lastAnimTick = now;
     }
-    needsRedraw = true;
   }
 
   if (currentDirection != oldDir) {
     needsRedraw = true;
   }
 
-  // 4. Update running animation timer (millis-based)
-  if (currentState == VEERA_STATE_RUNNING) {
-    if (now - lastAnimTick >= LC_RUN_FRAME_TIME_MS) {
-      lastAnimTick = now;
-      currentRunFrame = (currentRunFrame + 1) % VEERA_RUN_FRAME_COUNT;
-      needsRedraw = true;
-    }
-  }
-
-  // 5. Check if pixel position changed
-  int16_t currPixelX = (int16_t)roundf(veeraX);
-  int16_t currPixelY = (int16_t)roundf(veeraY);
-  if (currPixelX != prevRenderX || currPixelY != prevRenderY) {
+  if (currentState == VEERA_STATE_RUNNING && currentRunFrame != oldRunFrame) {
     needsRedraw = true;
   }
 
-  // 6. Redraw only when needed
+  if (currentState == VEERA_STATE_JUMPING && currentJumpFrame != oldJumpFrame) {
+    needsRedraw = true;
+  }
+
+  int16_t newPixelX = (int16_t)roundf(veeraX);
+  int16_t newPixelY = (int16_t)roundf(veeraY);
+  if (newPixelX != oldPixelX || newPixelY != oldPixelY) {
+    needsRedraw = true;
+  }
+
+  // 5. Redraw only when visual state or position changed
   if (needsRedraw) {
     drawVeera(tft);
   }
@@ -242,11 +367,17 @@ void update(Adafruit_ST7735 &tft) {
 void reset() {
   veeraX           = LC_VEERA_SPAWN_X;
   veeraY           = LC_VEERA_SPAWN_Y;
+  velocityX        = 0.0f;
+  velocityY        = 0.0f;
+  isGroundedState  = true;
   currentState     = VEERA_STATE_IDLE;
   currentDirection = VEERA_DIR_RIGHT;
   currentRunFrame  = 0;
-  prevRenderX      = -999;
-  prevRenderY      = -999;
+  currentJumpFrame = 0;
+  prevBoxX         = -999;
+  prevBoxY         = -999;
+  prevBoxW         = 0;
+  prevBoxH         = 0;
 }
 
 VeeraState getState() {
@@ -255,6 +386,10 @@ VeeraState getState() {
 
 VeeraDirection getDirection() {
   return currentDirection;
+}
+
+bool isGrounded() {
+  return isGroundedState;
 }
 
 float getPositionX() {

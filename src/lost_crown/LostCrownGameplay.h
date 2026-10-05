@@ -15,7 +15,8 @@ namespace LostCrownGameplay {
   // Veera character animation/behavior states
   enum VeeraState {
     VEERA_STATE_IDLE = 0,
-    VEERA_STATE_RUNNING
+    VEERA_STATE_RUNNING,
+    VEERA_STATE_JUMPING
   };
 
   // Horizontal facing direction
@@ -36,6 +37,7 @@ namespace LostCrownGameplay {
   // Accessors for state inspection
   VeeraState getState();
   VeeraDirection getDirection();
+  bool isGrounded();
   float getPositionX();
   float getPositionY();
 
