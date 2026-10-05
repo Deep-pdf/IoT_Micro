@@ -38,6 +38,9 @@ namespace LostCrownGameplay {
   VeeraState getState();
   VeeraDirection getDirection();
   bool isGrounded();
+  bool isAttacking();
+  uint8_t getAttackFrame();
+  bool isAttackHitboxActive();
   float getPositionX();
   float getPositionY();
 

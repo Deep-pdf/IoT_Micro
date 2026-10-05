@@ -153,5 +153,9 @@ static constexpr float    LC_JUMP_HORIZONTAL_SPEED   = 0.055f;   // Horizontal s
 // Animation timing for jump frames (millis per frame during jump)
 static constexpr uint32_t LC_JUMP_FRAME_TIME_MS      = 140;
 
+// ===== ATTACK CONFIGURATION =====
+// Animation timing (millis per attack frame, ~240 ms total for 4-frame sword attack)
+static constexpr uint32_t LC_ATTACK_FRAME_TIME_MS    = 60;
+
 
 

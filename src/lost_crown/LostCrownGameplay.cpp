@@ -6,7 +6,7 @@
  * Features:
  *  - 128x160 Static Training Ground background drawn once on begin().
  *  - Veera Idle (Veera_IDLE) and 5-frame running cycle (run1 -> run2 -> ... -> run5 -> repeat).
- *  - Veera 3-frame jumping animation (jump1 -> jump2 -> jump3).
+ *  - Veera 3-frame jumping animation (jump1 -> jump2 -> jump3), size-matched to Idle.
  *  - Full 2D platformer jump physics:
  *      - Vertical jump on UP
  *      - Diagonal jump on UP + LEFT / UP + RIGHT with horizontal momentum
@@ -15,12 +15,13 @@
  *      - No double jump while airborne
  *  - Real-time horizontal mirroring when facing LEFT (runs and jumps).
  *  - Guaranteed foot anchoring to the grass ground line across all animations.
- *  - Zero-flicker dirty-rectangle background restoration and transparent sprite composition.
+ *  - 100% flicker-free differential background restoration and transparent sprite composition.
  */
 
 #include "LostCrownGameplay.h"
 #include "LostCrownGameAssets.h"
 #include "LostCrownConfig.h"
+#include "button.h"
 #include <Adafruit_GFX.h>
 
 #define JOY_X 34
@@ -46,15 +47,17 @@ static VeeraDirection currentDirection     = VEERA_DIR_RIGHT;
 static uint8_t        currentRunFrame      = 0;
 static uint8_t        currentJumpFrame     = 0;
 
+// Attack Action State
+static bool           isAttackingState     = false;
+static uint8_t        currentAttackFrame   = 0;
+static uint32_t       lastAttackTick       = 0;
+
 static uint32_t       lastAnimTick         = 0;
 static uint32_t       lastPhysicsTick      = 0;
 
-// Maximum dimensions among all sprites (Jump is 38 x 42 = 1,596 words = 3,192 bytes)
-static constexpr int16_t MAX_SPRITE_W = VEERA_JUMP_SPRITE_W;
-static constexpr int16_t MAX_SPRITE_H = VEERA_JUMP_SPRITE_H;
-
-static uint16_t       spriteCompositeBuffer[MAX_SPRITE_W * MAX_SPRITE_H];
-static uint16_t       stripBuffer[MAX_SPRITE_W * MAX_SPRITE_H];
+// RAM buffer for zero-flicker composite rendering (max dimensions: 58 x 46 = 2,668 words = 5,336 bytes)
+static uint16_t       spriteCompositeBuffer[VEERA_ATTACK_SPRITE_W * VEERA_ATTACK_SPRITE_H];
+static uint16_t       stripBuffer[VEERA_ATTACK_SPRITE_W * VEERA_ATTACK_SPRITE_H];
 
 // ─── Background & Sprite Rendering Helpers ───────────────────────────────────
 
@@ -94,42 +97,66 @@ static void drawVeera(Adafruit_ST7735 &tft) {
   int16_t drawY;
   const uint16_t *frameData;
 
-  if (currentState == VEERA_STATE_JUMPING) {
-    spriteW   = VEERA_JUMP_SPRITE_W;
-    spriteH   = VEERA_JUMP_SPRITE_H;
-    drawX     = currX + VEERA_JUMP_OFFSET_X;
-    drawY     = currY + VEERA_JUMP_OFFSET_Y;
+  // Visual Priority: When attacking, render attack frame with normalized character anchor
+  if (isAttackingState) {
+    spriteW = VEERA_ATTACK_SPRITE_W;
+    spriteH = VEERA_ATTACK_SPRITE_H;
+    if (currentDirection == VEERA_DIR_RIGHT) {
+      drawX = currX - VEERA_ATTACK_OFFSET_X_RIGHT;
+    } else {
+      drawX = currX - VEERA_ATTACK_OFFSET_X_LEFT;
+    }
+    drawY = currY - VEERA_ATTACK_OFFSET_Y;
+    frameData = veera_attack_frames[currentAttackFrame];
+  } else if (currentState == VEERA_STATE_JUMPING) {
+    spriteW = VEERA_SPRITE_W;
+    spriteH = VEERA_SPRITE_H;
+    drawX = currX;
+    drawY = currY;
     frameData = veera_jump_frames[currentJumpFrame];
   } else if (currentState == VEERA_STATE_RUNNING) {
-    spriteW   = VEERA_SPRITE_W;
-    spriteH   = VEERA_SPRITE_H;
-    drawX     = currX;
-    drawY     = currY;
+    spriteW = VEERA_SPRITE_W;
+    spriteH = VEERA_SPRITE_H;
+    drawX = currX;
+    drawY = currY;
     frameData = veera_run_frames[currentRunFrame];
   } else {
-    // VEERA_STATE_IDLE
-    spriteW   = VEERA_SPRITE_W;
-    spriteH   = VEERA_SPRITE_H;
-    drawX     = currX;
-    drawY     = currY;
+    spriteW = VEERA_SPRITE_W;
+    spriteH = VEERA_SPRITE_H;
+    drawX = currX;
+    drawY = currY;
     frameData = veera_idle_pixels;
   }
 
-  // 1. Clean previous frame area to eliminate trails and ghosting
+  // 1. Clean ONLY the vacated slivers of the previous frame (zero-flicker differential restoration)
   if (prevBoxX != -999) {
-    if (drawY == prevBoxY && spriteW == prevBoxW && spriteH == prevBoxH) {
-      // Ground running at same Y: single sliver dirty-rectangle optimization
-      if (drawX > prevBoxX) {
-        int16_t uncoveredW = drawX - prevBoxX;
-        restoreBackgroundRect(tft, prevBoxX, prevBoxY, uncoveredW, prevBoxH);
-      } else if (drawX < prevBoxX) {
-        int16_t uncoveredX = drawX + spriteW;
-        int16_t uncoveredW = prevBoxX - drawX;
-        restoreBackgroundRect(tft, uncoveredX, prevBoxY, uncoveredW, prevBoxH);
-      }
-    } else {
-      // Airborne jumping, landing, or sprite dimension shift: restore previous bounding box
+    if (spriteW != prevBoxW || spriteH != prevBoxH || abs(drawX - prevBoxX) >= prevBoxW || abs(drawY - prevBoxY) >= prevBoxH) {
+      // Dimension shift (transition between attack & movement) or large displacement: restore entire previous box
       restoreBackgroundRect(tft, prevBoxX, prevBoxY, prevBoxW, prevBoxH);
+    } else if (drawX != prevBoxX || drawY != prevBoxY) {
+      int16_t dx = drawX - prevBoxX;
+      int16_t dy = drawY - prevBoxY;
+
+      // Vertical vacated strip
+      if (dy > 0) {
+        // Moved down: top of prevBox was vacated
+        restoreBackgroundRect(tft, prevBoxX, prevBoxY, prevBoxW, dy);
+      } else if (dy < 0) {
+        // Moved up: bottom of prevBox was vacated
+        restoreBackgroundRect(tft, prevBoxX, drawY + spriteH, prevBoxW, -dy);
+      }
+
+      // Horizontal vacated strip for the remaining Y overlap
+      int16_t remY = (dy > 0) ? drawY : prevBoxY;
+      int16_t remH = prevBoxH - abs(dy);
+
+      if (dx > 0) {
+        // Moved right: left of prevBox was vacated
+        restoreBackgroundRect(tft, prevBoxX, remY, dx, remH);
+      } else if (dx < 0) {
+        // Moved left: right of prevBox was vacated
+        restoreBackgroundRect(tft, drawX + spriteW, remY, -dx, remH);
+      }
     }
   }
 
@@ -158,8 +185,30 @@ static void drawVeera(Adafruit_ST7735 &tft) {
     }
   }
 
-  // 3. Blit the composited buffer in a single hardware transaction
-  tft.drawRGBBitmap(drawX, drawY, spriteCompositeBuffer, spriteW, spriteH);
+  // 3. Clip-safe blit to hardware TFT (atomic character update, no flashing, no screen-edge wrap)
+  int16_t x0 = (drawX < 0) ? 0 : drawX;
+  int16_t y0 = (drawY < 0) ? 0 : drawY;
+  int16_t x1 = drawX + spriteW;
+  int16_t y1 = drawY + spriteH;
+  if (x1 > LC_BG_W) x1 = LC_BG_W;
+  if (y1 > LC_BG_H) y1 = LC_BG_H;
+
+  int16_t blitW = x1 - x0;
+  int16_t blitH = y1 - y0;
+
+  if (blitW > 0 && blitH > 0) {
+    if (blitW == spriteW && blitH == spriteH) {
+      tft.drawRGBBitmap(drawX, drawY, spriteCompositeBuffer, spriteW, spriteH);
+    } else {
+      // Partial sub-rectangle when sprite crosses display boundary
+      for (int16_t r = 0; r < blitH; r++) {
+        int16_t srcR = (y0 - drawY) + r;
+        int16_t srcC = (x0 - drawX);
+        memcpy(&stripBuffer[r * blitW], &spriteCompositeBuffer[srcR * spriteW + srcC], blitW * sizeof(uint16_t));
+      }
+      tft.drawRGBBitmap(x0, y0, stripBuffer, blitW, blitH);
+    }
+  }
 
   // 4. Update previous render tracking
   prevBoxX = drawX;
@@ -184,6 +233,8 @@ void begin(Adafruit_ST7735 &tft) {
   currentDirection    = VEERA_DIR_RIGHT;
   currentRunFrame     = 0;
   currentJumpFrame    = 0;
+  isAttackingState    = false;
+  currentAttackFrame  = 0;
   prevBoxX            = -999;
   prevBoxY            = -999;
   prevBoxW            = 0;
@@ -192,6 +243,7 @@ void begin(Adafruit_ST7735 &tft) {
   uint32_t now        = millis();
   lastAnimTick        = now;
   lastPhysicsTick     = now;
+  lastAttackTick      = now;
 
   // 3. Render initial Veera IDLE sprite
   drawVeera(tft);
@@ -203,19 +255,47 @@ void update(Adafruit_ST7735 &tft) {
   if (dt > 100) dt = 100; // Cap large frame jumps
   lastPhysicsTick = now;
 
-  // 1. Read joystick input
+  // 1. Read joystick & enter button inputs
   int vrx = analogRead(JOY_X);
   int vry = analogRead(JOY_Y);
+  bool enterHit = isEnterPressed();
 
   bool needsRedraw = false;
   VeeraState oldState = currentState;
   VeeraDirection oldDir = currentDirection;
   uint8_t oldRunFrame = currentRunFrame;
   uint8_t oldJumpFrame = currentJumpFrame;
+  bool oldAttacking = isAttackingState;
+  uint8_t oldAttackFrame = currentAttackFrame;
   int16_t oldPixelX = (int16_t)roundf(veeraX);
   int16_t oldPixelY = (int16_t)roundf(veeraY);
 
-  // 2. Process Jump Trigger (Only when grounded)
+  // 2. Process Attack Trigger (ENTER button edge detection)
+  if (enterHit && !isAttackingState) {
+    // Fresh button press detected while not already attacking: start one-shot attack cycle
+    isAttackingState = true;
+    currentAttackFrame = 0;
+    lastAttackTick = now;
+    needsRedraw = true;
+  }
+
+  // 3. Process Attack Animation Progression (Non-blocking timing)
+  if (isAttackingState) {
+    if (now - lastAttackTick >= LC_ATTACK_FRAME_TIME_MS) {
+      lastAttackTick = now;
+      if (currentAttackFrame < VEERA_ATTACK_FRAME_COUNT - 1) {
+        currentAttackFrame++;
+        needsRedraw = true;
+      } else {
+        // Complete 4-frame cycle finished: attack1 -> attack2 -> attack3 -> attack4 -> FINISHED
+        isAttackingState = false;
+        currentAttackFrame = 0;
+        needsRedraw = true;
+      }
+    }
+  }
+
+  // 4. Process Jump Trigger (Only when grounded)
   bool isUpPushed = (vry < LC_JOYSTICK_UP_THRESHOLD);
 
   if (isGroundedState && isUpPushed) {
@@ -241,15 +321,15 @@ void update(Adafruit_ST7735 &tft) {
     }
   }
 
-  // 3. Update Physics & States
+  // 5. Update Movement Physics & States (Operates simultaneously with attack)
   if (!isGroundedState) {
     // ─── AIRBORNE STATE ──────────────────────────────────────────────────────
     currentState = VEERA_STATE_JUMPING;
 
-    // Apply horizontal velocity
+    // Apply horizontal velocity (persists during aerial attack)
     veeraX += velocityX * (float)dt;
 
-    // Apply gravity to vertical velocity
+    // Apply gravity to vertical velocity (persists during aerial attack)
     velocityY += LC_GRAVITY * (float)dt;
     veeraY += velocityY * (float)dt;
 
@@ -294,9 +374,9 @@ void update(Adafruit_ST7735 &tft) {
     }
   } else {
     // ─── GROUNDED STATE ──────────────────────────────────────────────────────
-    // Ground horizontal movement & dead zone
+    // Ground horizontal movement & dead zone (continues during attack while running)
     if (vrx > LC_JOYSTICK_DEADZONE_HIGH) {
-      // Joystick RIGHT: Move right, running animation
+      // Joystick RIGHT: Move right
       currentState = VEERA_STATE_RUNNING;
       currentDirection = VEERA_DIR_RIGHT;
 
@@ -306,7 +386,7 @@ void update(Adafruit_ST7735 &tft) {
         veeraX = (float)LC_VEERA_MAX_X;
       }
     } else if (vrx < LC_JOYSTICK_DEADZONE_LOW) {
-      // Joystick LEFT: Move left, mirrored running animation
+      // Joystick LEFT: Move left
       currentState = VEERA_STATE_RUNNING;
       currentDirection = VEERA_DIR_LEFT;
 
@@ -329,7 +409,7 @@ void update(Adafruit_ST7735 &tft) {
     }
   }
 
-  // 4. State transition handling
+  // 6. State transition handling
   if (currentState != oldState) {
     needsRedraw = true;
     if (currentState == VEERA_STATE_IDLE) {
@@ -352,32 +432,42 @@ void update(Adafruit_ST7735 &tft) {
     needsRedraw = true;
   }
 
+  if (isAttackingState != oldAttacking) {
+    needsRedraw = true;
+  }
+
+  if (isAttackingState && currentAttackFrame != oldAttackFrame) {
+    needsRedraw = true;
+  }
+
   int16_t newPixelX = (int16_t)roundf(veeraX);
   int16_t newPixelY = (int16_t)roundf(veeraY);
   if (newPixelX != oldPixelX || newPixelY != oldPixelY) {
     needsRedraw = true;
   }
 
-  // 5. Redraw only when visual state or position changed
+  // 7. Redraw only when visual state or position changed
   if (needsRedraw) {
     drawVeera(tft);
   }
 }
 
 void reset() {
-  veeraX           = LC_VEERA_SPAWN_X;
-  veeraY           = LC_VEERA_SPAWN_Y;
-  velocityX        = 0.0f;
-  velocityY        = 0.0f;
-  isGroundedState  = true;
-  currentState     = VEERA_STATE_IDLE;
-  currentDirection = VEERA_DIR_RIGHT;
-  currentRunFrame  = 0;
-  currentJumpFrame = 0;
-  prevBoxX         = -999;
-  prevBoxY         = -999;
-  prevBoxW         = 0;
-  prevBoxH         = 0;
+  veeraX             = LC_VEERA_SPAWN_X;
+  veeraY             = LC_VEERA_SPAWN_Y;
+  velocityX          = 0.0f;
+  velocityY          = 0.0f;
+  isGroundedState    = true;
+  currentState       = VEERA_STATE_IDLE;
+  currentDirection   = VEERA_DIR_RIGHT;
+  currentRunFrame    = 0;
+  currentJumpFrame   = 0;
+  isAttackingState   = false;
+  currentAttackFrame = 0;
+  prevBoxX           = -999;
+  prevBoxY           = -999;
+  prevBoxW           = 0;
+  prevBoxH           = 0;
 }
 
 VeeraState getState() {
@@ -390,6 +480,19 @@ VeeraDirection getDirection() {
 
 bool isGrounded() {
   return isGroundedState;
+}
+
+bool isAttacking() {
+  return isAttackingState;
+}
+
+uint8_t getAttackFrame() {
+  return currentAttackFrame;
+}
+
+bool isAttackHitboxActive() {
+  // Main damaging attack frame is attack3 (index 2: 0=attack1, 1=attack2, 2=attack3, 3=attack4)
+  return (isAttackingState && currentAttackFrame == 2);
 }
 
 float getPositionX() {
