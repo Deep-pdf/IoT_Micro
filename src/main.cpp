@@ -12,6 +12,7 @@
 #include "spotify/SpotifyApp.h"
 #include "lost_crown/LostCrownLoading.h"
 #include "lost_crown/LostCrownTitle.h"
+#include "lost_crown/LostCrownGameplay.h"
 #include "hackk/HackkApp.h"
 
 #define TFT_CS   5
@@ -344,6 +345,20 @@ void exitLostCrownTitle() {
   redrawCurrentAppsPage();
 }
 
+void enterLostCrownGameplay() {
+  clearButtonEvents();
+  currentScreen = STATE_LOST_CROWN_GAMEPLAY;
+  LostCrownGameplay::begin(tft);
+  Serial.println("Lost Crown: Transitioned to Training Ground gameplay");
+}
+
+void exitLostCrownGameplay() {
+  clearButtonEvents();
+  currentScreen = STATE_LOST_CROWN_TITLE;
+  LostCrownTitle::begin(tft);
+  Serial.println("Lost Crown: Returned from Training Ground to Title Screen");
+}
+
 void enterSpotify() {
   clearButtonEvents();
   currentScreen = STATE_SPOTIFY;
@@ -572,6 +587,20 @@ void loop() {
       exitLostCrownTitle();
     } else {
       LostCrownTitle::update(tft);
+      if (isEnterPressed()) {
+        uint8_t selected = LostCrownTitle::getSelectedItem();
+        if (selected == LC_MENU_NEW_GAME) {
+          enterLostCrownGameplay();
+        } else if (selected == LC_MENU_QUIT) {
+          exitLostCrownTitle();
+        }
+      }
+    }
+  } else if (currentScreen == STATE_LOST_CROWN_GAMEPLAY) {
+    if (isBackPressed()) {
+      exitLostCrownGameplay();
+    } else {
+      LostCrownGameplay::update(tft);
     }
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)

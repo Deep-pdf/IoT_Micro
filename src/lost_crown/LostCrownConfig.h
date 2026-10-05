@@ -122,3 +122,23 @@ static constexpr uint16_t LC_COLOR_SELECTED      = 0xFEA0; // Bright golden ambe
 static constexpr uint16_t LC_COLOR_UNSELECTED    = 0xD6BA; // Cool silver/off-white (matching "CROWN")
 static constexpr uint16_t LC_COLOR_SHADOW        = 0x0821; // Dark contrast outline shadow
 
+// =====================================================================
+// TRAINING GROUND GAMEPLAY CONFIGURATION
+// =====================================================================
+// Animation timing (millis per running frame)
+static constexpr uint32_t LC_RUN_FRAME_TIME_MS      = 110;
+
+// Character horizontal movement speed (pixels per millisecond)
+static constexpr float    LC_VEERA_MOVE_SPEED       = 0.055f;
+
+// Joystick deadzone thresholds (analog 0..4095)
+static constexpr int      LC_JOYSTICK_DEADZONE_LOW  = 1400;
+static constexpr int      LC_JOYSTICK_DEADZONE_HIGH = 2700;
+
+// Playable boundaries for Veera on 128x160 screen (with 36px sprite)
+static constexpr int16_t  LC_VEERA_MIN_X            = 0;
+static constexpr int16_t  LC_VEERA_MAX_X            = 92; // 128 - 36
+static constexpr int16_t  LC_VEERA_SPAWN_X          = 46;
+static constexpr int16_t  LC_VEERA_SPAWN_Y          = 102; // Feet anchored to y=135
+
+
