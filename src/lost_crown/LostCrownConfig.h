@@ -170,12 +170,12 @@ static constexpr float    LC_BOOMERANG_SPEED            = 0.11f;
 static constexpr uint32_t LC_BOOMERANG_ROT_INTERVAL_MS = 35;
 
 // Boomerang max travel distance percent of available horizontal space toward boundary
-static constexpr float    LC_BOOMERANG_MAX_DIST_PERCENT = 0.60f;
+static constexpr float    LC_BOOMERANG_MAX_DIST_PERCENT = 0.85f;
 
 // Hand launch & catch offsets from Veera sprite position (veeraX, veeraY)
-static constexpr int16_t  LC_BOOMERANG_OFFSET_X_RIGHT   = 24;
-static constexpr int16_t  LC_BOOMERANG_OFFSET_X_LEFT    = -2;
-static constexpr int16_t  LC_BOOMERANG_OFFSET_Y         = 10;
+static constexpr int16_t  LC_BOOMERANG_OFFSET_X_RIGHT   = 22;
+static constexpr int16_t  LC_BOOMERANG_OFFSET_X_LEFT    = -4;
+static constexpr int16_t  LC_BOOMERANG_OFFSET_Y         = 8;
 
 // Back button hold time to quit/return from gameplay (in milliseconds)
 static constexpr uint32_t BACK_LONG_PRESS_TIME         = 3000;
