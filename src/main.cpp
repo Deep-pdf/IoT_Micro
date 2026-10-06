@@ -597,10 +597,9 @@ void loop() {
       }
     }
   } else if (currentScreen == STATE_LOST_CROWN_GAMEPLAY) {
-    if (isBackPressed()) {
+    LostCrownGameplay::update(tft);
+    if (LostCrownGameplay::shouldExit()) {
       exitLostCrownGameplay();
-    } else {
-      LostCrownGameplay::update(tft);
     }
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)

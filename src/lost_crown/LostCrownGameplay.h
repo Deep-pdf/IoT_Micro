@@ -44,4 +44,28 @@ namespace LostCrownGameplay {
   float getPositionX();
   float getPositionY();
 
+  // Boomerang projectile flight states
+  enum BoomerangState {
+    BOOMERANG_INACTIVE = 0,
+    BOOMERANG_OUTBOUND,
+    BOOMERANG_RETURNING
+  };
+
+  // Veera throw animation progression states
+  enum VeeraThrowState {
+    THROW_NONE = 0,
+    THROW_FRAME1, // Veera_throw1 (preparation)
+    THROW_FRAME2, // Veera_throw2 (release)
+    THROW_FRAME3, // Veera_throw3 (airborne hold pose)
+    THROW_FRAME4  // Veera_throw4 (catch & recovery)
+  };
+
+  bool isThrowing();
+  VeeraThrowState getThrowState();
+  BoomerangState getBoomerangState();
+  bool isBoomerangActive();
+  float getBoomerangX();
+  float getBoomerangY();
+  bool shouldExit();
+
 } // namespace LostCrownGameplay

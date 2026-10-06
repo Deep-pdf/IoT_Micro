@@ -13,6 +13,7 @@ void updateButton();
 bool isEnterPressed();
 bool isBackPressed();
 bool isBackLongPressed();
+bool isBackDown();
 void clearButtonEvents();
 
 #endif // BUTTON_H

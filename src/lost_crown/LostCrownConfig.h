@@ -157,5 +157,28 @@ static constexpr uint32_t LC_JUMP_FRAME_TIME_MS      = 140;
 // Animation timing (millis per attack frame, ~240 ms total for 4-frame sword attack)
 static constexpr uint32_t LC_ATTACK_FRAME_TIME_MS    = 60;
 
+// ===== BOOMERANG THROW CONFIGURATION =====
+// Animation timing (millis per throw animation frame)
+static constexpr uint32_t LC_THROW_FRAME1_TIME_MS      = 120; // Veera_throw1: preparation windup
+static constexpr uint32_t LC_THROW_FRAME2_TIME_MS      = 120; // Veera_throw2: release pose
+static constexpr uint32_t LC_THROW_FRAME4_TIME_MS      = 160; // Veera_throw4: catch recovery
+
+// Boomerang flight speed (pixels per millisecond)
+static constexpr float    LC_BOOMERANG_SPEED            = 0.11f;
+
+// Boomerang rotation spin interval (millis per 45-degree frame)
+static constexpr uint32_t LC_BOOMERANG_ROT_INTERVAL_MS = 35;
+
+// Boomerang max travel distance percent of available horizontal space toward boundary
+static constexpr float    LC_BOOMERANG_MAX_DIST_PERCENT = 0.60f;
+
+// Hand launch & catch offsets from Veera sprite position (veeraX, veeraY)
+static constexpr int16_t  LC_BOOMERANG_OFFSET_X_RIGHT   = 24;
+static constexpr int16_t  LC_BOOMERANG_OFFSET_X_LEFT    = -2;
+static constexpr int16_t  LC_BOOMERANG_OFFSET_Y         = 10;
+
+// Back button hold time to quit/return from gameplay (in milliseconds)
+static constexpr uint32_t BACK_LONG_PRESS_TIME         = 3000;
+
 
 

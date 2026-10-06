@@ -94,6 +94,10 @@ bool isBackLongPressed() {
   return false;
 }
 
+bool isBackDown() {
+  return (lastBackStableState == LOW);
+}
+
 void clearButtonEvents() {
   enterPressedEvent = false;
   backPressedEvent = false;
