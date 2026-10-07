@@ -13,6 +13,7 @@
 #include "lost_crown/LostCrownLoading.h"
 #include "lost_crown/LostCrownTitle.h"
 #include "lost_crown/LostCrownGameplay.h"
+#include "lost_crown/Level1.h"
 #include "hackk/HackkApp.h"
 
 #define TFT_CS   5
@@ -359,6 +360,20 @@ void exitLostCrownGameplay() {
   Serial.println("Lost Crown: Returned from Training Ground to Title Screen");
 }
 
+void enterLostCrownLevel1() {
+  clearButtonEvents();
+  currentScreen = STATE_LOST_CROWN_LEVEL1;
+  LostCrownLevel1::begin(tft);
+  Serial.println("Lost Crown: Hard cut transition to Level 1");
+}
+
+void exitLostCrownLevel1() {
+  clearButtonEvents();
+  currentScreen = STATE_LOST_CROWN_TITLE;
+  LostCrownTitle::begin(tft);
+  Serial.println("Lost Crown: Returned from Level 1 to Title Screen");
+}
+
 void enterSpotify() {
   clearButtonEvents();
   currentScreen = STATE_SPOTIFY;
@@ -598,8 +613,15 @@ void loop() {
     }
   } else if (currentScreen == STATE_LOST_CROWN_GAMEPLAY) {
     LostCrownGameplay::update(tft);
-    if (LostCrownGameplay::shouldExit()) {
+    if (LostCrownGameplay::hasExitedRight()) {
+      enterLostCrownLevel1();
+    } else if (LostCrownGameplay::shouldExit()) {
       exitLostCrownGameplay();
+    }
+  } else if (currentScreen == STATE_LOST_CROWN_LEVEL1) {
+    LostCrownLevel1::update(tft);
+    if (LostCrownLevel1::shouldExit()) {
+      exitLostCrownLevel1();
     }
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)

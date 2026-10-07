@@ -67,5 +67,6 @@ namespace LostCrownGameplay {
   float getBoomerangX();
   float getBoomerangY();
   bool shouldExit();
+  bool hasExitedRight();
 
 } // namespace LostCrownGameplay

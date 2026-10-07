@@ -75,6 +75,7 @@ static bool           lastBackDownState        = false;
 static uint32_t       backPressStartTick       = 0;
 static bool           longPressTriggered       = false;
 static bool           shouldExitGameplay       = false;
+static bool           hasExitedRightState      = false;
 
 static uint32_t       lastAnimTick         = 0;
 static uint32_t       lastPhysicsTick      = 0;
@@ -547,9 +548,10 @@ void update(Adafruit_ST7735 &tft) {
       currentJumpFrame = 2; // jump3: falling / preparing to land
     }
 
-    // Clamp horizontal position within playable screen
-    if (veeraX > (float)LC_VEERA_MAX_X) {
-      veeraX = (float)LC_VEERA_MAX_X;
+    // Allow Veera to move off right screen edge to trigger Level 1
+    if (veeraX >= 128.0f) {
+      veeraX = 128.0f;
+      hasExitedRightState = true;
     }
     if (veeraX < (float)LC_VEERA_MIN_X) {
       veeraX = (float)LC_VEERA_MIN_X;
@@ -585,8 +587,10 @@ void update(Adafruit_ST7735 &tft) {
 
       float dx = LC_VEERA_MOVE_SPEED * (float)dt;
       veeraX += dx;
-      if (veeraX > (float)LC_VEERA_MAX_X) {
-        veeraX = (float)LC_VEERA_MAX_X;
+      // Allow moving off the right edge
+      if (veeraX >= 128.0f) {
+        veeraX = 128.0f;
+        hasExitedRightState = true;
       }
     } else if (vrx < LC_JOYSTICK_DEADZONE_LOW) {
       currentState = VEERA_STATE_RUNNING;
@@ -703,6 +707,7 @@ void reset() {
   backPressStartTick       = 0;
   longPressTriggered       = false;
   shouldExitGameplay       = false;
+  hasExitedRightState      = false;
 }
 
 VeeraState getState() {
@@ -763,6 +768,10 @@ float getBoomerangY() {
 
 bool shouldExit() {
   return shouldExitGameplay;
+}
+
+bool hasExitedRight() {
+  return hasExitedRightState;
 }
 
 } // namespace LostCrownGameplay
