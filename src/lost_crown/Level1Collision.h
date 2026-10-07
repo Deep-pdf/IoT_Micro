@@ -48,15 +48,17 @@ namespace LostCrownLevel1 {
     { 138.0f, 197.0f, 110.0f },
     // 4: Central building main terrace (with red banner)
     { 188.0f, 308.0f, 137.0f },
-    // 5: Second floor terrace (rooftop balcony with greenery)
-    { 208.0f, 286.0f,  86.0f },
-    // 6: Mid-stair landing / archway platform
-    { 315.0f, 375.0f, 112.0f },
-    // 7: Top roof terrace (under wooden gazebo / red banners)
+    // 5: Second floor terrace - Platform 4 (extended across to stairs)
+    { 208.0f, 312.0f,  87.0f },
+    // 6: Mid-right doorway overhang - Platform 2 (above doorway with pots)
+    { 315.0f, 380.0f, 156.0f },
+    // 7: Mid-stair plant landing (between stair tiers)
+    { 320.0f, 352.0f, 105.0f },
+    // 8: Top roof terrace (under wooden gazebo / red banners)
     { 348.0f, 450.0f,  54.0f },
-    // 8: Right balcony / bridge over archway
+    // 9: Right balcony / bridge over archway
     { 370.0f, 474.0f, 124.0f },
-    // 9: Far right high bridge
+    // 10: Far right high bridge
     { 460.0f, 512.0f,  60.0f }
   };
   static constexpr size_t LEVEL1_PLATFORM_COUNT = sizeof(LEVEL1_PLATFORMS) / sizeof(LEVEL1_PLATFORMS[0]);
@@ -68,11 +70,10 @@ namespace LostCrownLevel1 {
     // Stair 2: Low Stone Wall to Main Terrace
     { 144.0f, 180.0f, 188.0f, 137.0f },
     // Stair 3: Main Terrace to Mid Landing
-    { 286.0f, 137.0f, 315.0f, 112.0f },
+    { 286.0f, 137.0f, 320.0f, 105.0f },
     // Stair 4: Mid Landing to Top Roof
-    { 315.0f, 112.0f, 348.0f,  54.0f },
-    // Stair 5: Right Balcony to Ground (behind urns)
-    { 412.0f, 124.0f, 452.0f, 214.0f }
+    { 304.0f, 105.0f, 348.0f,  54.0f }
+    // Stair 5 (invisible diagonal on lower right) has been removed
   };
   static constexpr size_t LEVEL1_STAIR_COUNT = sizeof(LEVEL1_STAIRS) / sizeof(LEVEL1_STAIRS[0]);
 
