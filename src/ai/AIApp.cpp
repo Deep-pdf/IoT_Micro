@@ -465,8 +465,8 @@ static void drawResponseBody(Adafruit_ST7735 &tft, const String &text) {
 //  and forwards movement to AIKeyboard::navigate().
 // ============================================================
 static void processJoystick(Adafruit_ST7735 &tft) {
-    int vrx = analogRead(JOY_X_PIN);
-    int vry = analogRead(JOY_Y_PIN);
+    int vrx = readJoystickX();
+    int vry = readJoystickY();
 
     // Calculate displacement relative to dead-zone thresholds (1200..2800)
     int diffX = 0;
@@ -624,7 +624,7 @@ static void updateResponse(Adafruit_ST7735 &tft) {
     }
 
     // 2. Joystick UP/DOWN scrolling for long responses
-    int vry = analogRead(JOY_Y_PIN);
+    int vry = readJoystickY();
     unsigned long now = millis();
 
     bool centered = (vry >= 1200 && vry <= 2800);

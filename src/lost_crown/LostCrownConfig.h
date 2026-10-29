@@ -8,6 +8,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include "joystick.h"
 
 // =====================================================================
 // LOADING SCREEN CONFIGURATION

@@ -322,8 +322,8 @@ void update(Adafruit_ST7735 &tft) {
   lastPhysicsTick = now;
 
   // 1. Read joystick & button inputs
-  int vrx = analogRead(JOY_X);
-  int vry = analogRead(JOY_Y);
+  int vrx = readJoystickX();
+  int vry = readJoystickY();
   bool enterHit = isEnterPressed();
   bool backDown = isBackDown();
   (void)isBackPressed(); // Clear raw button event if queued

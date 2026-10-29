@@ -967,8 +967,8 @@ void runGameplayUpdate() {
   float dy = 0;
   float speed = 0.08f; // pixels per millisecond
 
-  int vrx = analogRead(JOY_X);
-  int vry = analogRead(JOY_Y);
+  int vrx = readJoystickX();
+  int vry = readJoystickY();
 
   if (vrx < 1500) dx = -speed * dt;
   else if (vrx > 2700) dx = speed * dt;

@@ -118,8 +118,8 @@ void begin(Adafruit_ST7735 &tft) {
 
 void update(Adafruit_ST7735 &tft) {
   // Handle joystick navigation (UP / DOWN)
-  int vrx = analogRead(JOY_X);
-  int vry = analogRead(JOY_Y);
+  int vrx = readJoystickX();
+  int vry = readJoystickY();
 
   // Joystick deadzone filtering (Centered around 1500..2700)
   bool isCentered = (vrx > 1500 && vrx < 2700 && vry > 1500 && vry < 2700);

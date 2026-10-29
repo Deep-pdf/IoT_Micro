@@ -50,6 +50,7 @@ An advanced, feature-rich handheld device built on the **ESP32** microcontroller
 | **Joystick Button (SW)** | `GPIO 32` | Physical switch input |
 | **ENTER Button** | `GPIO 13` | Momentary push button (`INPUT_PULLUP`), debounced |
 | **BACK Button** | `GPIO 25` | Momentary push button (`INPUT_PULLUP`), short/long press |
+| **Status LED (Green)** | `GPIO 26` | Green LED + resistor (Configurable: Solid ON or Smooth Breathing PWM) |
 
 ---
 
@@ -61,12 +62,15 @@ IoT_Micro/
 ├── generate_quotes.py          # Python pre-build script parsing Markdown quotes to C++
 ├── include/
 │   ├── config.h                # User credentials (Wi-Fi, Spotify Bridge host, Mock mode)
+│   ├── status_led.h            # Status LED settings (Option 1: Power ON/OFF, Option 2: Smooth Breathing)
+│   ├── joystick.h              # Universal joystick orientation & 90-deg CW rotation mapping
 │   ├── home_screen.h           # OS layout, status bar, and state machine declarations
 │   ├── quote_library.h         # Auto-generated C++ array of quotes in PROGMEM
 │   ├── icons.h                 # 32x32 RGB565 pixel art icons for the app dock & grid
 │   └── button.h                # Hardware debouncing and press edge detection
 ├── src/
 │   ├── main.cpp                # Core firmware lifecycle, boot animation, app dispatcher
+│   ├── status_led.cpp          # FreeRTOS background task and ESP32 LEDC PWM driver
 │   ├── home_screen.cpp         # Main dashboard and Page 2 app launcher rendering
 │   ├── button.cpp              # Non-blocking button routines
 │   ├── ai/                     # AI Chat Application (Keyboard, HTTP connection, UI)

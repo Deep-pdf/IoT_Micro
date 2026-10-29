@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "joystick.h"
 
 class JoystickCal {
 public:
@@ -11,8 +12,8 @@ public:
 
         long sumX = 0, sumY = 0;
         for (int i = 0; i < 50; i++) {
-            sumX += analogRead(pinX);
-            sumY += analogRead(pinY);
+            sumX += readJoystickX();
+            sumY += readJoystickY();
             delay(5);
         }
         _cx = sumX / 50;
@@ -25,8 +26,8 @@ public:
 
         int maxDx = 0, maxDy = 0;
         for (int i = 0; i < 50; i++) {
-            int dx = abs(analogRead(pinX) - _cx);
-            int dy = abs(analogRead(pinY) - _cy);
+            int dx = abs(readJoystickX() - _cx);
+            int dy = abs(readJoystickY() - _cy);
             if (dx > maxDx) maxDx = dx;
             if (dy > maxDy) maxDy = dy;
             delay(5);
@@ -47,8 +48,8 @@ public:
 
     // Returns -1, 0, +1 for each axis after deadzone filtering.
     void read(int pinX, int pinY, int &outX, int &outY) const {
-        int dx = analogRead(pinX) - _cx;
-        int dy = analogRead(pinY) - _cy;
+        int dx = readJoystickX() - _cx;
+        int dy = readJoystickY() - _cy;
         outX = (abs(dx) > _deadzone) ? (dx > 0 ? 1 : -1) : 0;
         outY = (abs(dy) > _deadzone) ? (dy > 0 ? 1 : -1) : 0;
     }

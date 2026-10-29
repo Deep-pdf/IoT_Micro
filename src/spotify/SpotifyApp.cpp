@@ -100,8 +100,8 @@ void SpotifyApp::update(Adafruit_ST7735 &tft) {
     }
 
     // 3. Process Joystick Navigation (Move focus between PREV, PLAY/PAUSE, NEXT)
-    int vrx = analogRead(PIN_JOY_X);
-    int vry = analogRead(PIN_JOY_Y);
+    int vrx = readJoystickX();
+    int vry = readJoystickY();
 
     bool isCentered = (vrx > 1500 && vrx < 2700 && vry > 1500 && vry < 2700);
 

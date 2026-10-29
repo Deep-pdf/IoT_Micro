@@ -114,8 +114,8 @@ void PixelWars::update() {
     }
 
     // 2. Handle navigation
-    int vrx = analogRead(JOY_X);
-    int vry = analogRead(JOY_Y);
+    int vrx = readJoystickX();
+    int vry = readJoystickY();
 
     // Joystick deadzone filtering
     bool isCentered = (vrx > 1500 && vrx < 2700 && vry > 1500 && vry < 2700);

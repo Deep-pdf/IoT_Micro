@@ -1,5 +1,6 @@
 #ifndef BUTTON_H
 #define BUTTON_H
+#include "joystick.h"
 
 // Initialize the push button pin (GPIO 13) as INPUT_PULLUP
 void setupButton();

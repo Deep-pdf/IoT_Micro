@@ -15,6 +15,7 @@
 #include "lost_crown/LostCrownGameplay.h"
 #include "lost_crown/Level1.h"
 #include "hackk/HackkApp.h"
+#include "status_led.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -460,6 +461,9 @@ void handleCurrentSelection() {
 void setup() {
   Serial.begin(115200);
 
+  // Initialize status LED on GPIO 26 on boot
+  initStatusLed();
+
   // 1. Pull display reset LOW immediately to blank the panel and hide previous RAM contents
   pinMode(TFT_RST, OUTPUT);
   digitalWrite(TFT_RST, LOW);
@@ -632,8 +636,8 @@ void loop() {
 
     // 2. Process joystick movements (Only active on Home Screen)
     if (currentScreen == STATE_HOME) {
-      int vrx = analogRead(JOY_X);
-      int vry = analogRead(JOY_Y);
+      int vrx = readJoystickX();
+      int vry = readJoystickY();
 
       // Joystick deadzone filtering (Centered around 1500..2700)
       bool isCentered = (vrx > 1500 && vrx < 2700 && vry > 1500 && vry < 2700);
