@@ -1,0 +1,7 @@
+set(COMPONENT_SRCDIRS ".")
+set(COMPONENT_ADD_INCLUDEDIRS ".")
+if(RG_BUILD_TARGET STREQUAL "RG_TARGET_GMT024_S3")
+    set(COMPONENT_SRCEXCLUDE "main_snes.c")
+endif()
+register_component()
+rg_setup_compile_options(-O3 -Wno-error=format)

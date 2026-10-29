@@ -16,6 +16,7 @@
 #include "lost_crown/Level1.h"
 #include "hackk/HackkApp.h"
 #include "status_led.h"
+#include "retro/RetroApp.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -213,6 +214,20 @@ void handleNavigation(JoyDirection dir) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_PAGE2_CALCULATOR;
         drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_RETRO_ARCADE;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_RETRO_ARCADE) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_SPOTIFY;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        drawFocusHighlight(tft, currentFocus, true);
       }
     } else if (currentFocus == FOCUS_PAGE2_CALCULATOR) {
       if (dir == DIR_UP) {
@@ -393,6 +408,24 @@ void exitSpotify() {
   redrawCurrentAppsPage();
 }
 
+void enterRetroArcade() {
+  clearButtonEvents();
+  currentScreen = STATE_RETRO_ARCADE;
+  RetroApp::init(tft);
+}
+
+void exitRetroArcade() {
+  clearButtonEvents();
+  currentScreen = STATE_HOME;
+
+  // Select a new random quote!
+  selectRandomQuote();
+  lastQuoteChangeTime = millis();
+
+  // Restore active page layout
+  redrawCurrentAppsPage();
+}
+
 void enterCalculatorPlaceholder() {
   Serial.println("Placeholder Action: Enter Calculator App");
 }
@@ -445,6 +478,9 @@ void handleCurrentSelection() {
         break;
       case FOCUS_PAGE2_SPOTIFY:
         enterSpotify();
+        break;
+      case FOCUS_PAGE2_RETRO_ARCADE:
+        enterRetroArcade();
         break;
       case FOCUS_PAGE2_CALCULATOR:
         enterCalculatorPlaceholder();
@@ -588,6 +624,11 @@ void loop() {
     SpotifyApp::update(tft);
     if (SpotifyApp::shouldExit()) {
       exitSpotify();
+    }
+  } else if (currentScreen == STATE_RETRO_ARCADE) {
+    RetroApp::update(tft);
+    if (RetroApp::shouldExit()) {
+      exitRetroArcade();
     }
   } else if (currentScreen == STATE_HACKING_GO) {
     HackkApp::update(tft);

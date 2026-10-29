@@ -270,6 +270,9 @@ void drawAppsPage2(Adafruit_ST7735 &tft) {
   tft.drawRGBBitmap(8, 74, icon_spotify, 32, 32);
   tft.drawRGBBitmap(48, 74, icon_calculator, 32, 32);
   tft.drawRGBBitmap(88, 74, icon_hackinggo, 32, 32);
+
+  // Row 2 (Y = 114): Retro Arcade under Spotify (X=8)
+  tft.drawRGBBitmap(8, 114, icon_arcade, 32, 32);
 }
 
 void updateWiFiIconPage2(Adafruit_ST7735 &tft, bool connected) {
@@ -308,6 +311,7 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
     else if (element == FOCUS_PAGE2_SPOTIFY)    { x = 8;  y = 74; }
     else if (element == FOCUS_PAGE2_CALCULATOR) { x = 48; y = 74; }
     else if (element == FOCUS_PAGE2_HACKING_GO) { x = 88; y = 74; }
+    else if (element == FOCUS_PAGE2_RETRO_ARCADE) { x = 8;  y = 114; }
 
     uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
     tft.drawRect(x - 2, y - 2, 36, 36, color);
