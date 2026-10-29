@@ -55,7 +55,10 @@ class SpotifyApiClient:
                 return resp.status_code, {"error": err_msg}
 
             if resp.text.strip():
-                return resp.status_code, resp.json()
+                try:
+                    return resp.status_code, resp.json()
+                except Exception:
+                    return resp.status_code, None
             return resp.status_code, None
 
         except requests.RequestException as e:

@@ -1,4 +1,5 @@
 #include "AIConnection.h"
+#include "config.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 
@@ -6,7 +7,11 @@
 const unsigned long HTTP_TIMEOUT_MS = 30000;
 
 // Phone bridge URL
-const char* const PHONE_BRIDGE_URL = "http://10.240.13.100:8080/ask";
+#ifdef PHONE_AI_BRIDGE_HOST
+const char* const PHONE_BRIDGE_URL = "http://" PHONE_AI_BRIDGE_HOST ":8080/ask";
+#else
+const char* const PHONE_BRIDGE_URL = "http://10.26.243.234:8080/ask";
+#endif
 
 bool AIConnection::ensureWiFiConnected() {
     if (WiFi.status() == WL_CONNECTED) {

@@ -671,6 +671,12 @@ void loop() {
       bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
       if (currentWiFiConnected != lastWiFiConnected) {
         lastWiFiConnected = currentWiFiConnected;
+        if (currentWiFiConnected) {
+          Serial.print("[WiFi] Connected! ESP32 IP: ");
+          Serial.println(WiFi.localIP());
+        } else {
+          Serial.println("[WiFi] Disconnected!");
+        }
         if (currentScreen == STATE_HOME) {
           if (currentAppsPage == APPS_PAGE_2) {
             updateWiFiIconPage2(tft, lastWiFiConnected);

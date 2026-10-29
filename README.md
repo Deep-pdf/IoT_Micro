@@ -142,11 +142,33 @@ Open [include/config.h](file:///include/config.h) and set your Wi-Fi credentials
 #define WIFI_SSID "Your_WiFi_Name"
 #define WIFI_PASSWORD "Your_WiFi_Password"
 
-// Spotify Bridge IP (find your PC IP with 'ipconfig' or 'ifconfig')
-#define SPOTIFY_BRIDGE_HOST "192.168.1.100"
+
+// Centralized Bridge Host (Applied everywhere: Spotify & Phone AI)
+#define PC_BRIDGE_HOST "10.26.243.234"
+
+// Spotify Bridge Settings
+#define SPOTIFY_BRIDGE_HOST PC_BRIDGE_HOST
 #define SPOTIFY_BRIDGE_PORT 8888
 #define SPOTIFY_MOCK_MODE   false   // Set to true to test without bridge
+
+// Phone AI (Gemini) Bridge Settings
+#define PHONE_AI_BRIDGE_HOST PC_BRIDGE_HOST
+#define PHONE_AI_BRIDGE_PORT 8080
 ```
+
+#### 🌐 Changing Networks or Host Devices
+Whenever you run the bridge server from a **different device (laptop/PC)** or connect to a **different Wi-Fi network / router**, your computer's local IP address will change:
+1. Find your computer's current Wi-Fi IPv4 address:
+   - **Windows**: Run `ipconfig` in PowerShell/CMD and copy the `IPv4 Address` under your active Wi-Fi adapter.
+   - **macOS**: Run `ipconfig getifaddr en0` or check *System Settings > Wi-Fi > Details*.
+   - **Linux**: Run `hostname -I` or `ip a`.
+2. Update **`PC_BRIDGE_HOST`** in `include/config.h`:
+   ```cpp
+   #define PC_BRIDGE_HOST "YOUR_NEW_IP_HERE"
+   ```
+   *Updating this single variable automatically applies the new IP to both the Spotify Remote and Gemini AI apps across the entire firmware.*
+3. Ensure both ESP32 and host PC are connected to the exact same Wi-Fi SSID and that your firewall allows incoming connections on port `8888` (Spotify) and `8080` (Phone AI).
+4. Re-flash the ESP32 (`pio run --target upload`).
 
 ### 2. Compiling and Flashing
 Connect the ESP32 via USB and run:

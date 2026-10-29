@@ -134,10 +134,13 @@ void SpotifyApp::update(Adafruit_ST7735 &tft) {
         }
     }
 
-    // 4. Process Action Trigger (ENTER button Pin 13 OR Joystick Switch Pin 32)
-    bool actionTriggered = isEnterPressed() || joySwClicked;
 
-    if (actionTriggered) {
+    // 4. Process Action Trigger (ENTER button Pin 13) with debounce cooldown
+    static unsigned long lastActionMillis = 0;
+    bool actionTriggered = isEnterPressed();
+
+    if (actionTriggered && (now - lastActionMillis > 400)) {
+        lastActionMillis = now;
         if (currentSelection == CTRL_PLAYPAUSE) {
             SpotifyConnection::sendPlayPause();
             currentTrack.playing = !currentTrack.playing;

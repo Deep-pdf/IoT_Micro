@@ -5,7 +5,7 @@
 #include <ArduinoJson.h>
 
 #ifndef SPOTIFY_BRIDGE_HOST
-#define SPOTIFY_BRIDGE_HOST "10.240.13.7"
+#define SPOTIFY_BRIDGE_HOST "10.26.243.234"
 #endif
 
 #ifndef SPOTIFY_BRIDGE_PORT
@@ -77,6 +77,11 @@ bool SpotifyConnection::getState(SpotifyTrackState &state) {
     int httpCode = http.GET();
 
     if (httpCode != 200) {
+        Serial.print("[Spotify] GET /spotify/state failed, HTTP code: ");
+        Serial.print(httpCode);
+        Serial.print(" (");
+        Serial.print(http.errorToString(httpCode));
+        Serial.println(")");
         http.end();
         consecutiveFailures++;
         if (consecutiveFailures >= 3) {
@@ -164,6 +169,11 @@ bool SpotifyConnection::fetchArtwork(uint16_t *buffer, size_t maxPixels, int tar
 
     int httpCode = http.GET();
     if (httpCode != 200) {
+        Serial.print("[Spotify] GET /spotify/state failed, HTTP code: ");
+        Serial.print(httpCode);
+        Serial.print(" (");
+        Serial.print(http.errorToString(httpCode));
+        Serial.println(")");
         http.end();
         return false;
     }
