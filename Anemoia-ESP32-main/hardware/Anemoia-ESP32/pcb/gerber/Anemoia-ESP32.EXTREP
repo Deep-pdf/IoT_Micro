@@ -1,0 +1,22 @@
+------------------------------------------------------------------------------------------
+Gerber File Extension Report For: Anemoia-ESP32.GBR   4/14/2026  9:05:43 PM
+------------------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------------------
+Layer Extension     Layer Description                      
+------------------------------------------------------------------------------------------
+.gbr                Top Layer                               
+.gbr                Bottom Layer                            
+.gbr                Bottom Overlay                          
+.gbr                Top Overlay                             
+.gbr                Bottom Solder                           
+.gbr                Bottom Paste                            
+.gbr                Top Paste                               
+.gbr                Top Solder                              
+.gbr                Bottom Tenting                          
+.gbr                Top Tenting                             
+.gbr                Profile                                 
+.gbr                Non-plated through-hole drill file      
+.gbr                Plated through-hole drill file          
+------------------------------------------------------------------------------------------

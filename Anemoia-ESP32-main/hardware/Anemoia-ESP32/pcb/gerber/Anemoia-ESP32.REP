@@ -1,0 +1,185 @@
+*************************************************************
+FileName = Anemoia-ESP32.GBR
+AutoAperture = True
+*************************************************************
+Generating : Top Layer
+      File : Anemoia-ESP32_Copper_Signal_Top.gbr
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D13
+    D14
+    D15
+    D16
+    D17
+    D18
+*************************************************************
+
+*************************************************************
+Generating : Bottom Layer
+      File : Anemoia-ESP32_Copper_Signal_Bot.gbr
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D13
+    D14
+    D15
+    D16
+    D17
+    D18
+*************************************************************
+
+*************************************************************
+Generating : Bottom Overlay
+      File : Anemoia-ESP32_Legend_Bot.gbr
+
+    Adding Layer      : Bottom Overlay
+
+
+Used DCodes :
+    D19
+    D20
+    D21
+    D22
+*************************************************************
+
+*************************************************************
+Generating : Top Overlay
+      File : Anemoia-ESP32_Legend_Top.gbr
+
+    Adding Layer      : Top Overlay
+
+
+Used DCodes :
+    D21
+*************************************************************
+
+*************************************************************
+Generating : Bottom Solder
+      File : Anemoia-ESP32_Soldermask_Bot.gbr
+
+    Adding Layer      : Bottom Solder
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D23
+    D24
+    D25
+    D26
+*************************************************************
+
+*************************************************************
+Generating : Bottom Paste
+      File : Anemoia-ESP32_Paste_Bot.gbr
+
+    Adding Layer      : Bottom Paste
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+*************************************************************
+
+*************************************************************
+Generating : Top Paste
+      File : Anemoia-ESP32_Paste_Top.gbr
+
+    Adding Layer      : Top Paste
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+*************************************************************
+
+*************************************************************
+Generating : Top Solder
+      File : Anemoia-ESP32_Soldermask_Top.gbr
+
+    Adding Layer      : Top Solder
+
+    Adding Layer      : Top Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D23
+    D24
+    D25
+    D26
+*************************************************************
+
+*************************************************************
+Generating : Bottom Tenting
+      File : Anemoia-ESP32_Bottom_Tenting.gbr
+
+    Adding Layer      : Bottom Tenting
+
+
+Used DCodes :
+    D27
+*************************************************************
+
+*************************************************************
+Generating : Top Tenting
+      File : Anemoia-ESP32_Top_Tenting.gbr
+
+    Adding Layer      : Top Tenting
+
+
+Used DCodes :
+    D27
+*************************************************************
+
+*************************************************************
+Generating : Profile
+      File : Anemoia-ESP32_Profile.gbr
+
+
+Used DCodes :
+    D28
+*************************************************************
+
+*************************************************************
+Generating : Non-plated through-hole drill file
+      File : Anemoia-ESP32_NPTH_Drill.gbr
+
+
+Used DCodes :
+*************************************************************
+
+*************************************************************
+Generating : Plated through-hole drill file
+      File : Anemoia-ESP32_PTH_Drill.gbr
+
+
+Used DCodes :
+    D29
+    D30
+    D31
+    D32
+*************************************************************
+

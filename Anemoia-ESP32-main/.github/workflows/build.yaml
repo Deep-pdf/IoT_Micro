@@ -1,0 +1,520 @@
+name: Build firmware and deploy GitHub Page
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.c"
+      - "**.cpp"
+      - "**.h"
+      - "**.ino"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Cache Arduino CLI
+        id: cache-arduino-cli
+        uses: actions/cache@v5
+        with:
+          path: /opt/hostedtoolcache/arduino-cli
+          key: arduino-cli-1.4.1
+
+      - name: Install Arduino CLI
+        if: steps.cache-arduino-cli.outputs.cache-hit != 'true'
+        uses: arduino/setup-arduino-cli@v2
+        with:
+          version: 1.4.1
+
+      - name: Cache Arduino packages
+        id: cache-arduino
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.arduino15
+            ~/Arduino/libraries
+          key: ${{ runner.os }}-arduino-esp32-3.2.1
+
+      - name: Setup ESP32 core
+        if: steps.cache-arduino.outputs.cache-hit != 'true'
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls \
+            https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.2.1
+
+      - name: Install libraries
+        if: steps.cache-arduino.outputs.cache-hit != 'true'
+        run: |
+          arduino-cli lib install "TFT_eSPI@2.5.43"
+          arduino-cli lib install "SdFat@2.3.0"
+
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [esp32, cyd, module, discrete]
+        display: [ST7789, ILI9341]
+        swap: [swap_bytes, swap_bytes_off]
+        screen_freq: [screen_freq_80MHz, screen_freq_40MHz]
+        debug: [debug_on, debug_off]
+        exclude:
+          - device: cyd
+            swap: swap_bytes_off
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Restore Arduino CLI cache
+        uses: actions/cache@v5
+        with:
+          path: /opt/hostedtoolcache/arduino-cli
+          key: arduino-cli-1.4.1
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+        with:
+          version: 1.4.1
+
+      - name: Restore Arduino packages cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.arduino15
+            ~/Arduino/libraries
+          key: ${{ runner.os }}-arduino-esp32-3.2.1
+
+      - name: Cache clang-format
+        if: matrix.display == 'ST7789' && matrix.swap == 'swap_bytes' && matrix.screen_freq == 'screen_freq_80MHz' && matrix.device == 'esp32' && matrix.debug == 'debug_on'
+        id: cache-clang
+        uses: actions/cache@v5
+        with:
+          path: |
+            /usr/lib/llvm-18
+            /usr/bin/clang-format-18
+          key: clang-18-ubuntu-latest
+
+      - name: Install clang-format
+        if: steps.cache-clang.outputs.cache-hit != 'true' && matrix.display == 'ST7789' && matrix.swap == 'swap_bytes' && matrix.screen_freq == 'screen_freq_80MHz' && matrix.device == 'esp32' && matrix.debug == 'debug_on'
+        run: sudo apt-get install -y clang-format-18
+
+      - name: Install cppcheck
+        if: matrix.display == 'ST7789' && matrix.swap == 'swap_bytes' && matrix.screen_freq == 'screen_freq_80MHz'
+        run: sudo apt-get install -y cppcheck
+
+      - name: Build defines and platform flags
+        run: |
+          DEFINES=""
+          [ "${{ matrix.swap }}"        = "swap_bytes" ]        && DEFINES="$DEFINES -DSCREEN_SWAP_BYTES" || DEFINES="$DEFINES -USCREEN_SWAP_BYTES"
+          [ "${{ matrix.debug }}"       = "debug_on"   ]        && DEFINES="$DEFINES -DDEBUG"             || DEFINES="$DEFINES -UDEBUG"
+          [ "${{ matrix.device }}"      = "cyd"        ]        && DEFINES="$DEFINES -DCHEAP_YELLOW_DISPLAY_CONF"
+          [ "${{ matrix.device }}"      = "module"     ]        && DEFINES="$DEFINES -DMODULE_BASED_PCB_CONF"
+          [ "${{ matrix.device }}"      = "discrete"   ]        && DEFINES="$DEFINES -DDISCRETE_PCB_CONF"
+          [ "${{ matrix.screen_freq }}" = "screen_freq_40MHz" ] && DEFINES="$DEFINES -DFRAMESKIP" || DEFINES="$DEFINES -UFRAMESKIP"
+          PLATFORM_FLAGS="-DOPTIMIZATION_FLAGS -Ofast -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -funroll-loops -fno-tree-vectorize -frename-registers -fno-plt -flto"
+
+          echo "DEFINES=$DEFINES" >> $GITHUB_ENV
+          echo "PLATFORM_FLAGS=$PLATFORM_FLAGS" >> $GITHUB_ENV
+
+      - name: Configure platform.txt and User_Setup.h
+        run: |
+          # Copy platform.txt from Anemoia-ESP32 repo
+          cp platform.txt ~/.arduino15/packages/esp32/hardware/esp32/3.2.1/platform.txt
+
+          # Copy and configure user_setup.h based on device type and display type
+          if [ "${{ matrix.device }}" = "cyd" ]; then
+            cp User_Setups/CYD/User_Setup.h ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+          elif [ "${{ matrix.device }}" = "module" ]; then
+            cp User_Setups/Module-based-PCB/User_Setup.h ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+          elif [ "${{ matrix.device }}" = "discrete" ]; then
+            cp User_Setups/Discrete-PCB/User_Setup.h ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+          else
+            cp User_Setups/Default/User_Setup.h ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+          fi
+
+          if [ "${{ matrix.display }}" = "ST7789" ]; then
+            sed -i 's|^// #define ST7789_DRIVER|#define ST7789_DRIVER|' ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+            sed -i 's|^#define ILI9341_DRIVER|// #define ILI9341_DRIVER|' ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+          else
+            sed -i 's|^#define ST7789_DRIVER|// #define ST7789_DRIVER|' ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+            sed -i 's|^// #define ILI9341_DRIVER|#define ILI9341_DRIVER|' ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+          fi
+
+          case "${{ matrix.screen_freq }}" in
+            screen_freq_80MHz) SPI_FREQ=80000000 ;;
+            screen_freq_40MHz) SPI_FREQ=40000000 ;;
+          esac
+          sed -i "s|^#define SPI_FREQUENCY.*|#define SPI_FREQUENCY $SPI_FREQ|" ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+
+      - name: Log build configuration
+        run: |
+          echo "========== BUILD CONFIGURATION =========="
+          echo "Device:       ${{ matrix.device }}"
+          echo "Display:      ${{ matrix.display }}"
+          echo "Swap bytes:   ${{ matrix.swap }}"
+          echo "Screen freq:  ${{ matrix.screen_freq }}"
+          echo "Debug:        ${{ matrix.debug }}"
+          echo ""
+          echo "========== COMPILER DEFINES =========="
+          echo "Extra defines: ${{ env.DEFINES }}"
+          echo ""
+          echo "========== USER_SETUP.H =========="
+          cat ~/Arduino/libraries/TFT_eSPI/User_Setup.h
+          echo ""
+          echo "========== CONFIG.H =========="
+          if [ "${{ matrix.device }}" = "cyd" ]; then
+            cat config_cyd.h
+          elif [ "${{ matrix.device }}" = "module" ]; then
+            cat config_module.h
+          elif [ "${{ matrix.device }}" = "discrete" ]; then
+            cat config_discrete.h
+          else
+            cat config.h
+          fi
+          echo "=========================================="
+
+      - name: Run clang-format
+        if: matrix.display == 'ST7789' && matrix.swap == 'swap_bytes' && matrix.screen_freq == 'screen_freq_80MHz' && matrix.device == 'esp32' && matrix.debug == 'debug_on'
+        run: |
+          find . -path ./build -prune -o \( -name "*.cpp" -o -name "*.h" -o -name "*.c" -o -name "*.ino" \) -print | \
+          xargs clang-format-18 --dry-run --Werror
+
+      - name: Run cppcheck
+        if: matrix.display == 'ST7789' && matrix.swap == 'swap_bytes' && matrix.screen_freq == 'screen_freq_80MHz'
+        run: |
+          find . -path ./build -prune -o \( -name "*.cpp" -o -name "*.h" -o -name "*.c" \) -print | \
+          xargs cppcheck \
+            --quiet \
+            --enable=warning,performance,portability \
+            --error-exitcode=1 \
+            --suppressions-list=.cppcheck-suppressions \
+            --inline-suppr \
+            --language=c++ \
+            --std=c++11
+
+      - name: Compile firmware
+        run: |
+          VARIANT="${{ matrix.device }}-${{ matrix.display }}-${{ matrix.swap }}-${{ matrix.screen_freq }}-${{ matrix.debug }}"
+          arduino-cli compile \
+            --fqbn "esp32:esp32:esp32:PartitionScheme=custom,EventsCore=0" \
+            --build-property "compiler.cpp.extra_flags=${{ env.PLATFORM_FLAGS }} ${{ env.DEFINES }}" \
+            --build-property "compiler.c.extra_flags=${{ env.PLATFORM_FLAGS }} ${{ env.DEFINES }}" \
+            --output-dir build/$VARIANT \
+            .
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.device }}-${{ matrix.display }}-${{ matrix.swap }}-${{ matrix.screen_freq }}-${{ matrix.debug }}
+          path: |
+            build/${{ matrix.device }}-${{ matrix.display }}-${{ matrix.swap }}-${{ matrix.screen_freq }}-${{ matrix.debug }}/*.ino.bin
+            build/${{ matrix.device }}-${{ matrix.display }}-${{ matrix.swap }}-${{ matrix.screen_freq }}-${{ matrix.debug }}/*.ino.bootloader.bin
+            build/${{ matrix.device }}-${{ matrix.display }}-${{ matrix.swap }}-${{ matrix.screen_freq }}-${{ matrix.debug }}/*.ino.partitions.bin
+          retention-days: 1
+
+  build-composite:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        video_standard: [ntsc, pal]
+        debug: [debug_on, debug_off]
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Restore Arduino CLI cache
+        uses: actions/cache@v5
+        with:
+          path: /opt/hostedtoolcache/arduino-cli
+          key: arduino-cli-1.4.1
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+        with:
+          version: 1.4.1
+
+      - name: Restore Arduino packages cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.arduino15
+            ~/Arduino/libraries
+          key: ${{ runner.os }}-arduino-esp32-3.2.1
+
+      - name: Build defines and platform flags
+        run: |
+          case "${{ matrix.video_standard }}" in
+            ntsc) VS_VAL=1 ;;
+            pal)  VS_VAL=0 ;;
+          esac
+          DEFINES="-DCOMPOSITE_VIDEO -DVIDEO_STANDARD=$VS_VAL"
+          [ "${{ matrix.debug }}" = "debug_on" ] && DEFINES="$DEFINES -DDEBUG" || DEFINES="$DEFINES -UDEBUG"
+          PLATFORM_FLAGS="-DOPTIMIZATION_FLAGS -Ofast -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -funroll-loops -fno-tree-vectorize -frename-registers -fno-plt -flto"
+          echo "DEFINES=$DEFINES" >> $GITHUB_ENV
+          echo "PLATFORM_FLAGS=$PLATFORM_FLAGS" >> $GITHUB_ENV
+          echo "VS_VAL=$VS_VAL" >> $GITHUB_ENV
+
+      - name: Configure platform.txt
+        run: |
+          cp platform.txt ~/.arduino15/packages/esp32/hardware/esp32/3.2.1/platform.txt
+
+      - name: Log build configuration
+        run: |
+          RESOLVED=$(echo "" | g++ -E -dM ${{ env.DEFINES }} -I. -include config.h -x c++ - \
+                    | grep -m1 '^#define VIDEO_STANDARD' | awk '{print $3}')
+          echo "========== BUILD CONFIGURATION =========="
+          echo "Device:         composite"
+          echo "Video standard (matrix):  ${{ matrix.video_standard }} (VS_VAL=${{ env.VS_VAL }})"
+          echo "Video standard (config.h): $RESOLVED"
+          echo ""
+          echo "========== COMPILER DEFINES =========="
+          echo "Extra defines: ${{ env.DEFINES }}"
+          echo "=========================================="
+
+      - name: Compile firmware
+        run: |
+          VARIANT="composite-${{ matrix.video_standard }}-${{ matrix.debug }}"
+          arduino-cli compile \
+            --fqbn "esp32:esp32:esp32:PartitionScheme=custom,EventsCore=0" \
+            --build-property "compiler.cpp.extra_flags=${{ env.PLATFORM_FLAGS }} ${{ env.DEFINES }}" \
+            --build-property "compiler.c.extra_flags=${{ env.PLATFORM_FLAGS }} ${{ env.DEFINES }}" \
+            --output-dir build/$VARIANT \
+            .
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-composite-${{ matrix.video_standard }}-${{ matrix.debug }}
+          path: |
+            build/composite-${{ matrix.video_standard }}-${{ matrix.debug }}/*.ino.bin
+            build/composite-${{ matrix.video_standard }}-${{ matrix.debug }}/*.ino.bootloader.bin
+            build/composite-${{ matrix.video_standard }}-${{ matrix.debug }}/*.ino.partitions.bin
+          retention-days: 1
+
+  deploy:
+    needs: [build, build-composite]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: firmware-*
+          merge-multiple: false
+
+      - name: Install mklittlefs
+        run: |
+          curl -sL https://github.com/earlephilhower/mklittlefs/releases/download/4.1.0/x86_64-linux-gnu-mklittlefs-42acb97.tar.gz | tar xz
+          sudo mv mklittlefs/mklittlefs /usr/local/bin/
+          sudo chmod +x /usr/local/bin/mklittlefs
+
+      - name: Assemble binaries directory
+        run: |
+          mkdir -p WebFlash/binaries
+          mkdir -p WebFlash/manifests
+          mkdir -p WebFlash/configs
+
+          CONTROLLERS="no_controller gpio nes snes psx uart"
+          ROTATIONS="rotation1 rotation3"
+          SD_FREQS="sd_freq_80MHz sd_freq_40MHz sd_freq_1MHz"
+          DACPINS="dac_gpio25 dac_gpio26"
+          BACKLIGHTS="backlight_off backlight_on"
+          DEMO_MODES="demo_mode_off demo_mode_on"
+          INVERT_COLORS="invert_off invert_on"
+
+          for artifact_dir in artifacts/firmware-*/; do
+            NAME=$(basename "$artifact_dir" | sed 's/^firmware-//')
+            IFS='-' read -r DEVICE DISPLAY SWAP SCREEN_FREQ DEBUG <<< "$NAME"
+            [ "$DEVICE" = "composite" ] && continue
+            BOOTLOADER=$(find "$artifact_dir" -name "*.ino.bootloader.bin")
+            PARTITIONS=$(find "$artifact_dir" -name "*.ino.partitions.bin")
+            FIRMWARE=$(find "$artifact_dir" -name "*.ino.bin" ! -name "*.merged.bin" \
+                                                               ! -name "*.bootloader.bin" \
+                                                               ! -name "*.partitions.bin")
+
+            FW_DEST="binaries/$DEVICE/$DISPLAY/$SWAP/$SCREEN_FREQ/$DEBUG"
+            mkdir -p "WebFlash/$FW_DEST"
+            cp "$BOOTLOADER" "WebFlash/$FW_DEST/bootloader.bin"
+            cp "$PARTITIONS" "WebFlash/$FW_DEST/partitions.bin"
+            cp "$FIRMWARE" "WebFlash/$FW_DEST/firmware.bin"
+
+            CONTROLLER_LIST="$CONTROLLERS"
+            DACPIN_LIST="$DACPINS"
+            BACKLIGHT_LIST="$BACKLIGHTS"
+            DEMO_MODE_LIST="$DEMO_MODES"
+
+            if [ "$DEVICE" = "cyd" ]; then
+              CONTROLLER_LIST="no_controller nes uart"
+              DACPIN_LIST="dac_gpio26"
+              BACKLIGHT_LIST="backlight_on"
+            elif [ "$DEVICE" = "module" ]; then
+              CONTROLLER_LIST="gpio"
+              DACPIN_LIST="dac_gpio26"
+              BACKLIGHT_LIST="backlight_off"
+            elif [ "$DEVICE" = "discrete" ]; then
+              CONTROLLER_LIST="gpio"
+              DACPIN_LIST="dac_gpio25"
+              BACKLIGHT_LIST="backlight_on"
+            fi
+
+            for CONTROLLER in $CONTROLLER_LIST; do
+              for ROTATION in $ROTATIONS; do
+                for SD_FREQ in $SD_FREQS; do
+                  for DACPIN in $DACPIN_LIST; do
+                    for BACKLIGHT in $BACKLIGHT_LIST; do
+                      for DEMO_MODE in $DEMO_MODE_LIST; do
+                        for INVERT in $INVERT_COLORS; do
+                          # Map to byte values matching RuntimeConfig struct
+                          case "$ROTATION" in
+                            rotation1) ROT_VAL=1 ;;
+                            rotation3) ROT_VAL=3 ;;
+                          esac
+
+                          case "$DACPIN" in
+                            dac_gpio25) DAC_VAL=0 ;;
+                            dac_gpio26) DAC_VAL=1 ;;
+                            *) DAC_VAL=0 ;;
+                          esac
+
+                          case "$CONTROLLER" in
+                            no_controller) CONTROLLER_VAL=255 ;;
+                            gpio) CONTROLLER_VAL=0 ;;
+                            nes) CONTROLLER_VAL=1 ;;
+                            snes) CONTROLLER_VAL=2 ;;
+                            psx) CONTROLLER_VAL=3 ;;
+                            uart) CONTROLLER_VAL=4 ;;
+                          esac
+
+                          case "$SD_FREQ" in
+                            sd_freq_80MHz) SD_VAL=80 ;;
+                            sd_freq_40MHz) SD_VAL=40 ;;
+                            sd_freq_1MHz)  SD_VAL=1  ;;
+                          esac
+
+                          case "$BACKLIGHT" in
+                            backlight_off) BL_VAL=0 ;;
+                            backlight_on)  BL_VAL=1 ;;
+                          esac
+
+                          case "$DEMO_MODE" in
+                            demo_mode_off) DM_VAL=0 ;;
+                            demo_mode_on)  DM_VAL=1 ;;
+                          esac
+
+                          case "$INVERT" in
+                            invert_off) IV_VAL=0 ;;
+                            invert_on)  IV_VAL=1 ;;
+                          esac
+
+                          # Write RuntimeConfig struct to binary file and create LittleFS image
+                          CFG_NAME="$DEVICE-$DISPLAY-$BACKLIGHT-$INVERT-$SWAP-$SCREEN_FREQ-$CONTROLLER-$ROTATION-$SD_FREQ-$DACPIN-$DEBUG-$DEMO_MODE"
+                          mkdir -p tmp/fs_stage
+                          printf "$(printf '\\%03o' $ROT_VAL $DAC_VAL $CONTROLLER_VAL $SD_VAL $BL_VAL $DM_VAL $IV_VAL)" \
+                              > tmp/fs_stage/runtime_config.bin
+                          mklittlefs -c tmp/fs_stage -s 0x0F000 "WebFlash/configs/${CFG_NAME}-config.bin"
+                          rm -rf "tmp/fs_stage"
+
+                          printf '{\n  "name": "Anemoia-ESP32",\n  "version": "1.0.0",\n  "funding_url": "https://ko-fi.com/manalotoshim",\n  "builds": [{\n    "chipFamily": "ESP32",\n    "parts": [\n      { "path": "../%s/bootloader.bin", "offset": 4096 },\n      { "path": "../%s/partitions.bin", "offset": 32768 },\n      { "path": "../%s/firmware.bin",   "offset": 65536 },\n      { "path": "../configs/%s",        "offset": 3866624 }\n    ]\n  }]\n}' \
+                            "$FW_DEST" "$FW_DEST" "$FW_DEST" "${CFG_NAME}-config.bin" \
+                            > "WebFlash/manifests/${CFG_NAME}.json"
+                        done
+                      done
+                    done
+                  done
+                done
+              done
+            done
+          done
+
+          # Handle composite builds
+          for artifact_dir in artifacts/firmware-composite-*/; do
+            NAME=$(basename "$artifact_dir" | sed 's/^firmware-//')
+            IFS='-' read -r DEVICE VIDEO_STANDARD DEBUG <<< "$NAME"
+
+            BOOTLOADER=$(find "$artifact_dir" -name "*.ino.bootloader.bin")
+            PARTITIONS=$(find "$artifact_dir" -name "*.ino.partitions.bin")
+            FIRMWARE=$(find "$artifact_dir" -name "*.ino.bin" ! -name "*.merged.bin" \
+                                                               ! -name "*.bootloader.bin" \
+                                                               ! -name "*.partitions.bin")
+
+            FW_DEST="binaries/composite/$VIDEO_STANDARD/$DEBUG"
+            mkdir -p "WebFlash/$FW_DEST"
+            cp "$BOOTLOADER" "WebFlash/$FW_DEST/bootloader.bin"
+            cp "$PARTITIONS" "WebFlash/$FW_DEST/partitions.bin"
+            cp "$FIRMWARE"   "WebFlash/$FW_DEST/firmware.bin"
+
+            for CONTROLLER in no_controller gpio nes snes psx uart; do
+              for SD_FREQ in $SD_FREQS; do
+                for DEMO_MODE in $DEMO_MODES; do
+                  case "$CONTROLLER" in
+                    no_controller) CONTROLLER_VAL=255 ;;
+                    gpio)          CONTROLLER_VAL=0   ;;
+                    nes)           CONTROLLER_VAL=1   ;;
+                    snes)          CONTROLLER_VAL=2   ;;
+                    psx)           CONTROLLER_VAL=3   ;;
+                    uart)          CONTROLLER_VAL=4   ;;
+                  esac
+
+                  case "$SD_FREQ" in
+                    sd_freq_80MHz) SD_VAL=80 ;;
+                    sd_freq_40MHz) SD_VAL=40 ;;
+                    sd_freq_1MHz)  SD_VAL=1  ;;
+                  esac
+
+                  case "$DEMO_MODE" in
+                    demo_mode_off) DM_VAL=0 ;;
+                    demo_mode_on)  DM_VAL=1 ;;
+                  esac
+
+                  CFG_NAME="composite-$VIDEO_STANDARD-$CONTROLLER-$SD_FREQ-$DEBUG-$DEMO_MODE"
+                  mkdir -p tmp/fs_stage
+                  printf "$(printf '\\%03o' 1 0 $CONTROLLER_VAL $SD_VAL 0 $DM_VAL)" \
+                      > tmp/fs_stage/runtime_config.bin
+                  mklittlefs -c tmp/fs_stage -s 0x0F000 "WebFlash/configs/${CFG_NAME}-config.bin"
+                  rm -rf "tmp/fs_stage"
+
+                  printf '{\n  "name": "Anemoia-ESP32",\n  "version": "1.0.0",\n  "funding_url": "https://ko-fi.com/manalotoshim",\n  "builds": [{\n    "chipFamily": "ESP32",\n    "parts": [\n      { "path": "../%s/bootloader.bin", "offset": 4096 },\n      { "path": "../%s/partitions.bin", "offset": 32768 },\n      { "path": "../%s/firmware.bin",   "offset": 65536 },\n      { "path": "../configs/%s",        "offset": 3866624 }\n    ]\n  }]\n}' \
+                    "$FW_DEST" "$FW_DEST" "$FW_DEST" "${CFG_NAME}-config.bin" \
+                    > "WebFlash/manifests/${CFG_NAME}.json"
+                done
+              done
+            done
+          done
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "./WebFlash"
+          retention-days: 1
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
