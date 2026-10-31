@@ -1,5 +1,8 @@
 #include "cpu6502.h"
 
+constexpr uint8_t Cpu6502::instr_cycles[256];
+constexpr uint8_t Cpu6502::zn_table[256];
+
 #define EXECUTE(addrmode, instruction)                                                             \
     {                                                                                              \
         additional_cycle1 = addrmode();                                                            \
