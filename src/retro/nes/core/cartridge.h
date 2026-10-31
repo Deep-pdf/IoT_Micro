@@ -9,6 +9,7 @@
 #include "mapper.h"
 #include "mapper000.h"
 #include "mapper002.h"
+#include "mapper004.h"
 #include "mirror_mode.h"
 #include "ppu2C02.h"
 #include "rom_backends.h"

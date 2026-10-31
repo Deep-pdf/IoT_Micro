@@ -64,6 +64,27 @@ Cartridge::Cartridge(const uint8_t* romData, size_t romSize)
 
 Cartridge::~Cartridge()
 {
+    if (mapper.state)
+    {
+        if (mapper_ID == 4)
+        {
+            Mapper004_state* s = (Mapper004_state*)mapper.state;
+            if (s->RAM) free(s->RAM);
+            delete s;
+        }
+        else if (mapper_ID == 2)
+        {
+            Mapper002_state* s = (Mapper002_state*)mapper.state;
+            if (s->CHR_bank && s->number_CHR_banks == 0) free(s->CHR_bank);
+            delete s;
+        }
+        else if (mapper_ID == 0)
+        {
+            Mapper000_state* s = (Mapper000_state*)mapper.state;
+            delete s;
+        }
+        mapper.state = nullptr;
+    }
 }
 
 void Cartridge::createMapper(uint8_t number_PRG_banks, uint8_t number_CHR_banks, ROMBackend backend)
@@ -75,6 +96,9 @@ void Cartridge::createMapper(uint8_t number_PRG_banks, uint8_t number_CHR_banks,
         break;
     case 2:
         mapper = createMapper002(number_PRG_banks, number_CHR_banks, backend, this);
+        break;
+    case 4:
+        mapper = createMapper004(number_PRG_banks, number_CHR_banks, backend, this);
         break;
     default:
         is_valid = false;
@@ -88,6 +112,7 @@ void Cartridge::reset()
     {
     case 0: mapper000_reset(&mapper); break;
     case 2: mapper002_reset(&mapper); break;
+    case 4: mapper004_reset(&mapper); break;
     default: break;
     }
 }
@@ -98,6 +123,7 @@ void Cartridge::mapPages(Bus* bus)
     {
     case 0: mapper000_mapPages(&mapper, bus); break;
     case 2: mapper002_mapPages(&mapper, bus); break;
+    case 4: mapper004_mapPages(&mapper, bus); break;
     default: break;
     }
 }
@@ -108,12 +134,18 @@ void Cartridge::mapPPUPages(Ppu2C02* ppu)
     {
     case 0: mapper000_mapPPUPages(&mapper, ppu); break;
     case 2: mapper002_mapPPUPages(&mapper, ppu); break;
+    case 4: mapper004_mapPPUPages(&mapper, ppu); break;
     default: break;
     }
 }
 
 void Cartridge::ppuScanline()
 {
+    switch (mapper_ID)
+    {
+    case 4: mapper004_scanline(&mapper); break;
+    default: break;
+    }
 }
 
 void Cartridge::cpuCycle(int cycles)

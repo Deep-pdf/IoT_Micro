@@ -51,6 +51,12 @@ bool NesBridge::loadRom(const NesRom& rom) {
     return loadRom(rom.data, rom.size);
 }
 
+bool NesBridge::loadGame(NesGameId game) {
+    const NesRom* rom = NesGetRom(game);
+    if (!rom) return false;
+    return loadRom(*rom);
+}
+
 void NesBridge::setController(uint8_t state) {
     if (nesCpu) {
         nesCpu->bus.setController(state);

@@ -13,6 +13,7 @@ public:
     // Load an NES ROM from memory / flash
     static bool loadRom(const uint8_t* romData, size_t romSize);
     static bool loadRom(const NesRom& rom);
+    static bool loadGame(NesGameId game);
 
     // Set and get the 8-bit NES controller state (Bit 0: A, 1: B, 2: Select, 3: Start, 4: Up, 5: Down, 6: Left, 7: Right)
     static void setController(uint8_t state);
