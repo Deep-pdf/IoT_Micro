@@ -1,4 +1,5 @@
 #include "NesDisplayAdapter.h"
+#include "NesPalette.h"
 
 static Adafruit_ST7735* tft = nullptr;
 
@@ -24,6 +25,9 @@ void NesDisplayAdapter::init(Adafruit_ST7735* display) {
         // Boost SPI to 40 MHz for ST7735 hardware
         tft->setSPISpeed(40000000UL);
     }
+    NesPalette::init();
+    Serial.printf("[NesDisplayAdapter] Active Enhanced Palette bound directly (Sat=+%d%%, Exp=-%d%%, Con=+%d%%)\n",
+                  NesPalette::getSaturationBoost(), NesPalette::getExposureReduce(), NesPalette::getContrastBoost());
 }
 
 void NesDisplayAdapter::clearBorders() {
@@ -46,16 +50,19 @@ void NesDisplayAdapter::startFrame() {
 }
 
 void NesDisplayAdapter::renderScanlineIndexed(int scanline, const uint8_t* nesIndices256, const uint16_t* palette64) {
-    if (!tft || !inFrame || !nesIndices256 || !palette64) return;
+    if (!tft || !inFrame || !nesIndices256) return;
     // 2:1 integer vertical downsampling: only render even scanlines (0, 2, ... 238)
     if ((scanline & 1) != 0 || scanline >= 240) return;
+
+    // Guaranteed direct lookup from active enhanced palette
+    const uint16_t* activePalette = NesPalette::getEnhancedPalette(0);
 
     uint32_t t0 = micros();
 
     // Direct 2:1 horizontal integer downscaling into burst buffer via direct palette LUT
     uint16_t* lineDest = &burstBuffer[bufferedLines * 128];
     for (int x = 0; x < 128; x++) {
-        lineDest[x] = palette64[nesIndices256[x * 2]];
+        lineDest[x] = activePalette[nesIndices256[x * 2]];
     }
     bufferedLines++;
 
@@ -79,7 +86,7 @@ void NesDisplayAdapter::renderScanline(int scanline, const uint16_t* nesScanline
     uint32_t t0 = micros();
     uint16_t* lineDest = &burstBuffer[bufferedLines * 128];
     for (int x = 0; x < 128; x++) {
-        lineDest[x] = nesScanline256[x * 2];
+        lineDest[x] = NesPalette::enhanceColor(nesScanline256[x * 2]);
     }
     bufferedLines++;
     uint32_t t1 = micros();

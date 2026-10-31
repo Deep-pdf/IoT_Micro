@@ -6,18 +6,18 @@
 
 // ==============================================================================
 // Configurable NES Color Enhancement Settings
-// Tuned for ST7735 TFT: reduced exposure for deep retro tones, higher saturation
+// Tuned for ST7735 TFT: reduced exposure for deep retro tones, bold vivid saturation
 // ==============================================================================
 #ifndef NES_SATURATION_BOOST_PCT
-#define NES_SATURATION_BOOST_PCT 35  // +35% saturation boost (rich, punchy colors)
+#define NES_SATURATION_BOOST_PCT 50  // +50% saturation boost (bold, vivid, punchy colors)
 #endif
 
 #ifndef NES_CONTRAST_BOOST_PCT
-#define NES_CONTRAST_BOOST_PCT 6     // +6% contrast boost
+#define NES_CONTRAST_BOOST_PCT 8     // +8% contrast boost
 #endif
 
 #ifndef NES_EXPOSURE_REDUCE_PCT
-#define NES_EXPOSURE_REDUCE_PCT 8    // -8% exposure reduction (cuts backlight wash-out)
+#define NES_EXPOSURE_REDUCE_PCT 12   // -12% exposure reduction (eliminates backlight wash-out)
 #endif
 
 class NesPalette {

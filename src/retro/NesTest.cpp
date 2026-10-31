@@ -176,6 +176,14 @@ void NesTest::init(Adafruit_ST7735& tft) {
     // Bind display adapter and init emulator
     NesBridge::init(&tft);
 
+    const uint16_t* orig = NesPalette::getOriginalPalette(0);
+    const uint16_t* enh  = NesPalette::getEnhancedPalette(0);
+    Serial.printf("[NesPalette] Swatches: Red 0x%04X->0x%04X | Sky 0x%04X->0x%04X | Grn 0x%04X->0x%04X | Yel 0x%04X->0x%04X\n",
+                  orig[0x16], enh[0x16],
+                  orig[0x21], enh[0x21],
+                  orig[0x2A], enh[0x2A],
+                  orig[0x27], enh[0x27]);
+
     bool loaded = NesBridge::loadGame(NES_GAME_MARIO);
     if (!loaded) {
         Serial.println("[NesTest] ERROR: loadGame(NES_GAME_MARIO) FAILED");
