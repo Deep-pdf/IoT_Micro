@@ -4,82 +4,89 @@
 #include "RetroInput.h"
 
 static RetroGameSelection selectedGame = GAME_MARIO;
+static RetroLaunchIntent s_launchIntent = RETRO_LAUNCH_NONE;
 static bool exitRequested = false;
 static bool needsRedraw = true;
-static bool launchMessageActive = false;
-static unsigned long launchMessageExpiry = 0;
+static bool unavailableActive = false;
+static unsigned long unavailableExpiry = 0;
 
-static const char* const GAME_TITLES[] = {
-    "SUPER MARIO BROS.",
-    "CONTRA (NES)",
-    "POKEMON RED (GB)"
-};
-
-void RetroLauncher::init(Adafruit_ST7735 &tft) {
+void RetroLauncher::init(Adafruit_ST7735 &tft, bool resetSelection) {
     RetroInput::init();
-    selectedGame = GAME_MARIO;
+    if (resetSelection) {
+        selectedGame = GAME_MARIO;
+    }
+    s_launchIntent = RETRO_LAUNCH_NONE;
     exitRequested = false;
-    needsRedraw = true;
-    launchMessageActive = false;
-    launchMessageExpiry = 0;
+    needsRedraw = false;
+    unavailableActive = false;
+    unavailableExpiry = 0;
 
-    // Blank screen to black before drawing initial frame
+    // Render selected game screen (Arcade#1, Arcade#2, or Arcade#3)
     tft.setRotation(0);
-    tft.fillScreen(ST77XX_BLACK);
-
-    // Render initial Mario state (Arcade#1)
     size_t assetSize = 0;
     const uint8_t* assetData = getRetroScreenAsset(selectedGame, assetSize);
     RetroDisplay::drawFrame(tft, assetData, assetSize);
-    needsRedraw = false;
 }
 
 void RetroLauncher::update(Adafruit_ST7735 &tft) {
     if (exitRequested) return;
 
-    // Check Back button to return to Micro_IOT OS
+    // 1. Back button returns to Micro_IOT OS (Home screen)
     if (RetroInput::isExitPressed()) {
         exitRequested = true;
         return;
     }
 
-    // Process Joystick Navigation
+    // 2. Joystick UP/DOWN navigation with wrap-around
     RetroNavEvent nav = RetroInput::readNavigation();
     if (nav == RETRO_NAV_DOWN) {
-        if (selectedGame < GAME_POKEMON) {
+        if (selectedGame == GAME_POKEMON) {
+            selectedGame = GAME_MARIO; // Wrap to Mario (Arcade#1)
+        } else {
             selectedGame = (RetroGameSelection)(selectedGame + 1);
-            needsRedraw = true;
-            launchMessageActive = false;
         }
+        needsRedraw = true;
+        unavailableActive = false;
     } else if (nav == RETRO_NAV_UP) {
-        if (selectedGame > GAME_MARIO) {
+        if (selectedGame == GAME_MARIO) {
+            selectedGame = GAME_POKEMON; // Wrap to Pokemon (Arcade#3)
+        } else {
             selectedGame = (RetroGameSelection)(selectedGame - 1);
+        }
+        needsRedraw = true;
+        unavailableActive = false;
+    }
+
+    // 3. Process Launch (Joystick Click or Enter Pushbutton)
+    if (RetroInput::isLaunchPressed()) {
+        if (selectedGame == GAME_MARIO) {
+            s_launchIntent = RETRO_LAUNCH_MARIO;
+            return;
+        } else if (selectedGame == GAME_CONTRA) {
+            s_launchIntent = RETRO_LAUNCH_CONTRA;
+            return;
+        } else {
+            // Pokémon Red: Not implemented / not available
+            unavailableActive = true;
+            unavailableExpiry = millis() + 1500;
             needsRedraw = true;
-            launchMessageActive = false;
         }
     }
 
-    // Process Launch (Joystick click or Enter button)
-    if (RetroInput::isLaunchPressed()) {
-        launchMessageActive = true;
-        launchMessageExpiry = millis() + 1500;
+    // 4. Auto-dismiss unavailable notification overlay after 1.5s
+    if (unavailableActive && millis() >= unavailableExpiry) {
+        unavailableActive = false;
         needsRedraw = true;
     }
 
-    // Auto-dismiss launch notification
-    if (launchMessageActive && millis() >= launchMessageExpiry) {
-        launchMessageActive = false;
-        needsRedraw = true;
-    }
-
-    // Perform screen update if selection or notification state changed
+    // 5. Redraw screen asset if selection or overlay changed
     if (needsRedraw) {
         size_t assetSize = 0;
         const uint8_t* assetData = getRetroScreenAsset(selectedGame, assetSize);
         RetroDisplay::drawFrame(tft, assetData, assetSize);
 
-        if (launchMessageActive) {
-            RetroDisplay::drawLaunchNotification(tft, GAME_TITLES[selectedGame]);
+        if (unavailableActive) {
+            RetroDisplay::drawUnavailableNotification(tft, "GB Emulator N/A");
         }
 
         needsRedraw = false;
@@ -94,3 +101,10 @@ RetroGameSelection RetroLauncher::getSelectedGame() {
     return selectedGame;
 }
 
+RetroLaunchIntent RetroLauncher::getLaunchIntent() {
+    return s_launchIntent;
+}
+
+void RetroLauncher::clearLaunchIntent() {
+    s_launchIntent = RETRO_LAUNCH_NONE;
+}

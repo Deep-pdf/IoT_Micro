@@ -86,3 +86,23 @@ void RetroDisplay::drawLaunchNotification(Adafruit_ST7735 &tft, const char *game
     tft.print(gameTitle);
 }
 
+void RetroDisplay::drawUnavailableNotification(Adafruit_ST7735 &tft, const char *gameTitle) {
+    int16_t bx = 10;
+    int16_t by = 118;
+    int16_t bw = 108;
+    int16_t bh = 28;
+
+    tft.fillRoundRect(bx, by, bw, bh, 4, 0x0000); // Black backing
+    tft.drawRoundRect(bx, by, bw, bh, 4, 0xF800); // Red border
+    tft.drawRoundRect(bx + 1, by + 1, bw - 2, bh - 2, 3, 0xFFFF);
+
+    tft.setFont(NULL);
+    tft.setTextSize(1);
+    tft.setTextColor(0xF800); // Red
+    tft.setCursor(bx + 8, by + 5);
+    tft.print("NOT AVAILABLE");
+
+    tft.setTextColor(0xFFFF);
+    tft.setCursor(bx + 8, by + 16);
+    tft.print(gameTitle ? gameTitle : "Core Not Available");
+}

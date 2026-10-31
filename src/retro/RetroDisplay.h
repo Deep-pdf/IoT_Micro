@@ -13,7 +13,9 @@ public:
 
     // Displays a sleek launch notification card overlay
     static void drawLaunchNotification(Adafruit_ST7735 &tft, const char *gameTitle);
+
+    // Displays an unavailable notification card overlay (e.g. for Pokémon)
+    static void drawUnavailableNotification(Adafruit_ST7735 &tft, const char *gameTitle);
 };
 
 #endif // RETRO_DISPLAY_H
-
