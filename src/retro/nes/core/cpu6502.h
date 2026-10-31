@@ -66,8 +66,8 @@ private:
     uint8_t fetch();
     uint8_t fast_fetch();
     void clock(int i);
-    uint8_t read(uint16_t addr);
-    void write(uint16_t addr, uint8_t data);
+    inline uint8_t read(uint16_t addr) { return bus.cpuRead(addr); }
+    inline void write(uint16_t addr, uint8_t data) { bus.cpuWrite(addr, data); }
     void OAM_Write(uint8_t addr, uint8_t data);
 
     // clang-format off

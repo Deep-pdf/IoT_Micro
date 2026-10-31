@@ -113,23 +113,12 @@ void PixelWars::update() {
       return;
     }
 
-    // 2. Handle navigation
-    int vrx = readJoystickX();
-    int vry = readJoystickY();
-
-    // Joystick deadzone filtering
-    bool isCentered = (vrx > 1500 && vrx < 2700 && vry > 1500 && vry < 2700);
-
-    if (isCentered) {
-      joystickCentered = true;
-    } else if (joystickCentered) {
-      if (vry < 1000) {
-        navigatePixelWarsMenu(-1); // UP
-        joystickCentered = false;
-      } else if (vry > 3000) {
-        navigatePixelWarsMenu(1);  // DOWN
-        joystickCentered = false;
-      }
+    // 2. Handle navigation with global responsive joystick
+    Joystick.update();
+    if (Joystick.wasUpPressed()) {
+      navigatePixelWarsMenu(-1);
+    } else if (Joystick.wasDownPressed()) {
+      navigatePixelWarsMenu(1);
     }
     return;
   }

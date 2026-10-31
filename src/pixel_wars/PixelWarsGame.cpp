@@ -967,14 +967,12 @@ void runGameplayUpdate() {
   float dy = 0;
   float speed = 0.08f; // pixels per millisecond
 
-  int vrx = readJoystickX();
-  int vry = readJoystickY();
+  Joystick.update();
+  if (Joystick.isLeft()) dx = -speed * dt;
+  else if (Joystick.isRight()) dx = speed * dt;
 
-  if (vrx < 1500) dx = -speed * dt;
-  else if (vrx > 2700) dx = speed * dt;
-
-  if (vry < 1500) dy = -speed * dt;
-  else if (vry > 2700) dy = speed * dt;
+  if (Joystick.isUp()) dy = -speed * dt;
+  else if (Joystick.isDown()) dy = speed * dt;
 
   playerX += dx;
   playerY += dy;

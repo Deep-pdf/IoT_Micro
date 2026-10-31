@@ -20,15 +20,7 @@ Cpu6502::~Cpu6502()
 {
 }
 
-inline uint8_t Cpu6502::read(uint16_t addr)
-{
-    return bus.cpuRead(addr);
-}
-
-inline void Cpu6502::write(uint16_t addr, uint8_t data)
-{
-    bus.cpuWrite(addr, data);
-}
+// read and write inlined in cpu6502.h
 
 IRAM_ATTR void Cpu6502::OAM_DMA(uint8_t page)
 {
@@ -48,9 +40,17 @@ IRAM_ATTR void Cpu6502::clock(int i)
     {
         if (cycles > 0)
         {
-            cycles--;
-            bus.cart->cpuCycle(1);
-            continue;
+            if (remaining_cycles >= cycles)
+            {
+                remaining_cycles -= (cycles - 1);
+                cycles = 0;
+                continue;
+            }
+            else
+            {
+                cycles -= remaining_cycles;
+                return;
+            }
         }
 
         opcode = read(PC++);
@@ -336,14 +336,12 @@ IRAM_ATTR void Cpu6502::clock(int i)
         if (remaining_cycles >= cycles)
         {
             remaining_cycles -= (cycles - 1);
-            bus.cart->cpuCycle(cycles);
             cycles = 0;
             continue;
         }
         else
         {
             cycles -= remaining_cycles;
-            bus.cart->cpuCycle(remaining_cycles);
             return;
         }
     }

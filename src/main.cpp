@@ -510,10 +510,8 @@ void setup() {
   tft.setRotation(0);
   tft.fillScreen(ST77XX_BLACK); // Clear display RAM to black while OFF
 
-  // 3. Initialize joystick, button, random seed, and Pixel Wars preferences
-  pinMode(JOY_X, INPUT);
-  pinMode(JOY_Y, INPUT);
-  pinMode(JOY_SW, INPUT_PULLUP);
+  // 3. Initialize global fast joystick, button, random seed, and Pixel Wars preferences
+  Joystick.begin();
   setupButton();
   randomSeed(analogRead(36));
   pixelWars.begin();
@@ -677,29 +675,15 @@ void loop() {
 
     // 2. Process joystick movements (Only active on Home Screen)
     if (currentScreen == STATE_HOME) {
-      int vrx = readJoystickX();
-      int vry = readJoystickY();
-
-      // Joystick deadzone filtering (Centered around 1500..2700)
-      bool isCentered = (vrx > 1500 && vrx < 2700 && vry > 1500 && vry < 2700);
-
-      if (isCentered) {
-        joystickCentered = true;
-      } else if (joystickCentered) {
-        // Decode direction based on thresholds
-        if (vry < 1000) {
-          handleNavigation(DIR_UP);
-          joystickCentered = false;
-        } else if (vry > 3000) {
-          handleNavigation(DIR_DOWN);
-          joystickCentered = false;
-        } else if (vrx < 1000) {
-          handleNavigation(DIR_LEFT);
-          joystickCentered = false;
-        } else if (vrx > 3000) {
-          handleNavigation(DIR_RIGHT);
-          joystickCentered = false;
-        }
+      Joystick.update();
+      if (Joystick.wasUpPressed()) {
+        handleNavigation(DIR_UP);
+      } else if (Joystick.wasDownPressed()) {
+        handleNavigation(DIR_DOWN);
+      } else if (Joystick.wasLeftPressed()) {
+        handleNavigation(DIR_LEFT);
+      } else if (Joystick.wasRightPressed()) {
+        handleNavigation(DIR_RIGHT);
       }
     }
 

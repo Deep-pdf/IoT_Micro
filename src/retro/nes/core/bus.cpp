@@ -11,23 +11,7 @@ Bus::~Bus()
 {
 }
 
-IRAM_ATTR void Bus::cpuWrite(uint16_t addr, uint8_t data)
-{
-    PROFILE_SCOPE(PROF_BUS_CPU_WRITE);
-    if (uint8_t* p = write_pages[addr >> 8])
-    {
-        p[addr & 0xFF] = data;
-        return;
-    }
-    write_handlers[addr >> 8](this, addr, data);
-}
-
-IRAM_ATTR uint8_t Bus::cpuRead(uint16_t addr)
-{
-    PROFILE_SCOPE(PROF_BUS_CPU_READ);
-    if (uint8_t* p = read_pages[addr >> 8]) return p[addr & 0xFF];
-    return read_handlers[addr >> 8](this, addr);
-}
+// cpuWrite and cpuRead inlined in bus.h
 
 void Bus::setController(uint8_t state)
 {

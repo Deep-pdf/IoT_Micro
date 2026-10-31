@@ -8,33 +8,90 @@
 #define HW_JOY_Y  35
 #define HW_JOY_SW 32
 
-/**
- * Universal Joystick Reader for 90-degree clockwise rotated hardware.
- *
- * Physical Rotation Mapping:
- * - Physical UP    -> y goes LOW  (< 1000)
- * - Physical DOWN  -> y goes HIGH (> 3000)
- * - Physical LEFT  -> x goes LOW  (< 1000)
- * - Physical RIGHT -> x goes HIGH (> 3000)
- *
- * Math Derivation (90 deg Clockwise Rotation):
- *   Logical Y = Raw X
- *   Logical X = 4095 - Raw Y
- */
+enum class JoyDir : uint8_t {
+    NONE = 0,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT
+};
+
+class GlobalJoystick {
+public:
+    GlobalJoystick();
+
+    // Call once in setup() to configure pins and calibrate resting center
+    void begin();
+
+    // High-frequency polling update: reads ADC, evaluates thresholds, handles hysteresis & repeats
+    void update();
+
+    // Continuous digital state (ideal for games: NES, Pixel Wars, Lost Crown)
+    bool isUp() const;
+    bool isDown() const;
+    bool isLeft() const;
+    bool isRight() const;
+    bool isPressed() const; // Joystick click (GPIO 32, active LOW)
+    JoyDir getDirection() const;
+
+    // Edge-triggered & auto-repeat state (ideal for menus: Home, Retro Launcher, AI App)
+    bool wasUpPressed();
+    bool wasDownPressed();
+    bool wasLeftPressed();
+    bool wasRightPressed();
+    bool wasClickPressed();
+
+    // Analog readings (rotated logical coordinates 0..4095)
+    int getLogicalX() const;
+    int getLogicalY() const;
+    int getRawX() const;
+    int getRawY() const;
+
+    // Calibration & threshold inspection/tuning
+    int getCenterX() const;
+    int getCenterY() const;
+    int getActiveThreshold() const;
+    int getReleaseThreshold() const;
+    void setThresholds(int activeThreshold, int releaseThreshold);
+
+private:
+    int m_rawX;
+    int m_rawY;
+    int m_logicalX;
+    int m_logicalY;
+    int m_centerX;
+    int m_centerY;
+
+    int m_threshActive;  // default 450 counts from center
+    int m_threshRelease; // default 250 counts from center
+
+    bool m_up;
+    bool m_down;
+    bool m_left;
+    bool m_right;
+    bool m_click;
+
+    // Edge & Repeat management for menu navigation
+    JoyDir m_lastDir;
+    unsigned long m_dirHoldStart;
+    unsigned long m_dirLastRepeat;
+    bool m_dirConsumed;
+
+    bool m_lastClickRaw;
+    unsigned long m_lastClickDebounce;
+    bool m_clickTriggered;
+};
+
+// Global singleton instance accessible everywhere in the project
+extern GlobalJoystick Joystick;
+
+// Legacy compatibility helpers
 inline int readJoystickX() {
-    int rawY = analogRead(HW_JOY_Y);
-    int x = 4095 - rawY;
-    if (x < 0) x = 0;
-    if (x > 4095) x = 4095;
-    return x;
+    return Joystick.getLogicalX();
 }
 
 inline int readJoystickY() {
-    int rawX = analogRead(HW_JOY_X);
-    int y = rawX;
-    if (y < 0) y = 0;
-    if (y > 4095) y = 4095;
-    return y;
+    return Joystick.getLogicalY();
 }
 
 #endif // JOYSTICK_H

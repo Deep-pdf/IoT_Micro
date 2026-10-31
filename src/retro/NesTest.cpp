@@ -2,21 +2,14 @@
 #include "nes/NesBridge.h"
 #include "nes/NesDisplayAdapter.h"
 #include "nes/NesRom.h"
+#include "joystick.h"
 
 #include <Arduino.h>
 #include <Adafruit_ST7735.h>
 
-// ---- Pin aliases (match config.h / joystick.h) ----
-#define NESTEST_JOY_X     34   // ADC raw X axis
-#define NESTEST_JOY_Y     35   // ADC raw Y axis
-#define NESTEST_JOY_SW    32   // Joystick click → NES B
+// ---- Pin aliases (match config.h / button.h) ----
 #define NESTEST_BTN_A     13   // GPIO 13 push button → NES A
 #define NESTEST_BTN_START 25   // GPIO 25 push button → NES Start (long hold = exit test)
-
-// Joystick thresholds (matching main.cpp joystick.h rotation mapping)
-// Physical 90° CW rotation:  logical X = 4095 - rawY,  logical Y = rawX
-#define JOY_THRESH_LO  1000
-#define JOY_THRESH_HI  3000
 
 // NES controller bit positions (standard 8-bit shift register order)
 #define NES_A      0x01
@@ -40,33 +33,20 @@ static unsigned long s_totalEmuTimeUs   = 0;
 static unsigned long s_totalRendTimeUs  = 0;
 static unsigned long s_totalTftTimeUs   = 0;
 
-// ---- Joystick: apply rotation mapping from joystick.h ----
-static inline int joy_logicalX() {
-    int v = 4095 - (int)analogRead(NESTEST_JOY_Y);
-    return v < 0 ? 0 : (v > 4095 ? 4095 : v);
-}
-static inline int joy_logicalY() {
-    int v = (int)analogRead(NESTEST_JOY_X);
-    return v < 0 ? 0 : (v > 4095 ? 4095 : v);
-}
-
-// Build the NES controller byte from current hardware state
+// Build the NES controller byte from global fast joystick state
 static uint8_t readNesController() {
+    Joystick.update();
     uint8_t ctrl = 0x00;
 
-    int lx = joy_logicalX();
-    int ly = joy_logicalY();
-
-    // Prevent simultaneous UP+DOWN / LEFT+RIGHT by reading largest deflection only
-    if (ly < JOY_THRESH_LO)       ctrl |= NES_UP;
-    else if (ly > JOY_THRESH_HI)  ctrl |= NES_DOWN;
-
-    if (lx < JOY_THRESH_LO)       ctrl |= NES_LEFT;
-    else if (lx > JOY_THRESH_HI)  ctrl |= NES_RIGHT;
+    // Fast, responsive directions from global driver
+    if (Joystick.isUp())    ctrl |= NES_UP;
+    if (Joystick.isDown())  ctrl |= NES_DOWN;
+    if (Joystick.isLeft())  ctrl |= NES_LEFT;
+    if (Joystick.isRight()) ctrl |= NES_RIGHT;
 
     // Buttons: INPUT_PULLUP → active LOW
     if (digitalRead(NESTEST_BTN_A)     == LOW) ctrl |= NES_A;
-    if (digitalRead(NESTEST_JOY_SW)    == LOW) ctrl |= NES_B;
+    if (Joystick.isPressed())                 ctrl |= NES_B; // GPIO 32 click
     if (digitalRead(NESTEST_BTN_START) == LOW) ctrl |= NES_START;
 
     return ctrl;
@@ -109,15 +89,15 @@ static void drawSplash(Adafruit_ST7735& tft) {
     tft.setTextColor(0x07E0); // green
     tft.setTextSize(1);
     tft.setCursor(4, 72);
-    tft.print("NES OPTIMIZED TEST");
+    tft.print("NES + FAST JOYSTICK");
 
     tft.setTextColor(0xFFFF);
     tft.setCursor(4, 84);
     tft.print("ROM: Mario Bros 3");
     tft.setCursor(4, 96);
-    tft.print("SPI: 40MHz Burst x8");
+    tft.printf("Joy Cal: %d,%d", Joystick.getCenterX(), Joystick.getCenterY());
     tft.setCursor(4, 108);
-    tft.print("DIRECT LUT 2:1");
+    tft.print("SPI: 40MHz Burst x8");
 
     tft.setTextColor(0xFD20); // orange
     tft.setCursor(4, 122);
@@ -141,12 +121,12 @@ void NesTest::init(Adafruit_ST7735& tft) {
     s_totalRendTimeUs  = 0;
     s_totalTftTimeUs   = 0;
 
-    // Re-initialize pins (idempotent)
+    // Initialize global joystick system
+    Joystick.begin();
+
+    // Re-initialize buttons
     pinMode(NESTEST_BTN_A,     INPUT_PULLUP);
     pinMode(NESTEST_BTN_START, INPUT_PULLUP);
-    pinMode(NESTEST_JOY_SW,    INPUT_PULLUP);
-    pinMode(NESTEST_JOY_X,     INPUT);
-    pinMode(NESTEST_JOY_Y,     INPUT);
 
     Serial.println();
     Serial.println("=== NES OPTIMIZED TEST START ===");
@@ -154,7 +134,8 @@ void NesTest::init(Adafruit_ST7735& tft) {
     Serial.println("ROM SIZE: 393232");
     Serial.println("MAPPER: 4 (MMC3)");
     Serial.println("DISPLAY: 128x120 active on 128x160 ST7735");
-    Serial.println("OPTIMIZATION: 40MHz SPI, 8-line burst, 2:1 direct LUT");
+    Serial.printf("JOYSTICK: Center=(%d,%d) Thresh=+/-d\n",
+                  Joystick.getCenterX(), Joystick.getCenterY(), Joystick.getActiveThreshold());
     Serial.println("Controls: JOY=DPAD, GPIO13=A, GPIO32=B, GPIO25=Start (hold 2s=exit)");
 
     drawSplash(tft);
@@ -176,7 +157,7 @@ void NesTest::init(Adafruit_ST7735& tft) {
         return;
     }
 
-    Serial.println("[NesTest] ROM loaded OK — starting optimized emulation");
+    Serial.println("[NesTest] ROM loaded OK — starting emulation with fast global input");
     s_initialized = true;
 }
 
@@ -241,7 +222,9 @@ void NesTest::update(Adafruit_ST7735& tft) {
         Serial.print(avgRendMs, 1);
         Serial.print("ms | TFT: ");
         Serial.print(avgTftMs, 1);
-        Serial.println("ms");
+        Serial.printf("ms | Joy: (%d,%d) [L:%d R:%d U:%d D:%d]\n",
+                      Joystick.getLogicalX(), Joystick.getLogicalY(),
+                      Joystick.isLeft(), Joystick.isRight(), Joystick.isUp(), Joystick.isDown());
 
         s_frameCount       = 0;
         s_totalFrameTimeUs = 0;

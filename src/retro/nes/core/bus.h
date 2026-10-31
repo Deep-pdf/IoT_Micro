@@ -28,8 +28,17 @@ public:
     void setController(uint8_t state);
     uint8_t getControllerState();
 
-    void cpuWrite(uint16_t addr, uint8_t data);
-    uint8_t cpuRead(uint16_t addr);
+    inline void cpuWrite(uint16_t addr, uint8_t data) {
+        if (uint8_t* p = write_pages[addr >> 8]) {
+            p[addr & 0xFF] = data;
+            return;
+        }
+        write_handlers[addr >> 8](this, addr, data);
+    }
+    inline uint8_t cpuRead(uint16_t addr) {
+        if (uint8_t* p = read_pages[addr >> 8]) return p[addr & 0xFF];
+        return read_handlers[addr >> 8](this, addr);
+    }
     void setPPUMirrorMode(MIRROR mirror);
     MIRROR getPPUMirrorMode();
 
