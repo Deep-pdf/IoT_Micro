@@ -509,6 +509,14 @@ inline void Ppu2C02::finishScanline()
     PROFILE_SCOPE(PROF_PPU_FINISH_SCANLINE);
     if (mask.render_background || mask.render_sprite) cart->ppuScanline();
 
+// High-speed scanline indexed callback for 2:1 downscaling (skips odd scanlines completely)
+    if (scanline_indexed_callback) {
+        if ((scanline & 1) == 0 && scanline < 240) {
+            scanline_indexed_callback(scanline, ptr_buffer, nes_palette[mask.emphasize]);
+        }
+        return;
+    }
+
 // Transfer internal scanline buffer to display buffer
 #ifndef COMPOSITE_VIDEO
     #ifdef DOUBLE_BUFFERING

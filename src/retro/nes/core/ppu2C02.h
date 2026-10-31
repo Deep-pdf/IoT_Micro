@@ -36,6 +36,7 @@ public:
 
     typedef void (*DrawCallback)(uint8_t* buffer, uint32_t size);
     typedef void (*ScanlineDrawCallback)(int scanline, const uint16_t* pixels256);
+    typedef void (*ScanlineIndexedCallback)(int scanline, const uint8_t* nesIndices256, const uint16_t* palette64);
     void setDrawCallback(DrawCallback callback)
     {
         draw_callback = callback;
@@ -43,6 +44,10 @@ public:
     void setScanlineCallback(ScanlineDrawCallback callback)
     {
         scanline_callback = callback;
+    }
+    void setScanlineIndexedCallback(ScanlineIndexedCallback callback)
+    {
+        scanline_indexed_callback = callback;
     }
 
     void buildPPUPageTables();
@@ -95,6 +100,7 @@ public:
 private:
     DrawCallback draw_callback = nullptr;
     ScanlineDrawCallback scanline_callback = nullptr;
+    ScanlineIndexedCallback scanline_indexed_callback = nullptr;
     static uint16_t display_scanline[SCANLINE_SIZE];
     Cartridge* cart = nullptr;
     Bus* bus = nullptr;

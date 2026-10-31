@@ -7,10 +7,6 @@ static Cpu6502* nesCpu = nullptr;
 static Cartridge* activeCart = nullptr;
 static bool emulatorRunning = false;
 
-static void onNesScanline(int scanline, const uint16_t* pixels256) {
-    NesDisplayAdapter::renderScanline(scanline, pixels256);
-}
-
 bool NesBridge::init(Adafruit_ST7735* display) {
     NesDisplayAdapter::init(display);
 
@@ -18,7 +14,7 @@ bool NesBridge::init(Adafruit_ST7735* display) {
         nesCpu = new Cpu6502();
     }
 
-    nesCpu->bus.ppu.setScanlineCallback(onNesScanline);
+    nesCpu->bus.ppu.setScanlineIndexedCallback(NesDisplayAdapter::renderScanlineIndexed);
     emulatorRunning = false;
     return true;
 }
