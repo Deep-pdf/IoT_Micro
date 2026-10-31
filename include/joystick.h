@@ -80,17 +80,20 @@ private:
     bool m_lastClickRaw;
     unsigned long m_lastClickDebounce;
     bool m_clickTriggered;
+    unsigned long m_lastUpdateMicros;
 };
 
 // Global singleton instance accessible everywhere in the project
 extern GlobalJoystick Joystick;
 
-// Legacy compatibility helpers
+// Legacy compatibility helpers (automatically refresh state)
 inline int readJoystickX() {
+    Joystick.update();
     return Joystick.getLogicalX();
 }
 
 inline int readJoystickY() {
+    Joystick.update();
     return Joystick.getLogicalY();
 }
 

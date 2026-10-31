@@ -9,7 +9,8 @@ GlobalJoystick::GlobalJoystick()
       m_threshActive(450), m_threshRelease(250),
       m_up(false), m_down(false), m_left(false), m_right(false), m_click(false),
       m_lastDir(JoyDir::NONE), m_dirHoldStart(0), m_dirLastRepeat(0), m_dirConsumed(false),
-      m_lastClickRaw(HIGH), m_lastClickDebounce(0), m_clickTriggered(false)
+      m_lastClickRaw(HIGH), m_lastClickDebounce(0), m_clickTriggered(false),
+      m_lastUpdateMicros(0)
 {
 }
 
@@ -46,6 +47,12 @@ void GlobalJoystick::begin() {
 }
 
 void GlobalJoystick::update() {
+    unsigned long nowMicros = micros();
+    if (m_lastUpdateMicros != 0 && (nowMicros - m_lastUpdateMicros < 1000)) {
+        return; // Rate limit ADC sampling to at most once per millisecond
+    }
+    m_lastUpdateMicros = nowMicros;
+
     // 1. Read hardware ADC and apply 90-degree CW rotation
     m_rawX = analogRead(HW_JOY_X);
     m_rawY = analogRead(HW_JOY_Y);
@@ -141,7 +148,7 @@ bool GlobalJoystick::isRight() const { return m_right; }
 bool GlobalJoystick::isPressed() const { return m_click; }
 
 bool GlobalJoystick::wasUpPressed() {
-    if (!m_up) return false;
+    if (getDirection() != JoyDir::UP) return false;
     unsigned long now = millis();
     if (!m_dirConsumed) {
         m_dirConsumed = true;
@@ -156,7 +163,7 @@ bool GlobalJoystick::wasUpPressed() {
 }
 
 bool GlobalJoystick::wasDownPressed() {
-    if (!m_down) return false;
+    if (getDirection() != JoyDir::DOWN) return false;
     unsigned long now = millis();
     if (!m_dirConsumed) {
         m_dirConsumed = true;
@@ -170,7 +177,7 @@ bool GlobalJoystick::wasDownPressed() {
 }
 
 bool GlobalJoystick::wasLeftPressed() {
-    if (!m_left) return false;
+    if (getDirection() != JoyDir::LEFT) return false;
     unsigned long now = millis();
     if (!m_dirConsumed) {
         m_dirConsumed = true;
@@ -184,7 +191,7 @@ bool GlobalJoystick::wasLeftPressed() {
 }
 
 bool GlobalJoystick::wasRightPressed() {
-    if (!m_right) return false;
+    if (getDirection() != JoyDir::RIGHT) return false;
     unsigned long now = millis();
     if (!m_dirConsumed) {
         m_dirConsumed = true;
@@ -198,7 +205,11 @@ bool GlobalJoystick::wasRightPressed() {
 }
 
 bool GlobalJoystick::wasClickPressed() {
-    return m_clickTriggered;
+    if (m_clickTriggered) {
+        m_clickTriggered = false;
+        return true;
+    }
+    return false;
 }
 
 int GlobalJoystick::getLogicalX() const { return m_logicalX; }

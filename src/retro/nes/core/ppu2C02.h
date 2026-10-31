@@ -86,6 +86,9 @@ public:
         PaletteCount
     };
     void setPalette(uint8_t palette);
+    void setCustomPalette(const uint16_t (*paletteArray)[64]) {
+        if (paletteArray) nes_palette = paletteArray;
+    }
 
     static constexpr int PPU_PAGE_SIZE = 256;
     static constexpr int NUM_PPU_PAGES = 0x4000 / PPU_PAGE_SIZE;

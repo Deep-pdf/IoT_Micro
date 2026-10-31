@@ -1,5 +1,6 @@
 #include "NesBridge.h"
 #include "NesDisplayAdapter.h"
+#include "NesPalette.h"
 #include "core/cpu6502.h"
 #include "core/cartridge.h"
 
@@ -14,6 +15,8 @@ bool NesBridge::init(Adafruit_ST7735* display) {
         nesCpu = new Cpu6502();
     }
 
+    NesPalette::init();
+    nesCpu->bus.ppu.setCustomPalette(NesPalette::getEnhancedPaletteArray());
     nesCpu->bus.ppu.setScanlineIndexedCallback(NesDisplayAdapter::renderScanlineIndexed);
     emulatorRunning = false;
     return true;

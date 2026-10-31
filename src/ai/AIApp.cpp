@@ -3,25 +3,14 @@
 #include "AIConnection.h"
 #include "BLADRMF_4pt7b.h"
 #include "button.h"
+#include "joystick.h"
 #include <Arduino.h>
 #include <string.h>
-
-// ============================================================
-//  HARDWARE PINS
-// ============================================================
-#define JOY_X_PIN   34
-#define JOY_Y_PIN   35
 
 // ============================================================
 //  TIMING
 // ============================================================
 #define CURSOR_BLINK_MS   500   // cursor toggle period (ms)
-#define JOY_DEAD_LO      1500   // joystick dead-zone lower bound (ADC counts)
-#define JOY_DEAD_HI      2700   // joystick dead-zone upper bound
-#define JOY_THRESH_LO    1000   // below this â†’ direction detected
-#define JOY_THRESH_HI    3000   // above this â†’ direction detected
-#define JOY_INIT_DELAY    200   // ms before first auto-repeat fires
-#define JOY_REPEAT_RATE   120   // ms between subsequent auto-repeats
 
 // ============================================================
 //  LIMITS
@@ -64,14 +53,6 @@ static String       responseText    = "";
 static bool          cursorVisible  = true;
 static unsigned long lastBlink      = 0;
 static bool          inputDirty     = true;
-
-// Joystick auto-repeat
-static bool          joyCentered    = true;
-static bool          joyMoving      = false;
-static unsigned long joyMoveStart   = 0;
-static unsigned long lastRepeat     = 0;
-static int           lastDx         = 0;
-static int           lastDy         = 0;
 
 // Exit signal for main.cpp
 static bool          _wantsExit     = false;
@@ -221,8 +202,6 @@ static int    respScrollRow    = 0;
 static int    maxRespScroll    = 0;
 static int    visibleRespLines = 0;
 static int16_t respStartY       = 0;
-static unsigned long lastScrollTick = 0;
-static bool scrollStickCentered     = true;
 
 // Dedicated function for rendering word-wrapped text using plain font (same as question)
 // Returns the bottom Y coordinate of the rendered text block
@@ -465,56 +444,15 @@ static void drawResponseBody(Adafruit_ST7735 &tft, const String &text) {
 //  and forwards movement to AIKeyboard::navigate().
 // ============================================================
 static void processJoystick(Adafruit_ST7735 &tft) {
-    int vrx = readJoystickX();
-    int vry = readJoystickY();
-
-    // Calculate displacement relative to dead-zone thresholds (1200..2800)
-    int diffX = 0;
-    if (vrx < 1200)      diffX = vrx - 1200;      // negative -> left
-    else if (vrx > 2800) diffX = vrx - 2800;      // positive -> right
-
-    int diffY = 0;
-    if (vry < 1200)      diffY = vry - 1200;      // negative -> up
-    else if (vry > 2800) diffY = vry - 2800;      // positive -> down
-
-    if (diffX == 0 && diffY == 0) {
-        joyCentered = true;
-        joyMoving   = false;
-        return;
-    }
-
-    // Pick dominant axis
     int dx = 0, dy = 0;
-    if (abs(diffX) >= abs(diffY)) {
-        dx = (diffX < 0) ? -1 : 1;
-    } else {
-        dy = (diffY < 0) ? -1 : 1;
-    }
+    if (Joystick.wasLeftPressed())       dx = -1;
+    else if (Joystick.wasRightPressed()) dx = 1;
+    else if (Joystick.wasUpPressed())    dy = -1;
+    else if (Joystick.wasDownPressed())  dy = 1;
 
-    unsigned long now = millis();
-
-    if (joyCentered) {
-        // First movement out of dead-zone: act immediately
-        joyCentered  = false;
-        joyMoving    = true;
-        joyMoveStart = now;
-        lastRepeat   = now;
-        lastDx       = dx;
-        lastDy       = dy;
+    if (dx != 0 || dy != 0) {
         AIKeyboard::navigate(dx, dy);
         AIKeyboard::render(tft);           // Dirty-only (2 keys repainted)
-
-    } else if (joyMoving) {
-        // Auto-repeat after initial delay
-        if ((now - joyMoveStart) > (unsigned long)JOY_INIT_DELAY) {
-            if ((now - lastRepeat) >= (unsigned long)JOY_REPEAT_RATE) {
-                lastRepeat = now;
-                lastDx     = dx;
-                lastDy     = dy;
-                AIKeyboard::navigate(dx, dy);
-                AIKeyboard::render(tft);
-            }
-        }
     }
 }
 
@@ -539,7 +477,7 @@ static void updateKeyboard(Adafruit_ST7735 &tft) {
     processJoystick(tft);
 
     // ── 3. Physical ENTER button → select current key ────────
-    if (isEnterPressed()) {
+    if (isEnterPressed() || Joystick.wasClickPressed()) {
         char k = AIKeyboard::selectCurrentKey();
 
         if (k == KEY_SHIFT) {
@@ -602,14 +540,12 @@ static void updateThinking(Adafruit_ST7735 &tft) {
 //  STATE: CHAT_RESPONSE
 // ============================================================
 static void updateResponse(Adafruit_ST7735 &tft) {
-    // 1. BACK or ENTER → return to keyboard for a new question
-    if (isBackPressed() || isEnterPressed()) {
+    // 1. BACK or ENTER or Click -> return to keyboard for a new question
+    if (isBackPressed() || isEnterPressed() || Joystick.wasClickPressed()) {
         inputText     = "";
         aiState       = CHAT_KEYBOARD;
         cursorVisible = true;
         lastBlink     = millis();
-        joyCentered   = true;
-        joyMoving     = false;
         inputDirty    = true;
         respScrollRow = 0;
         clearButtonEvents();
@@ -624,28 +560,16 @@ static void updateResponse(Adafruit_ST7735 &tft) {
     }
 
     // 2. Joystick UP/DOWN scrolling for long responses
-    int vry = readJoystickY();
-    unsigned long now = millis();
-
-    bool centered = (vry >= 1200 && vry <= 2800);
-    if (centered) {
-        scrollStickCentered = true;
-    } else if (maxRespScroll > 0) {
-        if (scrollStickCentered || (now - lastScrollTick >= 120)) {
-            if (vry < 1200) { // Push UP -> scroll towards top
-                if (respScrollRow > 0) {
-                    respScrollRow--;
-                    lastScrollTick = now;
-                    scrollStickCentered = false;
-                    renderResponseSlice(tft);
-                }
-            } else if (vry > 2800) { // Push DOWN -> scroll towards bottom
-                if (respScrollRow < maxRespScroll) {
-                    respScrollRow++;
-                    lastScrollTick = now;
-                    scrollStickCentered = false;
-                    renderResponseSlice(tft);
-                }
+    if (maxRespScroll > 0) {
+        if (Joystick.wasUpPressed()) {
+            if (respScrollRow > 0) {
+                respScrollRow--;
+                renderResponseSlice(tft);
+            }
+        } else if (Joystick.wasDownPressed()) {
+            if (respScrollRow < maxRespScroll) {
+                respScrollRow++;
+                renderResponseSlice(tft);
             }
         }
     }
@@ -661,8 +585,6 @@ void AIApp::init(Adafruit_ST7735 &tft) {
     responseText  = "";
     cursorVisible = true;
     lastBlink     = millis();
-    joyCentered   = true;
-    joyMoving     = false;
     inputDirty    = true;
     _wantsExit    = false;
     clearButtonEvents();
@@ -691,6 +613,8 @@ bool AIApp::shouldExit() {
 //  Called every loop() while STATE_AI is active.
 // ============================================================
 void AIApp::update(Adafruit_ST7735 &tft) {
+    Joystick.update();
+
     // 5-second long press on BACK button exits to Home screen
     if (isBackLongPressed()) {
         _wantsExit = true;

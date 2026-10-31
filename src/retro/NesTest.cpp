@@ -2,6 +2,7 @@
 #include "nes/NesBridge.h"
 #include "nes/NesDisplayAdapter.h"
 #include "nes/NesRom.h"
+#include "nes/NesPalette.h"
 #include "joystick.h"
 
 #include <Arduino.h>
@@ -57,26 +58,59 @@ static uint8_t readNesController() {
 static void drawSplash(Adafruit_ST7735& tft) {
     tft.setRotation(0);
     tft.fillScreen(0x0000);
-    tft.setFont(nullptr);  // use Adafruit default 5×7 font
+    tft.setFont(nullptr);
     tft.setTextWrap(false);
 
     // Active area boundary rectangle: (0, 20, 128, 120)
     tft.drawRect(0, 20, 128, 120, 0x7BEF);
 
-    // Diagnostic Band 1: Pure Primary Colors (RGB565 verification)
-    tft.fillRect(4, 24, 27, 12, 0xF800); // RED
-    tft.fillRect(35, 24, 27, 12, 0x07E0); // GREEN
-    tft.fillRect(66, 24, 27, 12, 0x001F); // BLUE
-    tft.fillRect(97, 24, 27, 12, 0xFFFF); // WHITE
+    NesPalette::init();
+    const uint16_t* origPal = NesPalette::getOriginalPalette(0);
+    const uint16_t* enhPal  = NesPalette::getEnhancedPalette(0);
 
-    // Diagnostic Band 2: NES Palette swatches
-    tft.fillRect(4, 40, 27, 12, 0xA920); // NES Mario Red
-    tft.fillRect(35, 40, 27, 12, 0x843F); // NES Sky Blue
-    tft.fillRect(66, 40, 27, 12, 0x56A4); // NES Bush Green
-    tft.fillRect(97, 40, 27, 12, 0xDB80); // NES Coin Yellow
+    // Representative 9 colors: Red, Green, Blue, Yellow, Sky Blue, Brown, Dark Gray, Light Gray, White
+    static const uint8_t repIndices[9] = {
+        0x16, // Red (Mario)
+        0x2A, // Green (Bush / Pipe)
+        0x12, // Blue (Deep)
+        0x27, // Yellow (Coin / Block)
+        0x21, // Sky Blue
+        0x17, // Brown (Terrain)
+        0x00, // Dark Gray
+        0x10, // Light Gray
+        0x20  // White
+    };
 
-    // Diagnostic Band 3: 2-pixel fine checkerboard (pixel alignment & sharpness check)
-    for (int y = 56; y < 66; y += 2) {
+    // Header
+    tft.setTextColor(0x07E0); // Green
+    tft.setTextSize(1);
+    tft.setCursor(4, 23);
+    tft.print("NES PALETTE ENHANCED");
+
+    // Row 1: Original NES swatches
+    tft.setTextColor(0xAD55); // Gray label
+    tft.setCursor(4, 35);
+    tft.print("ORG");
+    int startX = 26;
+    for (int i = 0; i < 9; i++) {
+        tft.fillRect(startX + i * 11, 33, 10, 9, origPal[repIndices[i]]);
+    }
+
+    // Row 2: Enhanced NES swatches (direct vertical comparison)
+    tft.setTextColor(0x07FF); // Cyan label
+    tft.setCursor(4, 47);
+    tft.print("ENH");
+    for (int i = 0; i < 9; i++) {
+        tft.fillRect(startX + i * 11, 45, 10, 9, enhPal[repIndices[i]]);
+    }
+
+    // Swatch indicator initials
+    tft.setTextColor(0x7BEF); // Mid gray
+    tft.setCursor(startX + 2, 57);
+    tft.print("R  G  B  Y  S  Br Dk Lt W");
+
+    // 2-pixel fine checkerboard (pixel alignment & sharpness check)
+    for (int y = 67; y < 75; y += 2) {
         for (int x = 4; x < 124; x += 4) {
             tft.drawPixel(x, y, 0xFFFF);
             tft.drawPixel(x + 1, y, 0xFFFF);
@@ -85,25 +119,24 @@ static void drawSplash(Adafruit_ST7735& tft) {
         }
     }
 
-    // Diagnostic text
-    tft.setTextColor(0x07E0); // green
-    tft.setTextSize(1);
-    tft.setCursor(4, 72);
-    tft.print("NES + FAST JOYSTICK");
+    // Diagnostic information
+    tft.setTextColor(0x07E0); // Green
+    tft.setCursor(4, 78);
+    tft.printf("Sat:+%d%% Con:+%d%% Exp:-%d%%", NesPalette::getSaturationBoost(), NesPalette::getContrastBoost(), NesPalette::getExposureReduce());
 
     tft.setTextColor(0xFFFF);
-    tft.setCursor(4, 84);
+    tft.setCursor(4, 90);
     tft.print("ROM: Mario Bros 3");
-    tft.setCursor(4, 96);
+    tft.setCursor(4, 102);
     tft.printf("Joy Cal: %d,%d", Joystick.getCenterX(), Joystick.getCenterY());
-    tft.setCursor(4, 108);
-    tft.print("SPI: 40MHz Burst x8");
+    tft.setCursor(4, 114);
+    tft.print("SPI: 40MHz  LUT: 64xRGB");
 
-    tft.setTextColor(0xFD20); // orange
-    tft.setCursor(4, 122);
+    tft.setTextColor(0xFD20); // Orange
+    tft.setCursor(4, 126);
     tft.print("STARTING...");
 
-    delay(1500);
+    delay(2000);
 }
 
 // ============================================================
