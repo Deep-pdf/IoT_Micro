@@ -2,6 +2,7 @@
 #include "RetroLauncher.h"
 #include "RetroInput.h"
 #include "nes/NesBridge.h"
+#include "nes/NesDisplayAdapter.h"
 #include "nes/NesRom.h"
 #include "joystick.h"
 #include "button.h"
@@ -35,6 +36,14 @@ static RetroAppState s_state = STATE_LAUNCHER;
 static NesGameId     s_activeGame = NES_GAME_NONE;
 static bool          s_startHeld = false;
 static unsigned long s_startHoldMs = 0;
+
+// Diagnostics & profiling counters
+static unsigned long s_frameCount       = 0;
+static unsigned long s_lastFpsPrint     = 0;
+static unsigned long s_totalFrameTimeUs = 0;
+static unsigned long s_totalEmuTimeUs   = 0;
+static unsigned long s_totalRendTimeUs  = 0;
+static unsigned long s_totalTftTimeUs   = 0;
 
 // Hardware pin mapping for NES controller emulation
 #define NES_BTN_A     13   // GPIO 13 push button -> NES Button A
@@ -72,6 +81,8 @@ void RetroApp::init(Adafruit_ST7735 &tft) {
     s_state = STATE_LAUNCHER;
     s_activeGame = NES_GAME_NONE;
     s_startHeld = false;
+    s_frameCount = 0;
+    s_lastFpsPrint = millis();
     RetroLauncher::init(tft, true); // true = reset selection to Super Mario Bros. (Arcade#1)
 }
 
@@ -83,11 +94,21 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
             RetroLauncher::clearLaunchIntent();
             NesGameId targetGame = (intent == RETRO_LAUNCH_MARIO) ? NES_GAME_MARIO : NES_GAME_CONTRA;
             NesBridge::init(&tft);
+            NesDisplayAdapter::loadSavedDisplayMode();
+            NesDisplayAdapter::clearBorders();
             if (NesBridge::loadGame(targetGame)) {
                 s_activeGame = targetGame;
                 s_state = STATE_GAMEPLAY;
                 s_startHeld = false;
-                Serial.printf("[RetroApp] Launched NES Game: %d\n", targetGame);
+                s_frameCount = 0;
+                s_lastFpsPrint = millis();
+                s_totalFrameTimeUs = 0;
+                s_totalEmuTimeUs = 0;
+                s_totalRendTimeUs = 0;
+                s_totalTftTimeUs = 0;
+                Serial.printf("[RetroApp] Launched NES Game: %s | Display Mode: %s\n",
+                              (targetGame == NES_GAME_MARIO) ? "Super Mario Bros. 3" : "Contra",
+                              (NesDisplayAdapter::getDisplayMode() == NES_DISPLAY_HYBRID) ? "HYBRID" : "FULL");
             }
         }
     } else if (s_state == STATE_GAMEPLAY) {
@@ -122,8 +143,46 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
             }
         }
 
-        // Run one NES frame (emulation + scanline downscale + DMA TFT transfer)
+        // Run one NES frame with microsecond stage profiling
+        NesDisplayAdapter::resetFrameMetrics();
+
+        unsigned long t0 = micros();
         NesBridge::runFrame();
+        unsigned long t1 = micros();
+
+        unsigned long frameTimeUs = t1 - t0;
+        unsigned long rendTimeUs  = NesDisplayAdapter::getRenderTimeUs();
+        unsigned long tftTimeUs   = NesDisplayAdapter::getTftTimeUs();
+        unsigned long emuTimeUs   = (frameTimeUs > (rendTimeUs + tftTimeUs)) ? (frameTimeUs - (rendTimeUs + tftTimeUs)) : 0;
+
+        s_totalFrameTimeUs += frameTimeUs;
+        s_totalRendTimeUs  += rendTimeUs;
+        s_totalTftTimeUs   += tftTimeUs;
+        s_totalEmuTimeUs   += emuTimeUs;
+        s_frameCount++;
+
+        // Diagnostic FPS & stage breakdown every 3 seconds to Serial
+        unsigned long now = millis();
+        if (now - s_lastFpsPrint >= 3000UL) {
+            unsigned long elapsed = now - s_lastFpsPrint;
+            float fps = (elapsed > 0) ? ((float)s_frameCount * 1000.0f / (float)elapsed) : 0.0f;
+            float avgFrameMs = (s_frameCount > 0) ? ((float)s_totalFrameTimeUs / (float)s_frameCount / 1000.0f) : 0.0f;
+            float avgEmuMs   = (s_frameCount > 0) ? ((float)s_totalEmuTimeUs   / (float)s_frameCount / 1000.0f) : 0.0f;
+            float avgRendMs  = (s_frameCount > 0) ? ((float)s_totalRendTimeUs  / (float)s_frameCount / 1000.0f) : 0.0f;
+            float avgTftMs   = (s_frameCount > 0) ? ((float)s_totalTftTimeUs   / (float)s_frameCount / 1000.0f) : 0.0f;
+
+            Serial.printf("[RetroApp] Game: %s | Mode: %s | FPS: %.1f | Frame: %.1fms | Emu: %.1fms | Render: %.1fms | TFT: %.1fms\n",
+                          (s_activeGame == NES_GAME_MARIO) ? "Mario 3" : "Contra",
+                          (NesDisplayAdapter::getDisplayMode() == NES_DISPLAY_HYBRID) ? "HYBRID" : "FULL",
+                          fps, avgFrameMs, avgEmuMs, avgRendMs, avgTftMs);
+
+            s_frameCount       = 0;
+            s_totalFrameTimeUs = 0;
+            s_totalEmuTimeUs   = 0;
+            s_totalRendTimeUs  = 0;
+            s_totalTftTimeUs   = 0;
+            s_lastFpsPrint     = now;
+        }
     }
 }
 

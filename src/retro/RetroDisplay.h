@@ -16,6 +16,12 @@ public:
 
     // Displays an unavailable notification card overlay (e.g. for Pokémon)
     static void drawUnavailableNotification(Adafruit_ST7735 &tft, const char *gameTitle);
+
+    // Displays the compact Settings badge in launcher bottom region (replaces old Select/Play area)
+    static void drawSettingsSection(Adafruit_ST7735 &tft, bool isFocused, uint8_t displayMode);
+
+    // Displays the Retro Arcade Settings Menu overlay dialog
+    static void drawSettingsMenu(Adafruit_ST7735 &tft, int menuSelection, uint8_t savedMode);
 };
 
 #endif // RETRO_DISPLAY_H

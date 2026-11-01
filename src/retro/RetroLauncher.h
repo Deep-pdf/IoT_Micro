@@ -11,6 +11,13 @@ enum RetroGameSelection {
     GAME_COUNT = 3
 };
 
+enum RetroLauncherFocus {
+    FOCUS_GAME_MARIO = 0,
+    FOCUS_GAME_CONTRA = 1,
+    FOCUS_GAME_POKEMON = 2,
+    FOCUS_SETTINGS = 3
+};
+
 enum RetroLaunchIntent {
     RETRO_LAUNCH_NONE = 0,
     RETRO_LAUNCH_MARIO,
@@ -25,6 +32,7 @@ public:
     static RetroGameSelection getSelectedGame();
     static RetroLaunchIntent getLaunchIntent();
     static void clearLaunchIntent();
+    static bool isInSettingsMenu();
 };
 
 #endif // RETRO_LAUNCHER_H
