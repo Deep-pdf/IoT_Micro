@@ -16,12 +16,12 @@ static uint16_t burstBuffer[BURST_PIXELS];
 static int bufferedLines = 0;
 static bool inFrame = false;
 
-// Hybrid Mode Detail Buffer:
-// Allocated from heap on init (4,992 bytes, leaves .dram0.bss intact)
-// Captures native 1:1 NES pixel region (X=64..191, even scanlines 132..208)
-static constexpr int DETAIL_LINES = 39;
-static uint8_t* s_detailIndices = nullptr;
-static int s_detailCount = 0;
+// Hybrid Mode Proportional Zoom:
+// Source viewport: 192 x 240 (centered X=32..223, all 240 scanlines)
+// Destination: 128 x 160 (full panel, 0% aspect ratio distortion: Sx = Sy = 2/3)
+// Zero dynamic heap, zero extra framebuffers
+static uint8_t s_xLutHybrid[128];
+static int s_hybridScanlineIdx = 0;
 
 // Microsecond profiling accumulators per frame
 static uint32_t s_renderTimeUs = 0;
@@ -63,12 +63,7 @@ void NesDisplayAdapter::init(Adafruit_ST7735* display) {
     tft = display;
     inFrame = false;
     bufferedLines = 0;
-    s_detailCount = 0;
-
-    // Allocate 1:1 detail buffer from heap (zero static BSS cost)
-    if (!s_detailIndices) {
-        s_detailIndices = (uint8_t*)malloc(DETAIL_LINES * 128);
-    }
+    s_hybridScanlineIdx = 0;
 
     if (tft) {
         // Boost SPI to 40 MHz for ST7735 hardware
@@ -76,6 +71,13 @@ void NesDisplayAdapter::init(Adafruit_ST7735* display) {
     }
     loadSavedDisplayMode();
     NesPalette::init();
+
+    // Precompute 3:2 horizontal nearest-neighbor LUT for Hybrid mode
+    // Maps 128 destination pixels to 192 source pixels centered in NES 256 width (X=32..223)
+    for (int x = 0; x < 128; x++) {
+        s_xLutHybrid[x] = 32 + (uint8_t)((x * 3) / 2);
+    }
+
     Serial.printf("[NesDisplayAdapter] Initialized | Mode: %s | Palette: Sat=+%d%%, Exp=-%d%%, Con=+%d%%\n",
                   (s_displayMode == NES_DISPLAY_HYBRID) ? "HYBRID" : "FULL",
                   NesPalette::getSaturationBoost(), NesPalette::getExposureReduce(), NesPalette::getContrastBoost());
@@ -85,12 +87,11 @@ void NesDisplayAdapter::clearBorders() {
     if (!tft) return;
     tft->setRotation(0); // 128x160 Portrait
     if (s_displayMode == NES_DISPLAY_FULL) {
-        // Top 20px black letterbox
+        // Full mode: Top and bottom 20px black letterbox
         tft->fillRect(0, 0, 128, 20, 0x0000);
-        // Bottom 20px black letterbox
         tft->fillRect(0, 140, 128, 20, 0x0000);
     } else {
-        // Hybrid fills full 128x160 area continuously
+        // Hybrid mode: fills the entire 128x160 screen continuously, blank screen once
         tft->fillScreen(0x0000);
     }
 }
@@ -101,55 +102,78 @@ void NesDisplayAdapter::startFrame() {
     tft->startWrite();
 
     if (s_displayMode == NES_DISPLAY_FULL) {
-        // Single address window for 128x120 active area (Y=20..139)
+        // Centered 128x120 active area (Y=20..139) with 20px black letterbox top & bottom
         tft->setAddrWindow(0, 20, 128, 120);
     } else {
-        // Single continuous address window for full 128x160 screen (Y=0..159)
+        // Hybrid mode: fills full 128x160 active area (Y=0..159) with single proportional zoom
         tft->setAddrWindow(0, 0, 128, 160);
     }
 
     bufferedLines = 0;
-    s_detailCount = 0;
+    s_hybridScanlineIdx = 0;
     inFrame = true;
 }
 
 void NesDisplayAdapter::renderScanlineIndexed(int scanline, const uint8_t* nesIndices256, const uint16_t* palette64) {
     if (!tft || !inFrame || !nesIndices256) return;
-    // 2:1 integer vertical downsampling: only render even scanlines (0, 2, ... 238)
+    // Only even scanlines (0, 2, ..., 238) are processed
     if ((scanline & 1) != 0 || scanline >= 240) return;
 
-    // Direct lookup from active enhanced palette
     const uint16_t* activePalette = NesPalette::getEnhancedPalette(0);
-
     uint32_t t0 = micros();
 
-    // 1. Direct 2:1 horizontal downscaling into burst buffer for the base game view (128x120)
-    uint16_t* lineDest = &burstBuffer[bufferedLines * 128];
-    for (int x = 0; x < 128; x++) {
-        lineDest[x] = activePalette[nesIndices256[x * 2]];
-    }
-    bufferedLines++;
+    if (s_displayMode == NES_DISPLAY_FULL) {
+        // =====================================================================
+        // FULL GAME MODE (PRESERVED 100% UNCHANGED):
+        // 2:1 integer downsampling into 128x120 centered viewport
+        // =====================================================================
+        uint16_t* lineDest = &burstBuffer[bufferedLines * 128];
+        for (int x = 0; x < 128; x++) {
+            lineDest[x] = activePalette[nesIndices256[x * 2]];
+        }
+        bufferedLines++;
 
-    // 2. In Hybrid mode: sample 39 even scanlines from gameplay region (132..208) at 1:1 pixel scale
-    // Horizontally centered: X=64..191 (128 native NES pixels mapped 1:1 to 128 TFT pixels)
-    if (s_displayMode == NES_DISPLAY_HYBRID && s_detailIndices) {
-        if (scanline >= 132 && scanline <= 208 && s_detailCount < DETAIL_LINES) {
-            memcpy(&s_detailIndices[s_detailCount * 128], &nesIndices256[64], 128);
-            s_detailCount++;
+        if (bufferedLines >= BURST_LINES) {
+            uint32_t t2 = micros();
+            tft->writePixels(burstBuffer, BURST_PIXELS);
+            uint32_t t3 = micros();
+            s_tftTimeUs += (t3 - t2);
+            bufferedLines = 0;
+        }
+    } else {
+        // =====================================================================
+        // NEW HYBRID MODE: SINGLE INTENLLIGENT PROPORTIONAL ZOOM (192x240 -> 128x160)
+        // 1. Horizontal: 192 source pixels (centered X=32..223) -> 128 dest pixels via LUT
+        // 2. Vertical: 120 received scanlines -> 160 TFT lines (4:3 expansion, repeat line 0 of every 3)
+        // Scale ratio: Sx = 128/192 = 2/3, Sy = 160/240 = 2/3 (Sx == Sy -> 0% aspect distortion!)
+        // Single unified image, zero duplicate viewports, zero separators, fills entire 128x160 screen
+        // =====================================================================
+        uint16_t tempLine[128];
+        for (int x = 0; x < 128; x++) {
+            tempLine[x] = activePalette[nesIndices256[s_xLutHybrid[x]]];
+        }
+
+        // For every 3 received scanlines: line 0 repeated twice, line 1 once, line 2 once -> exactly 4 lines!
+        // 120 received scanlines * 4 / 3 = exactly 160 destination lines!
+        int repeatCount = (s_hybridScanlineIdx % 3 == 0) ? 2 : 1;
+        s_hybridScanlineIdx++;
+
+        for (int r = 0; r < repeatCount; r++) {
+            memcpy(&burstBuffer[bufferedLines * 128], tempLine, 128 * sizeof(uint16_t));
+            bufferedLines++;
+
+            if (bufferedLines >= BURST_LINES) {
+                uint32_t t2 = micros();
+                tft->writePixels(burstBuffer, BURST_PIXELS);
+                uint32_t t3 = micros();
+                s_tftTimeUs += (t3 - t2);
+                bufferedLines = 0;
+            }
         }
     }
 
     uint32_t t1 = micros();
     s_renderTimeUs += (t1 - t0);
-
-    // When 8 lines (1024 pixels) are buffered, issue one multi-line burst to SPI
-    if (bufferedLines >= BURST_LINES) {
-        uint32_t t2 = micros();
-        tft->writePixels(burstBuffer, BURST_PIXELS);
-        uint32_t t3 = micros();
-        s_tftTimeUs += (t3 - t2);
-        bufferedLines = 0;
-    }
 }
 
 void NesDisplayAdapter::renderScanline(int scanline, const uint16_t* nesScanline256) {
@@ -157,79 +181,58 @@ void NesDisplayAdapter::renderScanline(int scanline, const uint16_t* nesScanline
     if ((scanline & 1) != 0 || scanline >= 240) return;
 
     uint32_t t0 = micros();
-    uint16_t* lineDest = &burstBuffer[bufferedLines * 128];
-    for (int x = 0; x < 128; x++) {
-        lineDest[x] = NesPalette::enhanceColor(nesScanline256[x * 2]);
+
+    if (s_displayMode == NES_DISPLAY_FULL) {
+        uint16_t* lineDest = &burstBuffer[bufferedLines * 128];
+        for (int x = 0; x < 128; x++) {
+            lineDest[x] = NesPalette::enhanceColor(nesScanline256[x * 2]);
+        }
+        bufferedLines++;
+
+        if (bufferedLines >= BURST_LINES) {
+            uint32_t t2 = micros();
+            tft->writePixels(burstBuffer, BURST_PIXELS);
+            uint32_t t3 = micros();
+            s_tftTimeUs += (t3 - t2);
+            bufferedLines = 0;
+        }
+    } else {
+        uint16_t tempLine[128];
+        for (int x = 0; x < 128; x++) {
+            tempLine[x] = NesPalette::enhanceColor(nesScanline256[s_xLutHybrid[x]]);
+        }
+
+        int repeatCount = (s_hybridScanlineIdx % 3 == 0) ? 2 : 1;
+        s_hybridScanlineIdx++;
+
+        for (int r = 0; r < repeatCount; r++) {
+            memcpy(&burstBuffer[bufferedLines * 128], tempLine, 128 * sizeof(uint16_t));
+            bufferedLines++;
+
+            if (bufferedLines >= BURST_LINES) {
+                uint32_t t2 = micros();
+                tft->writePixels(burstBuffer, BURST_PIXELS);
+                uint32_t t3 = micros();
+                s_tftTimeUs += (t3 - t2);
+                bufferedLines = 0;
+            }
+        }
     }
-    bufferedLines++;
+
     uint32_t t1 = micros();
     s_renderTimeUs += (t1 - t0);
-
-    if (bufferedLines >= BURST_LINES) {
-        uint32_t t2 = micros();
-        tft->writePixels(burstBuffer, BURST_PIXELS);
-        uint32_t t3 = micros();
-        s_tftTimeUs += (t3 - t2);
-        bufferedLines = 0;
-    }
 }
 
 void NesDisplayAdapter::endFrame() {
     if (!tft || !inFrame) return;
 
-    // Flush any remaining buffered scanlines for the 128x120 base view
+    // Flush any remaining buffered scanlines
     if (bufferedLines > 0) {
         uint32_t t0 = micros();
         tft->writePixels(burstBuffer, bufferedLines * 128);
         uint32_t t1 = micros();
         s_tftTimeUs += (t1 - t0);
         bufferedLines = 0;
-    }
-
-    // In Hybrid Mode: Stream Divider (1 line) + 1:1 Pixel-Perfect Detail Viewport (39 lines)
-    if (s_displayMode == NES_DISPLAY_HYBRID) {
-        const uint16_t* activePalette = NesPalette::getEnhancedPalette(0);
-        uint32_t t0 = micros();
-
-        // 1. Divider line (Row 120): sleek metallic accent separator
-        for (int x = 0; x < 128; x++) {
-            burstBuffer[x] = (x & 1) ? 0x39E7 : 0x2104; // Micro-textured 1px separator
-        }
-        int curBufLines = 1;
-
-        // 2. Stream 39 detail lines (Rows 121..159) using multi-line bursts
-        for (int l = 0; l < DETAIL_LINES; l++) {
-            uint16_t* destLine = &burstBuffer[curBufLines * 128];
-            if (s_detailIndices && l < s_detailCount) {
-                const uint8_t* srcIndices = &s_detailIndices[l * 128];
-                for (int x = 0; x < 128; x++) {
-                    destLine[x] = activePalette[srcIndices[x]];
-                }
-            } else {
-                memset(destLine, 0, 128 * sizeof(uint16_t)); // Pad with black if needed
-            }
-            curBufLines++;
-
-            if (curBufLines >= BURST_LINES) {
-                uint32_t t_burst_0 = micros();
-                tft->writePixels(burstBuffer, curBufLines * 128);
-                uint32_t t_burst_1 = micros();
-                s_tftTimeUs += (t_burst_1 - t_burst_0);
-                curBufLines = 0;
-            }
-        }
-
-        // Flush remaining detail lines
-        if (curBufLines > 0) {
-            uint32_t t_burst_0 = micros();
-            tft->writePixels(burstBuffer, curBufLines * 128);
-            uint32_t t_burst_1 = micros();
-            s_tftTimeUs += (t_burst_1 - t_burst_0);
-            curBufLines = 0;
-        }
-
-        uint32_t t1 = micros();
-        s_renderTimeUs += (t1 - t0);
     }
 
     tft->endWrite();

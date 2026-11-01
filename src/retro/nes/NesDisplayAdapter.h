@@ -6,8 +6,8 @@
 #include <Adafruit_ST7735.h>
 
 enum NesDisplayMode : uint8_t {
-    NES_DISPLAY_HYBRID = 0, // Top 128x120 Full 4:3 Game View + Divider + Bottom 39-line 1:1 Pixel-Perfect Viewport
-    NES_DISPLAY_FULL   = 1  // Centered 128x120 Full 4:3 Game View (20px top & bottom letterbox)
+    NES_DISPLAY_HYBRID = 0, // Single proportional 1.33x zoom (192x240 -> 128x160 full screen, 0% aspect distortion)
+    NES_DISPLAY_FULL   = 1  // Centered 128x120 Full 4:3 Game View (20px top & bottom black letterbox)
 };
 
 class NesDisplayAdapter {
@@ -29,14 +29,14 @@ public:
 
     // High-performance indexed scanline callback:
     // Receives 256 NES palette indices and 64-entry RGB565 palette
-    // Performs integer 2:1 downsampling directly into a multi-line burst buffer
-    // and caches 1:1 detail region in Hybrid mode
+    // Full mode: Performs integer 2:1 downsampling into burst buffer
+    // Hybrid mode: Performs 3:2 proportional zoom into full 128x160 screen
     static void renderScanlineIndexed(int scanline, const uint8_t* nesIndices256, const uint16_t* palette64);
 
     // Legacy fallback scanline callback
     static void renderScanline(int scanline, const uint16_t* nesScanline256);
 
-    // Completes the frame write (flushes remaining lines + Hybrid 1:1 detail region)
+    // Completes the frame write (flushes remaining lines)
     static void endFrame();
 
     // Performance metrics (per-frame microseconds)
