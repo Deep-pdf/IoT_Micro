@@ -3,6 +3,7 @@
 #include "RetroDisplay.h"
 #include "RetroInput.h"
 #include "nes/NesDisplayAdapter.h"
+#include "gb/GbRom.h"
 
 static RetroLauncherFocus s_focus = FOCUS_GAME_MARIO;
 static RetroGameSelection selectedGame = GAME_MARIO;
@@ -141,6 +142,8 @@ void RetroLauncher::update(Adafruit_ST7735 &tft) {
             s_launchIntent = RETRO_LAUNCH_CONTRA;
             return;
         } else if (s_focus == FOCUS_GAME_POKEMON) {
+            GbRom::init();
+            GbRom::validate();
             unavailableActive = true;
             unavailableExpiry = millis() + 1500;
             needsRedraw = true;
