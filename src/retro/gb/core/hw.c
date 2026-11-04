@@ -237,6 +237,8 @@ void gb_hw_deinit(void)
 		free(hw.vbanks);
 		hw.vbanks = NULL;
 	}
+	gb_sound_deinit();
+	gb_lcd_deinit();
 }
 
 
@@ -691,13 +693,10 @@ byte gb_hw_read(unsigned a)
 		}
 		// fall through
 	case 0x2000:
-		return cart.rombanks[0][a & 0x3fff];
 		return gb_rom_bridge_read_bank0((uint16_t)a);
 
-	case 0x4000: // Cart ROM
 	case 0x4000: // Cart ROM Switchable
 	case 0x6000:
-		return cart.rombanks[cart.rombank][a & 0x3FFF];
 		return gb_rom_bridge_read_switchable((uint16_t)a);
 
 	case 0x8000: // Video RAM

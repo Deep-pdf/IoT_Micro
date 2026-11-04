@@ -32,4 +32,9 @@
 #define TFT_DC    2             // Data/Command
 #define TFT_RST   4             // Reset
 
+// -- Retro Game Boy Hardware Test Mode ----------------------------------------
+// Set to 1 to run the standalone Game Boy (Pokémon Red) TFT display verification test
+// on boot. Set to 0 (default) for standard Micro_IOT OS operation.
+#define GB_HARDWARE_DISPLAY_TEST  1
+
 #endif // CONFIG_H

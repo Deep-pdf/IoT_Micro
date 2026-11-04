@@ -17,6 +17,7 @@
 #include "hackk/HackkApp.h"
 #include "status_led.h"
 #include "retro/RetroApp.h"
+#include "retro/gb/GbDisplayTest.h"
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -588,7 +589,12 @@ void setup() {
   delay(step_delay);
 
   // Select a random quote from the library
-  selectRandomQuote();
+#if GB_HARDWARE_DISPLAY_TEST
+  Serial.println("[BOOT] GB_HARDWARE_DISPLAY_TEST is enabled. Running Game Boy display test on TFT...");
+  GbDisplayTest::run(tft, 300);
+#endif
+
+    selectRandomQuote();
   lastQuoteChangeTime = millis();
 
   // Draw the Initial Home Screen UI (Wi-Fi icon begins as White)

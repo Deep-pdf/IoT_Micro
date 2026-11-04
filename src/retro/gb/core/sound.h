@@ -20,6 +20,7 @@ typedef struct
 } gb_snd_t;
 
 gb_snd_t *gb_sound_init(void);
+void gb_sound_deinit(void);
 void gb_sound_write(byte r, byte b);
 void gb_sound_dirty(void);
 void gb_sound_reset(bool hard);

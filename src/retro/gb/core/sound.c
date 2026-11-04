@@ -10,19 +10,38 @@
 #include "sound.h"
 #include "hw.h"
 
-static gb_snd_t s_snd;
+static gb_snd_t *s_snd = NULL;
 
 gb_snd_t *gb_sound_init(void)
 {
-	memset(&s_snd, 0, sizeof(s_snd));
-	return &s_snd;
+	if (!s_snd)
+	{
+		s_snd = (gb_snd_t*)calloc(1, sizeof(gb_snd_t));
+	}
+	else
+	{
+		memset(s_snd, 0, sizeof(*s_snd));
+	}
+	return s_snd;
+}
+
+void gb_sound_deinit(void)
+{
+	if (s_snd)
+	{
+		free(s_snd);
+		s_snd = NULL;
+	}
 }
 
 void gb_sound_reset(bool hard)
 {
-	memset(&s_snd, 0, sizeof(s_snd));
-	s_snd.rate = 0;
-	s_snd.cycles = 0;
+	if (s_snd)
+	{
+		memset(s_snd, 0, sizeof(*s_snd));
+		s_snd->rate = 0;
+		s_snd->cycles = 0;
+	}
 	GB.audio.pos = 0;
 	R_NR52 = 0xF1;
 }
@@ -42,6 +61,9 @@ void gb_sound_dirty(void)
 void gb_sound_emulate(void)
 {
 	// Drain cycle accumulator to prevent integer overflow while consuming 0 CPU cycles
-	s_snd.cycles = 0;
+	if (s_snd)
+	{
+		s_snd->cycles = 0;
+	}
 }
 
