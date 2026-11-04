@@ -238,6 +238,7 @@ void gb_hw_deinit(void)
 		hw.vbanks = NULL;
 	}
 	gb_sound_deinit();
+	hw.snd = NULL;
 	gb_lcd_deinit();
 }
 

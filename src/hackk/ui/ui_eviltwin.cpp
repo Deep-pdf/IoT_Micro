@@ -9,7 +9,6 @@
 
 static volatile int  s_scanning = 0;
 static uint32_t s_scan_started_ms = 0;
-static char          s_ssids[32][33];
 static TaskHandle_t  s_scan_task = NULL;
 static bool          s_scan_drawn = false;  // scanning screen painted once
 static bool          s_run_header = false;  // running screen header/footer painted once
@@ -17,15 +16,6 @@ static bool          s_run_header = false;  // running screen header/footer pain
 static void scan_task(void *arg) {
     int n = 0;
     n = wifi_controller_scan();          // always returns (10s max timeout)
-
-    for (int i = 0; i < n && i < 32; i++) {
-        wifi_ap_record_t r;
-        wifi_controller_get_ap(i, &r);
-        strncpy(s_ssids[i],
-                (r.ssid[0] != 0) ? (const char *)r.ssid : "<hidden>",
-                32);
-        s_ssids[i][32] = '\0';
-    }
 
     g_ui.ap_count = n;
     g_ui.cursor   = 0;
@@ -73,7 +63,12 @@ void ui_eviltwin_draw() {
         for (int i = 0; i < rows; i++) {
             int idx = g_ui.scroll + i;
             if (idx >= g_ui.ap_count) break;
-            tft_row(LIST_Y + i * ROW_H, s_ssids[idx], idx == g_ui.cursor);
+            wifi_ap_record_t r;
+            const char *name = "<hidden>";
+            if (wifi_controller_get_ap(idx, &r) && r.ssid[0] != 0) {
+                name = (const char *)r.ssid;
+            }
+            tft_row(LIST_Y + i * ROW_H, name, idx == g_ui.cursor);
         }
         tft_footer("OK:start BK:back");
         return;
