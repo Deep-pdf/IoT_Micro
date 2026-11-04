@@ -5,6 +5,7 @@
 #include "cpu.h"
 #include "hw.h"
 #include "lcd.h"
+#include "../GbRomBridge.h"
 
 gb_cart_t cart;
 gb_t GB;
@@ -217,11 +218,25 @@ bool gb_hw_init(void)
 
 	if (!hw.rambanks || !hw.vbanks || !hw.cpu || !hw.snd)
 	{
-		// hw_deinit();
+		gb_hw_deinit();
 		return false;
 	}
 
 	return true;
+}
+
+void gb_hw_deinit(void)
+{
+	if (hw.rambanks)
+	{
+		free(hw.rambanks);
+		hw.rambanks = NULL;
+	}
+	if (hw.vbanks)
+	{
+		free(hw.vbanks);
+		hw.vbanks = NULL;
+	}
 }
 
 
@@ -287,17 +302,18 @@ void gb_hw_vblank(void)
 void gb_hw_updatemap(void)
 {
 	int rombank = cart.rombank & (cart.romsize - 1);
+	if (rombank == 0)
+		rombank = 1;
 
-	if (cart.rombanks[rombank] == NULL)
-	{
-		gnuboy_load_bank(rombank);
-	}
+	// Update active switchable bank in GbRom backend (decompresses only if not cached)
+	gb_rom_bridge_select_bank((uint8_t)rombank);
 
-	// ROM
-	hw.rmap[0x0] = cart.rombanks[0];
-	hw.rmap[0x1] = cart.rombanks[0];
-	hw.rmap[0x2] = cart.rombanks[0];
-	hw.rmap[0x3] = cart.rombanks[0];
+	// ROM Bank 0 (0x0000 - 0x3FFF): Direct, fast pointer to raw flash Bank 0
+	const byte *bank0 = gb_rom_bridge_get_bank0();
+	hw.rmap[0x0] = (byte*)bank0;
+	hw.rmap[0x1] = (byte*)bank0;
+	hw.rmap[0x2] = (byte*)bank0;
+	hw.rmap[0x3] = (byte*)bank0;
 
 	// Force bios to go through gb_hw_read (speed doesn't really matter here)
 	if (hw.bios && (R_BIOS & 1) == 0)
@@ -305,11 +321,14 @@ void gb_hw_updatemap(void)
 		hw.rmap[0x0] = NULL;
 	}
 
-	// Cartridge ROM
-	hw.rmap[0x4] = cart.rombanks[rombank] - 0x4000;
-	hw.rmap[0x5] = hw.rmap[0x4];
-	hw.rmap[0x6] = hw.rmap[0x4];
-	hw.rmap[0x7] = hw.rmap[0x4];
+	// Cartridge ROM Switchable (0x4000 - 0x7FFF):
+	// Standards-safe bounded access: rmap[0x4..0x7] is set to NULL to route
+	// reads through gb_hw_read(). This completely eliminates negative pointer
+	// offsets ('buffer - 0x4000') and ensures reads never exceed 16 KB boundaries.
+	hw.rmap[0x4] = NULL;
+	hw.rmap[0x5] = NULL;
+	hw.rmap[0x6] = NULL;
+	hw.rmap[0x7] = NULL;
 
 	// Video RAM
 	hw.rmap[0x8] = hw.wmap[0x8] = hw.vbanks[R_VBK & 1] - 0x8000;
@@ -673,10 +692,13 @@ byte gb_hw_read(unsigned a)
 		// fall through
 	case 0x2000:
 		return cart.rombanks[0][a & 0x3fff];
+		return gb_rom_bridge_read_bank0((uint16_t)a);
 
 	case 0x4000: // Cart ROM
+	case 0x4000: // Cart ROM Switchable
 	case 0x6000:
 		return cart.rombanks[cart.rombank][a & 0x3FFF];
+		return gb_rom_bridge_read_switchable((uint16_t)a);
 
 	case 0x8000: // Video RAM
 		return hw.vbanks[R_VBK&1][a & 0x1FFF];

@@ -5,6 +5,7 @@
 #include "cpu.h"
 #include "sound.h"
 #include "lcd.h"
+#include "../GbRomBridge.h"
 
 #define hw GB
 
@@ -29,6 +30,13 @@ int gnuboy_init(int samplerate, gb_audio_fmt_t audio_fmt, gb_video_fmt_t video_f
 	if (!gb_hw_init())
 		return -1;
 	return 0;
+}
+
+
+void gnuboy_deinit(void)
+{
+	gnuboy_free_rom();
+	gb_hw_deinit();
 }
 
 
@@ -176,35 +184,65 @@ int gnuboy_load_bios_file(const char *file)
 
 void gnuboy_load_bank(int bank)
 {
-	const size_t OFFSET = bank * BANK_SIZE;
+	gb_rom_bridge_select_bank((uint8_t)bank);
+}
 
-	if (!cart.rombanks[bank])
-		cart.rombanks[bank] = malloc(BANK_SIZE);
 
-	if (!cart.romFile)
-		return;
-
-	MESSAGE_INFO("loading bank %d.\n", bank);
-	while (!cart.rombanks[bank])
+int gnuboy_load_rom_from_bridge(void)
+{
+	if (!gb_rom_bridge_is_initialized())
 	{
-		int i = rand() & 0xFF;
-		if (cart.rombanks[i])
+		if (!gb_rom_bridge_init())
 		{
-			MESSAGE_INFO("reclaiming bank %d.\n", i);
-			cart.rombanks[bank] = cart.rombanks[i];
-			cart.rombanks[i] = NULL;
-			break;
+			MESSAGE_ERROR("GbRomBridge initialization failed\n");
+			return -1;
 		}
 	}
 
-	// Load the 16K page
-	if (fseek(cart.romFile, OFFSET, SEEK_SET) != 0
-		|| !fread(cart.rombanks[bank], BANK_SIZE, 1, cart.romFile))
+	gb_rom_metadata_t meta;
+	if (!gb_rom_bridge_get_metadata(&meta))
 	{
-		MESSAGE_WARN("ROM bank loading failed\n");
-		if (!feof(cart.romFile))
-			abort(); // This indicates an SD Card failure
+		MESSAGE_ERROR("Failed to get ROM metadata\n");
+		return -2;
 	}
+
+	// Pokemon Red is DMG with CGB colorization support
+	hw.hwtype = GB_HW_DMG;
+
+	memcpy(&cart.checksum, &meta.global_checksum, 2);
+	memcpy(&cart.name, meta.title, 16);
+	cart.name[16] = 0;
+
+	cart.has_battery = true;
+	cart.has_rtc  = false;
+	cart.has_rumble = false;
+	cart.has_sensor = false;
+	cart.colorize = 0;
+	cart.mbc = MBC_MBC3;
+	cart.romsize = 64; // 1 MB / 64 banks
+	cart.ramsize = 4;  // 32 KB / 4 banks
+
+	// Allocate temporary 32 KB cartridge RAM buffer (4 banks of 8 KB)
+	if (cart.rambanks == NULL)
+	{
+		cart.rambanks = calloc(cart.ramsize, 0x2000);
+		if (!cart.rambanks)
+		{
+			MESSAGE_ERROR("Cartridge RAM allocation failed\n");
+			return -3;
+		}
+	}
+
+	// cart.rombanks array is bypassed - direct mapping through GbRomBridge
+	cart.rombanks = NULL;
+
+	// Initial MBC register state
+	cart.rombank = 1;
+	cart.rambank = 0;
+	cart.enableram = 0;
+
+	gb_hw_updatemap();
+	return 0;
 }
 
 

@@ -270,6 +270,7 @@ extern gb_t GB;
 #define host GB
 
 bool gb_hw_init(void);
+void gb_hw_deinit(void);
 void gb_hw_reset(bool hard);
 void gb_hw_setpad(int new_pad);
 void gb_hw_interrupt(byte i, int level);
