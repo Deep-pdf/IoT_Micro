@@ -93,19 +93,40 @@ void gnuboy_run(bool draw)
 
 	int cycles = 0;
 
-	// LCD is powered down, it won't touch LY or do vblank
+	// 1. LCD is powered down at frame entry: emulate 1 full frame of cycles without LY or VBlank
 	if (!(R_LCDC & 0x80)) {
 		cycles += 154 * 228;
 		cycles -= gb_cpu_emulate(cycles);
+		if (GB.audio.callback && GB.audio.pos > 0) {
+			(GB.audio.callback)(GB.audio.buffer, GB.audio.pos);
+		}
 		return;
 	}
 
-	// We emulate until vblank (0..144)
-	while (R_LY <= 144) {
+	// 2. Visible scanlines (0..144) while LCD is active
+	int lines = 0;
+	while ((R_LCDC & 0x80) && R_LY <= 144) {
 		cycles += 228;
 		cycles -= gb_cpu_emulate(cycles);
+		lines++;
 	}
 
+	// 3. If LCD was disabled mid-frame during visible scanlines:
+	// Do not fire video callback or VBlank interrupt. Emulate the remaining
+	// scanline cycle budget so CPU, timers, and interrupts advance steadily.
+	if (!(R_LCDC & 0x80)) {
+		int remaining_lines = 154 - lines;
+		if (remaining_lines > 0) {
+			cycles += remaining_lines * 228;
+			cycles -= gb_cpu_emulate(cycles);
+		}
+		if (GB.audio.callback && GB.audio.pos > 0) {
+			(GB.audio.callback)(GB.audio.buffer, GB.audio.pos);
+		}
+		return;
+	}
+
+	// 4. Completed all visible scanlines with active LCD: draw frame and trigger VBlank
 	/* When using GB_PIXEL_PALETTED, the host should draw the frame in this callback
 	   because the palette can be modified below before gnuboy_run returns. */
 	if (draw && GB.video.callback) {
@@ -114,10 +135,20 @@ void gnuboy_run(bool draw)
 
 	gb_hw_vblank();
 
-	// Emulate vblank (145...0)
-	while (R_LY > 0) {
+	// 5. Emulate VBlank (145...0) while LCD remains active
+	while ((R_LCDC & 0x80) && R_LY > 0) {
 		cycles += 228;
 		cycles -= gb_cpu_emulate(cycles);
+		lines++;
+	}
+
+	// 6. If LCD was disabled mid-frame during VBlank:
+	if (!(R_LCDC & 0x80)) {
+		int remaining_lines = 154 - lines;
+		if (remaining_lines > 0) {
+			cycles += remaining_lines * 228;
+			cycles -= gb_cpu_emulate(cycles);
+		}
 	}
 
 	if (GB.audio.callback && GB.audio.pos > 0) {
