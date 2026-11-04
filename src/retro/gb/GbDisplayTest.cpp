@@ -7,6 +7,7 @@
 #include "GbDisplayTest.h"
 #include "GbDisplayAdapter.h"
 #include "GbRomBridge.h"
+#include "GbRom.h"
 #include "core/gnuboy.h"
 #include "core/hw.h"
 #include "core/cpu.h"
@@ -43,12 +44,14 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
     // 3. Validate Cartridge
     if (!gb_rom_bridge_validate_cartridge()) {
         Serial.println("[GbDisplayTest] ERROR: Cartridge validation failed!");
+        GbRom::deinit();
         return false;
     }
 
     // 4. Initialize Display Adapter (allocates 23,040-byte framebuffer)
     if (!GbDisplayAdapter::init(s_activeTft)) {
         Serial.println("[GbDisplayTest] ERROR: GbDisplayAdapter::init() failed!");
+        GbRom::deinit();
         return false;
     }
 
@@ -62,6 +65,7 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
     if (gnuboy_init(0, GB_AUDIO_STEREO_S16, GB_PIXEL_PALETTED, onGbVideoFrame, NULL) < 0) {
         Serial.println("[GbDisplayTest] ERROR: gnuboy_init() failed!");
         GbDisplayAdapter::deinit();
+        GbRom::deinit();
         return false;
     }
 
@@ -77,6 +81,7 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
         Serial.printf("[GbDisplayTest] ERROR: gnuboy_load_rom_from_bridge() failed: %d\n", loadRes);
         gnuboy_deinit();
         GbDisplayAdapter::deinit();
+        GbRom::deinit();
         return false;
     }
 
@@ -94,10 +99,26 @@ void GbDisplayTest::update(Adafruit_ST7735& tft) {
 
 void GbDisplayTest::deinit() {
     if (s_running) {
-        gnuboy_deinit();
-        GbDisplayAdapter::deinit();
+        // 1. Stop frame execution and rendering
         s_running = false;
         s_activeTft = nullptr;
+
+        gb_diag_log_heap("Teardown 1: Before Teardown", -1, 0, NULL, NULL);
+
+        // 2. Gnuboy Core teardown (frees Cartridge RAM, WRAM, VRAM, Sound, LCD BUF)
+        gnuboy_deinit();
+        gb_diag_log_heap("Teardown 2: After gnuboy_deinit()", -1, 0, NULL, NULL);
+
+        // 3. Display Adapter teardown (frees Framebuffer & Burst Buffer)
+        GbDisplayAdapter::deinit();
+        gb_diag_log_heap("Teardown 3: After GbDisplayAdapter::deinit()", -1, 0, NULL, NULL);
+
+        // 4. ROM Subsystem teardown (frees 16 KB switchable ROM bank buffer)
+        GbRom::deinit();
+        gb_diag_log_heap("Teardown 4: After GbRom::deinit()", -1, 0, NULL, NULL);
+
+        // 5. End of complete teardown sequence
+        gb_diag_log_heap("Teardown 5: End of GbDisplayTest::deinit()", -1, 0, NULL, NULL);
     }
 }
 

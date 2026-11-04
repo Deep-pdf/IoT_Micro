@@ -23,6 +23,7 @@ typedef struct {
 // Lifecycle
 bool gb_rom_bridge_init(void);
 bool gb_rom_bridge_is_initialized(void);
+void gb_rom_bridge_deinit(void);
 
 // Bank 0 direct pointer & bounded reads
 const uint8_t* gb_rom_bridge_get_bank0(void);

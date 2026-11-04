@@ -18,6 +18,9 @@ public:
     // Initialize the ROM subsystem (allocates 16 KB buffer once and caches Bank 1)
     static bool init();
 
+    // Deinitialize the ROM subsystem and release the 16 KB switchable bank buffer
+    static void deinit();
+
     // Direct reads from raw Bank 0 in flash ($0000 - $3FFF)
     static inline uint8_t readFixedBank(uint16_t address) {
         return gb_rom_bank0_data[address & 0x3FFF];

@@ -11,6 +11,10 @@ bool gb_rom_bridge_init(void) {
     return GbRom::init();
 }
 
+void gb_rom_bridge_deinit(void) {
+    GbRom::deinit();
+}
+
 bool gb_rom_bridge_is_initialized(void) {
     return (GbRom::getFixedBankBuffer() != nullptr) && (GbRom::getSwitchableBankBuffer() != nullptr);
 }

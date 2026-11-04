@@ -51,6 +51,7 @@ bool GbRom::init() {
     // 3. Pre-load Bank 1 (default startup state for Game Boy DMG)
     if (!selectRomBank(1)) {
         Serial.println("[GbRom] ERROR: Failed to load initial Bank 1!");
+        deinit();
         return false;
     }
 
@@ -58,6 +59,17 @@ bool GbRom::init() {
     Serial.printf("[GbRom] Initialized: Bank 0 (%d B raw flash) + Banks 1..63 (%u B LZ4 HC-12) | 16 KB SRAM buffer ready\n",
                   GB_ROM_BANK0_SIZE, gb_rom_compressed_size);
     return true;
+}
+
+void GbRom::deinit() {
+    if (s_switchableBankRam) {
+        free(s_switchableBankRam);
+        s_switchableBankRam = nullptr;
+    }
+    s_currentLoadedBank = 0xFF;
+    s_initialized       = false;
+    s_decompressCount   = 0;
+    s_cacheHitCount     = 0;
 }
 
 bool GbRom::selectRomBank(uint8_t bank) {
