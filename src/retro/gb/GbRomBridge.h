@@ -42,6 +42,9 @@ uint32_t gb_rom_bridge_get_decompression_count(void);
 uint32_t gb_rom_bridge_get_cache_hit_count(void);
 void     gb_rom_bridge_reset_metrics(void);
 
+// Diagnostic Heap Logging
+void gb_diag_log_heap(const char *checkpoint_tag, int bank_idx, size_t req_size, void *ptr, const char *allocator_desc);
+
 #ifdef __cplusplus
 }
 #endif

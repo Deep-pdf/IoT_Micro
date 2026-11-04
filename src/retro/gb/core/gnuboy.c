@@ -282,6 +282,8 @@ int gnuboy_load_rom_from_bridge(void)
 	cart.romsize = 64; // 1 MB / 64 banks
 	cart.ramsize = 4;  // 32 KB / 4 banks
 
+	gb_diag_log_heap("5. Before Cartridge RAM Allocation", -1, 0, NULL, NULL);
+
 	// Allocate 32 KB cartridge RAM as four independent 8 KB bank allocations
 	for (int i = 0; i < cart.ramsize; i++)
 	{
@@ -290,18 +292,22 @@ int gnuboy_load_rom_from_bridge(void)
 			cart.rambanks[i] = (byte*)calloc(1, 0x2000);
 			if (!cart.rambanks[i])
 			{
+				gb_diag_log_heap("Cartridge RAM Allocation FAILED", i, 0x2000, NULL, "calloc(1, 8192) [MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL]");
 				MESSAGE_ERROR("Cartridge RAM allocation failed for bank %d\n", i);
 				// Unwind and free previously allocated banks
 				for (int j = 0; j < i; j++)
 				{
 					if (cart.rambanks[j])
 					{
+						MESSAGE_INFO("Failure Unwind: Freeing bank %d (ptr %p)\n", j, cart.rambanks[j]);
 						free(cart.rambanks[j]);
 						cart.rambanks[j] = NULL;
 					}
 				}
+				gb_diag_log_heap("After Failure Unwind & Reset", -1, 0, NULL, NULL);
 				return -3;
 			}
+			gb_diag_log_heap("6. Successful Bank Allocation", i, 0x2000, cart.rambanks[i], "calloc(1, 8192) [MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL]");
 		}
 	}
 

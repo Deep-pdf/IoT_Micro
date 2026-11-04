@@ -25,6 +25,8 @@ static void onGbVideoFrame(void* buffer) {
 bool GbDisplayTest::init(Adafruit_ST7735& tft) {
     s_activeTft = &tft;
 
+    gb_diag_log_heap("1. Start of GbDisplayTest::init()", -1, 0, NULL, NULL);
+
     // 1. Initialize Display & Letterbox borders
     s_activeTft->setRotation(0);
     s_activeTft->setSPISpeed(40000000UL);
@@ -35,6 +37,8 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
         Serial.println("[GbDisplayTest] ERROR: gb_rom_bridge_init() failed!");
         return false;
     }
+
+    gb_diag_log_heap("2. After GbRom::init()", -1, 0, NULL, NULL);
 
     // 3. Validate Cartridge
     if (!gb_rom_bridge_validate_cartridge()) {
@@ -48,6 +52,8 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
         return false;
     }
 
+    gb_diag_log_heap("3. After GbDisplayAdapter::init()", -1, 0, NULL, NULL);
+
     GbDisplayAdapter::clearBorders();
 
     // 5. Initialize Gnuboy Core with GB_PIXEL_PALETTED format and synchronous video callback
@@ -56,6 +62,8 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
         GbDisplayAdapter::deinit();
         return false;
     }
+
+    gb_diag_log_heap("4. After gnuboy_init()", -1, 0, NULL, NULL);
 
     // Bind allocated framebuffer
     gnuboy_set_framebuffer(GbDisplayAdapter::getFramebuffer());

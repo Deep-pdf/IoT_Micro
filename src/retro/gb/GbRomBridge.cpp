@@ -2,6 +2,7 @@
 #include "GbRom.h"
 #include <string.h>
 #include <Arduino.h>
+#include "esp_heap_caps.h"
 
 extern "C" {
 
@@ -104,6 +105,27 @@ uint32_t gb_rom_bridge_get_cache_hit_count(void) {
 
 void gb_rom_bridge_reset_metrics(void) {
     GbRom::resetMetrics();
+}
+
+void gb_diag_log_heap(const char *checkpoint_tag, int bank_idx, size_t req_size, void *ptr, const char *allocator_desc) {
+    uint32_t freeHeap        = ESP.getFreeHeap();
+    uint32_t maxAllocHeap    = ESP.getMaxAllocHeap();
+    uint32_t free8Bit        = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+    uint32_t largest8Bit     = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    uint32_t freeInternal    = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    uint32_t largestInternal = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
+
+    if (bank_idx >= 0) {
+        Serial.printf("[GbDiagHeap] [%s] Bank %d | Req: %u B | %s | Ptr: %p\n",
+                      checkpoint_tag, bank_idx, (unsigned)req_size,
+                      allocator_desc ? allocator_desc : "N/A", ptr);
+        Serial.printf("             FreeHeap: %6u B | MaxAlloc: %6u B | Free8Bit: %6u B | Largest8Bit: %6u B | FreeInternal: %6u B | LargestInternal: %6u B\n",
+                      freeHeap, maxAllocHeap, free8Bit, largest8Bit, freeInternal, largestInternal);
+    } else {
+        Serial.printf("[GbDiagHeap] [%s]\n", checkpoint_tag);
+        Serial.printf("             FreeHeap: %6u B | MaxAlloc: %6u B | Free8Bit: %6u B | Largest8Bit: %6u B | FreeInternal: %6u B | LargestInternal: %6u B\n",
+                      freeHeap, maxAllocHeap, free8Bit, largest8Bit, freeInternal, largestInternal);
+    }
 }
 
 } // extern "C"
