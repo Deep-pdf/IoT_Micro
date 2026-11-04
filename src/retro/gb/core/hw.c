@@ -209,8 +209,15 @@ void gb_hw_setpad(int new_pad)
 
 bool gb_hw_init(void)
 {
-	hw.rambanks = calloc(8, 4096);
-	hw.vbanks = calloc(2, 8192);
+	int wram_banks = IS_CGB ? 8 : 2;
+	int vram_banks = IS_CGB ? 2 : 1;
+
+	hw.rambanks = calloc(wram_banks, 4096);
+	gb_diag_log_heap("After WRAM Allocation", -1, wram_banks * 4096, hw.rambanks, "calloc WRAM");
+
+	hw.vbanks = calloc(vram_banks, 8192);
+	gb_diag_log_heap("After VRAM Allocation", -1, vram_banks * 8192, hw.vbanks, "calloc VRAM");
+
 	hw.snd = gb_sound_init();
 	hw.cpu = gb_cpu_init();
 	hw.cart = &cart;
@@ -222,6 +229,23 @@ bool gb_hw_init(void)
 		return false;
 	}
 
+	return true;
+}
+
+bool gb_hw_ensure_cgb_buffers(void)
+{
+	if (IS_CGB)
+	{
+		if (hw.rambanks) free(hw.rambanks);
+		if (hw.vbanks) free(hw.vbanks);
+		hw.rambanks = calloc(8, 4096);
+		hw.vbanks = calloc(2, 8192);
+		if (!hw.rambanks || !hw.vbanks)
+		{
+			gb_hw_deinit();
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -262,7 +286,7 @@ void gb_hw_reset(bool hard)
 
 	if (hard)
 	{
-		memset(hw.rambanks, 0xff, 8 * 4096);
+		memset(hw.rambanks, 0xff, (IS_CGB ? 8 : 2) * 4096);
 		for (int i = 0; i < cart.ramsize; i++)
 		{
 			if (cart.rambanks[i])
@@ -338,8 +362,9 @@ void gb_hw_updatemap(void)
 	hw.rmap[0x7] = NULL;
 
 	// Video RAM
-	hw.rmap[0x8] = hw.wmap[0x8] = hw.vbanks[R_VBK & 1] - 0x8000;
-	hw.rmap[0x9] = hw.wmap[0x9] = hw.vbanks[R_VBK & 1] - 0x8000;
+	int vbank = IS_CGB ? (R_VBK & 1) : 0;
+	hw.rmap[0x8] = hw.wmap[0x8] = hw.vbanks[vbank] - 0x8000;
+	hw.rmap[0x9] = hw.wmap[0x9] = hw.vbanks[vbank] - 0x8000;
 
 	// Cartridge RAM
 	hw.rmap[0xA] = hw.wmap[0xA] = NULL;
@@ -348,9 +373,11 @@ void gb_hw_updatemap(void)
 	// Work RAM
 	hw.rmap[0xC] = hw.wmap[0xC] = hw.rambanks[0] - 0xC000;
 
-	// Work RAM (GBC)
+	// Work RAM Bank 1 (fixed in DMG, switchable 1..7 in CGB)
 	if (IS_CGB)
 		hw.rmap[0xD] = hw.wmap[0xD] = hw.rambanks[(R_SVBK & 0x7) ?: 1] - 0xD000;
+	else
+		hw.rmap[0xD] = hw.wmap[0xD] = hw.rambanks[1] - 0xD000;
 
 	// Mirror of 0xC000
 	hw.rmap[0xE] = hw.wmap[0xE] = hw.rambanks[0] - 0xE000;
@@ -503,7 +530,7 @@ void gb_hw_write(unsigned a, byte b)
 		break;
 
 	case 0x8000: // Video RAM
-		hw.vbanks[R_VBK&1][a & 0x1FFF] = b;
+		hw.vbanks[IS_CGB ? (R_VBK & 1) : 0][a & 0x1FFF] = b;
 		break;
 
 	case 0xA000: // Save RAM or RTC
@@ -528,7 +555,7 @@ void gb_hw_write(unsigned a, byte b)
 		if ((a & 0xF000) == 0xC000)
 			hw.rambanks[0][a & 0x0FFF] = b;
 		else
-			hw.rambanks[(R_SVBK & 0x7) ?: 1][a & 0x0FFF] = b;
+			hw.rambanks[IS_CGB ? ((R_SVBK & 0x7) ?: 1) : 1][a & 0x0FFF] = b;
 		break;
 
 	case 0xE000: // Memory mapped IO
@@ -705,7 +732,7 @@ byte gb_hw_read(unsigned a)
 		return gb_rom_bridge_read_switchable((uint16_t)a);
 
 	case 0x8000: // Video RAM
-		return hw.vbanks[R_VBK&1][a & 0x1FFF];
+		return hw.vbanks[IS_CGB ? (R_VBK & 1) : 0][a & 0x1FFF];
 
 	case 0xA000: // Cart RAM or RTC
 		if (!cart.enableram)
@@ -717,7 +744,7 @@ byte gb_hw_read(unsigned a)
 	case 0xC000: // System RAM
 		if ((a & 0xF000) == 0xC000)
 			return hw.rambanks[0][a & 0xFFF];
-		return hw.rambanks[(R_SVBK & 0x7) ?: 1][a & 0xFFF];
+		return hw.rambanks[IS_CGB ? ((R_SVBK & 0x7) ?: 1) : 1][a & 0xFFF];
 
 	case 0xE000: // Memory mapped IO
 		// Mirror RAM: 0xE000 - 0xFDFF

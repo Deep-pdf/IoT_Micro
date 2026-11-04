@@ -20,6 +20,7 @@
 int gnuboy_init(int samplerate, gb_audio_fmt_t audio_fmt, gb_video_fmt_t video_fmt, gb_video_cb_t *video_callback, gb_audio_cb_t *audio_callback)
 {
 	GB = (gb_t){
+		.hwtype = GB_HW_DMG,
 		.video.colorize = GB_PALETTE_CGB,
 		.video.format = video_fmt,
 		.video.callback = video_callback,
@@ -282,7 +283,7 @@ int gnuboy_load_rom_from_bridge(void)
 	cart.romsize = 64; // 1 MB / 64 banks
 	cart.ramsize = 4;  // 32 KB / 4 banks
 
-	gb_diag_log_heap("5. Before Cartridge RAM Allocation", -1, 0, NULL, NULL);
+	gb_diag_log_heap("Before Cartridge RAM Allocation", -1, 0, NULL, NULL);
 
 	// Allocate 32 KB cartridge RAM as four independent 8 KB bank allocations
 	for (int i = 0; i < cart.ramsize; i++)
@@ -307,9 +308,11 @@ int gnuboy_load_rom_from_bridge(void)
 				gb_diag_log_heap("After Failure Unwind & Reset", -1, 0, NULL, NULL);
 				return -3;
 			}
-			gb_diag_log_heap("6. Successful Bank Allocation", i, 0x2000, cart.rambanks[i], "calloc(1, 8192) [MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL]");
+			gb_diag_log_heap("Cartridge RAM Bank Allocation OK", i, 0x2000, cart.rambanks[i], "calloc(1, 8192) [MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL]");
 		}
 	}
+
+	gb_diag_log_heap("After All Four Cartridge RAM Allocations", -1, 4 * 0x2000, cart.rambanks[3], "All 4 Banks Allocated OK");
 
 	// cart.rombanks array is bypassed - direct mapping through GbRomBridge
 	cart.rombanks = NULL;
@@ -352,6 +355,12 @@ int gnuboy_load_rom(const byte *data, size_t size)
 		hw.hwtype = GB_HW_SGB; // Game supports SGB features
 	else
 		hw.hwtype = GB_HW_DMG; // Games supports DMG only
+
+	if (IS_CGB && !gb_hw_ensure_cgb_buffers())
+	{
+		MESSAGE_ERROR("Failed to allocate CGB buffers\n");
+		return -3;
+	}
 
 	memcpy(&cart.checksum, header + 0x014E, 2);
 	memcpy(&cart.name, header + 0x0134, 16);

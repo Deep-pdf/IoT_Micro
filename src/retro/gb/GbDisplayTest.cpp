@@ -52,9 +52,11 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
         return false;
     }
 
-    gb_diag_log_heap("3. After GbDisplayAdapter::init()", -1, 0, NULL, NULL);
+    gb_diag_log_heap("After Display Adapter Init", -1, 0, NULL, NULL);
 
     GbDisplayAdapter::clearBorders();
+
+    gb_diag_log_heap("Before Gnuboy Initialization", -1, 0, NULL, NULL);
 
     // 5. Initialize Gnuboy Core with GB_PIXEL_PALETTED format and synchronous video callback
     if (gnuboy_init(0, GB_AUDIO_STEREO_S16, GB_PIXEL_PALETTED, onGbVideoFrame, NULL) < 0) {
@@ -63,7 +65,7 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
         return false;
     }
 
-    gb_diag_log_heap("4. After gnuboy_init()", -1, 0, NULL, NULL);
+    gb_diag_log_heap("After gnuboy_init()", -1, 0, NULL, NULL);
 
     // Bind allocated framebuffer
     gnuboy_set_framebuffer(GbDisplayAdapter::getFramebuffer());

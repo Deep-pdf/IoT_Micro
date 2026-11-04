@@ -73,7 +73,7 @@ static inline void tilebuf(int S, int T, int WT, int *WND, int *BG)
 
 	base = ((R_LCDC&0x08)?0x1C00:0x1800) + (T<<5) + S;
 	tilemap = VBANKS[0] + base;
-	attrmap = VBANKS[1] + base;
+	attrmap = IS_CGB ? (VBANKS[1] + base) : NULL;
 	tilebuf = BG;
 	cnt = ((WX + 7) >> 3) + 1;
 
@@ -122,7 +122,7 @@ static inline void tilebuf(int S, int T, int WT, int *WND, int *BG)
 
 	base = ((R_LCDC&0x40)?0x1C00:0x1800) + (WT<<5);
 	tilemap = VBANKS[0] + base;
-	attrmap = VBANKS[1] + base;
+	attrmap = IS_CGB ? (VBANKS[1] + base) : NULL;
 	tilebuf = WND;
 	cnt = ((160 - WX) >> 3) + 1;
 
@@ -477,7 +477,7 @@ void gb_lcd_reset(bool hard)
 {
 	if (hard)
 	{
-		memset(VBANKS, 0, 2 * 8192);
+		memset(VBANKS, 0, (IS_CGB ? 2 : 1) * 8192);
 		memset(&GB.oam, 0, 256);
 		memset(&GB.pal, 0, 128);
 	}
