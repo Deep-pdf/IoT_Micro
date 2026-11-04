@@ -263,7 +263,11 @@ void gb_hw_reset(bool hard)
 	if (hard)
 	{
 		memset(hw.rambanks, 0xff, 8 * 4096);
-		memset(cart.rambanks, 0xff, cart.ramsize * 8192);
+		for (int i = 0; i < cart.ramsize; i++)
+		{
+			if (cart.rambanks[i])
+				memset(cart.rambanks[i], 0xff, 8192);
+		}
 		memset(&cart.rtc, 0, sizeof(gb_rtc_t));
 	}
 

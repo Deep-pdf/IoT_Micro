@@ -186,7 +186,7 @@ typedef struct
 
 	// Memory
 	byte **rombanks; // [512];
-	byte (*rambanks)[8192];
+	byte *rambanks[4];
 	unsigned sram_dirty;
 	unsigned sram_saved;
 

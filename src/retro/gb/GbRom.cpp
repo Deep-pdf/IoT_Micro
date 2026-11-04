@@ -8,6 +8,8 @@
 uint8_t* GbRom::s_switchableBankRam = nullptr;
 uint8_t  GbRom::s_currentLoadedBank = 0xFF;
 bool     GbRom::s_initialized = false;
+uint32_t GbRom::s_decompressCount = 0;
+uint32_t GbRom::s_cacheHitCount = 0;
 
 // Standard CRC32 tableless / byte-wise calculator for validation
 uint32_t GbRom::calculateCrc32(const uint8_t* data, size_t length) {
@@ -77,6 +79,7 @@ bool GbRom::selectRomBank(uint8_t bank) {
 
     // Cache hit: already decompressed in RAM
     if (bank == s_currentLoadedBank) {
+        s_cacheHitCount++;
         return true;
     }
 
@@ -107,13 +110,27 @@ bool GbRom::selectRomBank(uint8_t bank) {
         return false;
     }
 
-    // Decompression verified -> update active bank
+    // Decompression verified -> update active bank & counter
     s_currentLoadedBank = bank;
+    s_decompressCount++;
     return true;
 }
 
 uint8_t GbRom::getCurrentBank() {
     return s_currentLoadedBank;
+}
+
+uint32_t GbRom::getDecompressionCount() {
+    return s_decompressCount;
+}
+
+uint32_t GbRom::getCacheHitCount() {
+    return s_cacheHitCount;
+}
+
+void GbRom::resetMetrics() {
+    s_decompressCount = 0;
+    s_cacheHitCount   = 0;
 }
 
 const uint8_t* GbRom::getFixedBankBuffer() {
@@ -226,15 +243,51 @@ bool GbRom::validate() {
     }
 
     // 4. Test bank cache / repeated access
-    s_currentLoadedBank = 10;
-    uint32_t tCache0 = micros();
-    bool cacheHit = selectRomBank(10);
-    uint32_t tCache1 = micros();
-    if (!cacheHit || (tCache1 - tCache0) > 2) {
-        Serial.println("[GbRom] FAIL: Cache hit test failed!");
+    // Step 1: Select bank 10 through the normal bank-selection path
+    if (!selectRomBank(10)) {
+        Serial.println("[GbRom] FAIL: Initial selectRomBank(10) failed!");
         return false;
     }
-    Serial.println("[GbRom] Bank Cache Hit Test -> PASS (0 us overhead)");
+    // Step 2: Verify that the loaded bank is actually bank 10
+    if (getCurrentBank() != 10) {
+        Serial.printf("[GbRom] FAIL: Loaded bank %d != 10!\n", getCurrentBank());
+        return false;
+    }
+    // Step 3: Verify its contents against the expected CRC32
+    uint32_t expectedCrc10 = pgm_read_dword(&GB_ROM_BANKS[10].crc32);
+    uint32_t actualCrc10   = calculateCrc32(s_switchableBankRam, GB_ROM_BANK_SIZE);
+    if (actualCrc10 != expectedCrc10) {
+        Serial.printf("[GbRom] FAIL: Bank 10 CRC mismatch! Exp: 0x%08X, Got: 0x%08X\n",
+                      expectedCrc10, actualCrc10);
+        return false;
+    }
+    // Step 4: Record the decompression counter
+    uint32_t decompCountBefore = s_decompressCount;
+
+    // Step 5: Select bank 10 again through the normal API
+    if (!selectRomBank(10)) {
+        Serial.println("[GbRom] FAIL: Repeated selectRomBank(10) failed!");
+        return false;
+    }
+    // Step 6 & 7: Verify the selection succeeds and current bank remains 10
+    if (getCurrentBank() != 10) {
+        Serial.printf("[GbRom] FAIL: Current bank changed to %d on cache hit!\n", getCurrentBank());
+        return false;
+    }
+    // Step 8: Verify the decompression counter did not increase
+    if (s_decompressCount != decompCountBefore) {
+        Serial.printf("[GbRom] FAIL: Decompression counter increased on cache hit! Before: %u, After: %u\n",
+                      decompCountBefore, s_decompressCount);
+        return false;
+    }
+    // Step 9: Verify the bank contents still match the expected CRC32
+    uint32_t cachedCrc10 = calculateCrc32(s_switchableBankRam, GB_ROM_BANK_SIZE);
+    if (cachedCrc10 != expectedCrc10) {
+        Serial.printf("[GbRom] FAIL: Cached bank 10 CRC corrupted! Exp: 0x%08X, Got: 0x%08X\n",
+                      expectedCrc10, cachedCrc10);
+        return false;
+    }
+    Serial.println("[GbRom] Bank Cache Hit Test -> PASS (Zero redundant decompressions, CRC32 verified)");
 
     // 5. Test invalid bank requests
     // Bank 0 should map to Bank 1 (MBC3 rule)

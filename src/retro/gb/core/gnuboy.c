@@ -282,14 +282,26 @@ int gnuboy_load_rom_from_bridge(void)
 	cart.romsize = 64; // 1 MB / 64 banks
 	cart.ramsize = 4;  // 32 KB / 4 banks
 
-	// Allocate temporary 32 KB cartridge RAM buffer (4 banks of 8 KB)
-	if (cart.rambanks == NULL)
+	// Allocate 32 KB cartridge RAM as four independent 8 KB bank allocations
+	for (int i = 0; i < cart.ramsize; i++)
 	{
-		cart.rambanks = calloc(cart.ramsize, 0x2000);
-		if (!cart.rambanks)
+		if (cart.rambanks[i] == NULL)
 		{
-			MESSAGE_ERROR("Cartridge RAM allocation failed\n");
-			return -3;
+			cart.rambanks[i] = (byte*)calloc(1, 0x2000);
+			if (!cart.rambanks[i])
+			{
+				MESSAGE_ERROR("Cartridge RAM allocation failed for bank %d\n", i);
+				// Unwind and free previously allocated banks
+				for (int j = 0; j < i; j++)
+				{
+					if (cart.rambanks[j])
+					{
+						free(cart.rambanks[j]);
+						cart.rambanks[j] = NULL;
+					}
+				}
+				return -3;
+			}
 		}
 	}
 
@@ -392,11 +404,35 @@ int gnuboy_load_rom(const byte *data, size_t size)
 		cart.ramsize = 1;
 	}
 
-	cart.rambanks = calloc(cart.ramsize, 0x2000);
+	for (int i = 0; i < cart.ramsize && i < 4; i++)
+	{
+		cart.rambanks[i] = (byte*)calloc(1, 0x2000);
+		if (!cart.rambanks[i])
+		{
+			for (int j = 0; j < i; j++)
+			{
+				if (cart.rambanks[j])
+				{
+					free(cart.rambanks[j]);
+					cart.rambanks[j] = NULL;
+				}
+			}
+			MESSAGE_ERROR("Memory allocation failed.");
+			return -3;
+		}
+	}
 	cart.rombanks = calloc(cart.romsize, sizeof(byte *));
 
-	if (!cart.rambanks || !cart.rombanks)
+	if (!cart.rombanks)
 	{
+		for (int j = 0; j < cart.ramsize && j < 4; j++)
+		{
+			if (cart.rambanks[j])
+			{
+				free(cart.rambanks[j]);
+				cart.rambanks[j] = NULL;
+			}
+		}
 		MESSAGE_ERROR("Memory allocation failed.");
 		return -3;
 	}
@@ -497,8 +533,14 @@ void gnuboy_free_rom(void)
 	free(cart.rombanks);
 	cart.rombanks = NULL;
 
-	free(cart.rambanks);
-	cart.rambanks = NULL;
+	for (int i = 0; i < 4; i++)
+	{
+		if (cart.rambanks[i])
+		{
+			free(cart.rambanks[i]);
+			cart.rambanks[i] = NULL;
+		}
+	}
 
 	if (cart.romFile)
 	{
@@ -808,13 +850,16 @@ static int do_save_load(const char *file, bool save)
 
 	uint32_t (*header)[2] = (uint32_t (*)[2])buf;
 
-	sblock_t blocks[] = {
-		{buf, 1},
-		{hw.rambanks, IS_CGB ? 8 : 2},
-		{hw.vbanks, IS_CGB ? 4 : 2},
-		{cart.rambanks, cart.ramsize * 2},
-		{NULL, 0},
-	};
+	sblock_t blocks[16];
+	int bidx = 0;
+	blocks[bidx++] = (sblock_t){buf, 1};
+	blocks[bidx++] = (sblock_t){hw.rambanks, IS_CGB ? 8 : 2};
+	blocks[bidx++] = (sblock_t){hw.vbanks, IS_CGB ? 4 : 2};
+	for (int i = 0; i < cart.ramsize && i < 4; i++)
+	{
+		blocks[bidx++] = (sblock_t){cart.rambanks[i], 2};
+	}
+	blocks[bidx++] = (sblock_t){NULL, 0};
 
 	FILE *fp = NULL;
 

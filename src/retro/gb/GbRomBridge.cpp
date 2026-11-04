@@ -3,14 +3,10 @@
 #include <string.h>
 #include <Arduino.h>
 
-static uint32_t s_decompressCount = 0;
-static uint32_t s_cacheHitCount   = 0;
-
 extern "C" {
 
 bool gb_rom_bridge_init(void) {
-    s_decompressCount = 0;
-    s_cacheHitCount = 0;
+    GbRom::resetMetrics();
     return GbRom::init();
 }
 
@@ -31,24 +27,7 @@ uint8_t gb_rom_bridge_read_switchable(uint16_t address) {
 }
 
 bool gb_rom_bridge_select_bank(uint8_t bank) {
-    if (bank == 0) {
-        bank = 1;
-    }
-    bank &= 0x3F;
-    if (bank == 0) {
-        bank = 1;
-    }
-
-    if (bank == GbRom::getCurrentBank()) {
-        s_cacheHitCount++;
-        return true;
-    }
-
-    bool success = GbRom::selectRomBank(bank);
-    if (success) {
-        s_decompressCount++;
-    }
-    return success;
+    return GbRom::selectRomBank(bank);
 }
 
 uint8_t gb_rom_bridge_get_current_bank(void) {
@@ -116,16 +95,15 @@ bool gb_rom_bridge_validate_cartridge(void) {
 }
 
 uint32_t gb_rom_bridge_get_decompression_count(void) {
-    return s_decompressCount;
+    return GbRom::getDecompressionCount();
 }
 
 uint32_t gb_rom_bridge_get_cache_hit_count(void) {
-    return s_cacheHitCount;
+    return GbRom::getCacheHitCount();
 }
 
 void gb_rom_bridge_reset_metrics(void) {
-    s_decompressCount = 0;
-    s_cacheHitCount = 0;
+    GbRom::resetMetrics();
 }
 
 } // extern "C"

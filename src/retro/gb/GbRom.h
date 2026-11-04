@@ -52,11 +52,18 @@ public:
     // Returns SRAM memory footprint used by the ROM subsystem
     static size_t getRamFootprint();
 
+    // Telemetry counters
+    static uint32_t getDecompressionCount();
+    static uint32_t getCacheHitCount();
+    static void     resetMetrics();
+
 private:
     // Reusable 16 KB buffer allocated once on init (0 dynamic allocations during bank switches)
     static uint8_t* s_switchableBankRam;
     static uint8_t  s_currentLoadedBank;
     static bool     s_initialized;
+    static uint32_t s_decompressCount;
+    static uint32_t s_cacheHitCount;
 
     // Internal CRC32 calculator for validation
     static uint32_t calculateCrc32(const uint8_t* data, size_t length);
