@@ -385,6 +385,7 @@ void enterLostCrownLevel1() {
 }
 
 void exitLostCrownLevel1() {
+  LostCrownLevel1::end();
   clearButtonEvents();
   currentScreen = STATE_LOST_CROWN_TITLE;
   LostCrownTitle::begin(tft);

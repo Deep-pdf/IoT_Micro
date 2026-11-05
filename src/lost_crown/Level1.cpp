@@ -20,6 +20,7 @@
 #include "LostCrownGameplay.h"
 #include "button.h"
 #include <Adafruit_GFX.h>
+#include "esp_heap_caps.h"
 
 #define JOY_X 34
 #define JOY_Y 35
@@ -83,10 +84,11 @@ static uint32_t lastAnimTick     = 0;
 static uint32_t lastPhysicsTick  = 0;
 
 // RAM backbuffer for 100% flicker-free atomic rendering (128 x 160 x 2 = 40,960 bytes)
-static uint16_t screenBuffer[SCREEN_W * SCREEN_H];
+static uint16_t* s_screenBuffer = nullptr;
 
 // ─── Internal Rendering Routine ──────────────────────────────────────────────
 static void renderFrame(Adafruit_ST7735 &tft) {
+  if (!s_screenBuffer) return;
   int16_t icamX = (int16_t)roundf(camX);
   int16_t icamY = (int16_t)roundf(camY);
 
@@ -98,7 +100,7 @@ static void renderFrame(Adafruit_ST7735 &tft) {
   // 1. Copy visible 128x160 viewport slice from PROGMEM world image into backbuffer
   for (int16_t r = 0; r < SCREEN_H; r++) {
     int32_t bgOffset = (int32_t)(icamY + r) * LEVEL1_WORLD_W + icamX;
-    memcpy_P(&screenBuffer[r * SCREEN_W], &level1_bg_pixels[bgOffset], SCREEN_W * sizeof(uint16_t));
+    memcpy_P(&s_screenBuffer[r * SCREEN_W], &level1_bg_pixels[bgOffset], SCREEN_W * sizeof(uint16_t));
   }
 
   // 2. Composite Veera sprite into backbuffer
@@ -145,7 +147,7 @@ static void renderFrame(Adafruit_ST7735 &tft) {
       uint16_t pixel = pgm_read_word(&frameData[r * spriteW + sc]);
 
       if (pixel != VEERA_TRANSPARENT_COLOR) {
-        screenBuffer[sy * SCREEN_W + sx] = pixel;
+        s_screenBuffer[sy * SCREEN_W + sx] = pixel;
       }
     }
   }
@@ -166,19 +168,26 @@ static void renderFrame(Adafruit_ST7735 &tft) {
 
         uint16_t bPixel = pgm_read_word(&rotFrameData[r * BOOMERANG_SPRITE_SIZE + c]);
         if (bPixel != VEERA_TRANSPARENT_COLOR) {
-          screenBuffer[sy * SCREEN_W + sx] = bPixel;
+          s_screenBuffer[sy * SCREEN_W + sx] = bPixel;
         }
       }
     }
   }
 
   // 4. Atomic hardware blit to ST7735 TFT display (zero tearing, zero flicker)
-  tft.drawRGBBitmap(0, 0, screenBuffer, SCREEN_W, SCREEN_H);
+  tft.drawRGBBitmap(0, 0, s_screenBuffer, SCREEN_W, SCREEN_H);
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 void begin(Adafruit_ST7735 &tft) {
+  if (!s_screenBuffer) {
+    s_screenBuffer = (uint16_t*)heap_caps_malloc(SCREEN_W * SCREEN_H * sizeof(uint16_t), MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
+    if (!s_screenBuffer) {
+      Serial.println("[Level1] ERROR: Failed to allocate dynamic screen buffer (40960 B)!");
+      return;
+    }
+  }
   reset();
 
   uint32_t now = millis();
@@ -224,7 +233,15 @@ void reset() {
   shouldExitLevel    = false;
 }
 
+void end() {
+  if (s_screenBuffer) {
+    free(s_screenBuffer);
+    s_screenBuffer = nullptr;
+  }
+}
+
 void update(Adafruit_ST7735 &tft) {
+  if (!s_screenBuffer) return;
   uint32_t now = millis();
   uint32_t dt = now - lastPhysicsTick;
   if (dt > 100) dt = 100; // Cap large frame jumps

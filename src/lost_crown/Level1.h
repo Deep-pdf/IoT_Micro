@@ -22,6 +22,9 @@ namespace LostCrownLevel1 {
   // Resets level state
   void reset();
 
+  // Cleans up Level 1 and releases dynamic frame buffer
+  void end();
+
   // Returns true if player held back button for 3s to return to Title
   bool shouldExit();
 
