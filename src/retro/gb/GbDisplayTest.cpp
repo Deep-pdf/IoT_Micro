@@ -8,6 +8,7 @@
 #include "GbDisplayAdapter.h"
 #include "GbRomBridge.h"
 #include "GbRom.h"
+#include "GbInput.h"
 #include "core/gnuboy.h"
 #include "core/hw.h"
 #include "core/cpu.h"
@@ -87,6 +88,7 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
 
     // 7. Hard reset CPU & PPU
     gnuboy_reset(true);
+    GbInput::init();
     s_running = true;
 
     return true;
@@ -94,6 +96,13 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
 
 void GbDisplayTest::update(Adafruit_ST7735& tft) {
     if (!s_running) return;
+    GbInput::update();
+    if (GbInput::isExitRequested()) {
+        deinit();
+        GbInput::waitForExitRelease();
+        return;
+    }
+    gnuboy_set_pad(GbInput::getPadState());
     gnuboy_run(true);
 }
 
@@ -102,7 +111,7 @@ void GbDisplayTest::deinit() {
         // 1. Stop frame execution and rendering
         s_running = false;
         s_activeTft = nullptr;
-        gnuboy_set_pad(0);
+        GbInput::deinit();
 
         gb_diag_log_heap("Teardown 1: Before Teardown", -1, 0, NULL, NULL);
 
@@ -138,10 +147,6 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
     Serial.printf("[GbTest] Initial Free Heap:       %6u bytes\n", heapBefore);
     Serial.printf("[GbTest] Initial Max Free Block:  %6u bytes\n", maxBlockBefore);
 
-    // Initialize buttons (Exit & Game Boy START)
-    pinMode(BTN_BACK, INPUT_PULLUP);
-    pinMode(BTN_ENTER, INPUT_PULLUP);
-
     Serial.println("[GbTest] Step 1: Initializing Hardware Display & Core...");
     if (!init(tft)) {
         Serial.println("[GbTest] ERROR: Initialization failed!");
@@ -165,7 +170,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
                   (unsigned)GB.cpu->pc.w, (unsigned)GB.cpu->sp.w);
 
     Serial.printf("[GbTest] Step 2: Executing & Rendering %u Frames on TFT...\n", targetFrames);
-    Serial.println("[GbTest] (Press BTN_ENTER / GPIO 13 for Game Boy START | Hold BTN_BACK / GPIO 25 to exit)");
+    Serial.println("[GbTest] Controls: JOY=D-pad, GPIO13=A, GPIO32=B, GPIO25=START (hold 2s to exit)");
     Serial.println("--------------------------------------------------------------------------------------------------------");
     Serial.println(" Frame |   PC   |   SP   | ROM/RAM | Emu (ms) | Scale (us) | TFT (ms) | Total (ms) |  FPS  | FreeHeap | Decomp/Hit");
     Serial.println("--------------------------------------------------------------------------------------------------------");
@@ -182,19 +187,14 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
     bool exitedEarly = false;
 
     for (uint32_t f = 1; f <= targetFrames; f++) {
-        // Check for early exit request
-        if (digitalRead(BTN_BACK) == LOW) {
-            Serial.printf("[GbTest] Early exit triggered via BTN_BACK at frame %u.\n", f);
+        // Poll physical Game Boy controls (D-Pad, A, B, START, and safe exit gesture)
+        GbInput::update();
+        if (GbInput::isExitRequested()) {
+            Serial.printf("[GbTest] Safe exit triggered via BTN_BACK long-hold at frame %u.\n", f);
             exitedEarly = true;
             break;
         }
-
-        // Poll physical controls: map BTN_ENTER (GPIO 13, active-low) to Game Boy START
-        int pad = 0;
-        if (digitalRead(BTN_ENTER) == LOW) {
-            pad |= GB_PAD_START;
-        }
-        gnuboy_set_pad(pad);
+        gnuboy_set_pad(GbInput::getPadState());
 
         uint32_t fStart = micros();
 
@@ -249,6 +249,10 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
     Serial.println("--------------------------------------------------------------------------------------------------------");
     Serial.printf("[GbTest] Rendered %u frames in %u ms (Overall Average: %.1f FPS)\n",
                   totalFramesRendered, totalDurationMs, overallFps);
+
+    if (exitedEarly) {
+        GbInput::waitForExitRelease();
+    }
 
     Serial.println("[GbTest] Step 3: Tearing Down & Checking Memory Safety...");
     uint32_t heapBeforeDeinit    = ESP.getFreeHeap();
