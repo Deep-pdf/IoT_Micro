@@ -674,7 +674,7 @@ int gnuboy_load_sram(const char *file)
 		if (fseek(f, i * 8192, SEEK_SET) == 0 && fread(cart.rambanks[i], 8192, 1, f) == 1)
 		{
 			MESSAGE_INFO("Loaded SRAM bank %d.\n", i);
-			cart.sram_saved = (1 << i);
+			cart.sram_saved |= (1 << i);
 		}
 	}
 

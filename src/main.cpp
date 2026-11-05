@@ -17,7 +17,7 @@
 #include "hackk/HackkApp.h"
 #include "status_led.h"
 #include "retro/RetroApp.h"
-#include "retro/gb/GbDisplayTest.h"
+// (Game Boy now launched from Retro Arcade)
 
 #define TFT_CS   5
 #define TFT_DC   2
@@ -590,10 +590,10 @@ void setup() {
   delay(step_delay);
 
   // Select a random quote from the library
-#if GB_HARDWARE_DISPLAY_TEST
-  Serial.println("[BOOT] GB_HARDWARE_DISPLAY_TEST is enabled. Running Game Boy display test on TFT...");
-  GbDisplayTest::run(tft);
-#endif
+
+
+
+
 
     selectRandomQuote();
   lastQuoteChangeTime = millis();

@@ -2,34 +2,50 @@
 #define GB_SAVE_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
-
-#define GB_SAVE_RAM_BANKS      4
-#define GB_SAVE_RAM_BANK_SIZE  8192
-#define GB_SAVE_RAM_TOTAL_SIZE (GB_SAVE_RAM_BANKS * GB_SAVE_RAM_BANK_SIZE) // 32 KB
 
 class GbSave {
 public:
-    // Future integration interface for 32 KB MBC3 cartridge SRAM
-    virtual ~GbSave() = default;
+    static constexpr size_t SRAM_BANK_SIZE   = 8192;
+    static constexpr size_t SRAM_TOTAL_SIZE  = 32768; // 4 banks * 8192 bytes
+    static constexpr const char* SAVE_FILE_PATH   = "/pokemon_red.sav";
+    static constexpr const char* TEMP_FILE_PATH   = "/pokemon_red.sav.tmp";
+    static constexpr const char* BACKUP_FILE_PATH = "/pokemon_red.sav.bak";
 
-    // Direct byte access to 8 KB cartridge RAM banks ($A000 - $BFFF)
-    virtual uint8_t readRam(uint8_t bank, uint16_t offset) = 0;
-    virtual void    writeRam(uint8_t bank, uint16_t offset, uint8_t value) = 0;
+    // Initializes LittleFS on the 896 KB 'spiffs' flash partition.
+    // Mounts LittleFS once without formatting on failure.
+    // Performs recovery of any interrupted atomic commits if needed.
+    static bool init();
 
-    // Direct pointer to currently active 8 KB RAM bank (for fast emulator access)
-    virtual uint8_t* getRamBankPtr(uint8_t bank) = 0;
+    // Loads persistent save data into cart.rambanks[0..3].
+    // Must be called AFTER gnuboy_reset(true).
+    // If save does not exist, leaves clean initialized RAM.
+    // If size != 32768, safely rejects and restores clean RAM.
+    // Clears dirty state on success.
+    static bool load();
 
-    // Persistence lifecycle
-    virtual bool load() = 0;
-    virtual bool save() = 0;
-    virtual bool isDirty() const = 0;
-    virtual void clearDirty() = 0;
+    // Saves all four 8 KB Cartridge RAM banks atomically to flash.
+    // Writes to .tmp, verifies size and byte-level contents, rotates backup, and commits.
+    // Clears dirty state on success. Retains dirty state on failure.
+    static bool save();
 
-    // Metadata & integrity verification
-    virtual uint32_t calculateSaveCrc32() = 0;
-    virtual bool     verifySaveIntegrity() = 0;
+    // Periodic check for auto-saving dirty SRAM during gameplay.
+    // Debounces writes (waits 2.0s after last write before committing).
+    // Call once per emulated frame.
+    static void update();
+
+    // Returns true if Cartridge RAM has unsaved modifications.
+    static bool isDirty();
+
+    // Cleans up save manager state across emulator sessions.
+    static void deinit();
+
+    // Diagnostic accessors
+    static bool isFilesystemReady();
+    static size_t getSaveFileSize();
+    static uint32_t getLastSaveMs();
+    static uint32_t getSaveCount();
 };
 
 #endif // GB_SAVE_H
-

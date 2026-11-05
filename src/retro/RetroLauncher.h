@@ -21,7 +21,8 @@ enum RetroLauncherFocus {
 enum RetroLaunchIntent {
     RETRO_LAUNCH_NONE = 0,
     RETRO_LAUNCH_MARIO,
-    RETRO_LAUNCH_CONTRA
+    RETRO_LAUNCH_CONTRA,
+    RETRO_LAUNCH_POKEMON
 };
 
 class RetroLauncher {

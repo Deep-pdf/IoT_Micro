@@ -4,6 +4,7 @@
 #include "nes/NesBridge.h"
 #include "nes/NesDisplayAdapter.h"
 #include "nes/NesRom.h"
+#include "gb/GbBridge.h"
 #include "joystick.h"
 #include "button.h"
 #include <Arduino.h>
@@ -29,7 +30,8 @@ bool RetroApp::shouldExit() {
 
 enum RetroAppState {
     STATE_LAUNCHER,
-    STATE_GAMEPLAY
+    STATE_GAMEPLAY_NES,
+    STATE_GAMEPLAY_GB
 };
 
 static RetroAppState s_state = STATE_LAUNCHER;
@@ -98,7 +100,7 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
             NesDisplayAdapter::clearBorders();
             if (NesBridge::loadGame(targetGame)) {
                 s_activeGame = targetGame;
-                s_state = STATE_GAMEPLAY;
+                s_state = STATE_GAMEPLAY_NES;
                 s_startHeld = false;
                 s_frameCount = 0;
                 s_lastFpsPrint = millis();
@@ -110,8 +112,21 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
                               (targetGame == NES_GAME_MARIO) ? "Super Mario Bros. 3" : "Contra",
                               (NesDisplayAdapter::getDisplayMode() == NES_DISPLAY_HYBRID) ? "HYBRID" : "FULL");
             }
+        } else if (intent == RETRO_LAUNCH_POKEMON) {
+            RetroLauncher::clearLaunchIntent();
+            if (GbBridge::init(&tft)) {
+                s_activeGame = NES_GAME_NONE;
+                s_state = STATE_GAMEPLAY_GB;
+                s_frameCount = 0;
+                s_lastFpsPrint = millis();
+                s_totalFrameTimeUs = 0;
+                Serial.println("[RetroApp] Launched Game Boy: Pokémon Red");
+            } else {
+                Serial.println("[RetroApp] ERROR: Failed to launch Pokémon Red!");
+                RetroLauncher::init(tft, false);
+            }
         }
-    } else if (s_state == STATE_GAMEPLAY) {
+    } else if (s_state == STATE_GAMEPLAY_NES) {
         uint8_t ctrl = readNesController();
         NesBridge::setController(ctrl);
 
@@ -182,6 +197,40 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
             s_totalRendTimeUs  = 0;
             s_totalTftTimeUs   = 0;
             s_lastFpsPrint     = now;
+        }
+    } else if (s_state == STATE_GAMEPLAY_GB) {
+        // Run one Game Boy frame
+        unsigned long t0 = micros();
+        GbBridge::runFrame();
+        unsigned long frameTimeUs = micros() - t0;
+
+        // Check exit gesture (BTN_BACK hold >= 2s)
+        if (GbBridge::isExitRequested()) {
+            Serial.println("[RetroApp] Game Boy exit triggered -> returning to launcher");
+            GbBridge::stop();
+            GbBridge::waitForExitRelease();
+
+            s_state = STATE_LAUNCHER;
+
+            // Return to launcher preserving selected game (Pokémon Red)
+            RetroLauncher::init(tft, false);
+            return;
+        }
+
+        s_totalFrameTimeUs += frameTimeUs;
+        s_frameCount++;
+
+        // Performance telemetry every 3 seconds to Serial
+        unsigned long now = millis();
+        if (now - s_lastFpsPrint >= 3000UL) {
+            unsigned long elapsed = now - s_lastFpsPrint;
+            float fps = (elapsed > 0) ? ((float)s_frameCount * 1000.0f / (float)elapsed) : 0.0f;
+            float avgFrameMs = (s_frameCount > 0) ? ((float)s_totalFrameTimeUs / (float)s_frameCount / 1000.0f) : 0.0f;
+            Serial.printf("[RetroApp] Game: Pokémon Red | FPS: %.1f | Frame: %.1fms | FreeHeap: %u B\n",
+                          fps, avgFrameMs, ESP.getFreeHeap());
+            s_frameCount = 0;
+            s_totalFrameTimeUs = 0;
+            s_lastFpsPrint = now;
         }
     }
 }
