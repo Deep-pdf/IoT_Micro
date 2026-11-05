@@ -592,7 +592,7 @@ void setup() {
   // Select a random quote from the library
 #if GB_HARDWARE_DISPLAY_TEST
   Serial.println("[BOOT] GB_HARDWARE_DISPLAY_TEST is enabled. Running Game Boy display test on TFT...");
-  GbDisplayTest::run(tft, 1200);
+  GbDisplayTest::run(tft);
 #endif
 
     selectRandomQuote();

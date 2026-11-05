@@ -143,13 +143,13 @@ bool GbDisplayTest::isRunning() {
     return s_running;
 }
 
-bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
+bool GbDisplayTest::run(Adafruit_ST7735& tft) {
     uint32_t heapBefore     = ESP.getFreeHeap();
     uint32_t maxBlockBefore = ESP.getMaxAllocHeap();
 
     Serial.println();
     Serial.println("==================================================================");
-    Serial.println("       Gnuboy TFT Display Integration Test (Phase 4.1.2)          ");
+    Serial.println("       Gnuboy TFT Display Integration Test (Phase 4.1.3)          ");
     Serial.println("==================================================================");
     Serial.printf("[GbTest] Initial Free Heap:       %6u bytes\n", heapBefore);
     Serial.printf("[GbTest] Initial Max Free Block:  %6u bytes\n", maxBlockBefore);
@@ -176,7 +176,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
     Serial.printf("[GbTest] CPU Reset Complete: PC = 0x%04X, SP = 0x%04X\n",
                   (unsigned)GB.cpu->pc.w, (unsigned)GB.cpu->sp.w);
 
-    Serial.printf("[GbTest] Step 2: Executing & Rendering %u Frames on TFT...\n", targetFrames);
+    Serial.println("[GbTest] Step 2: Executing & Rendering indefinitely on TFT (Continuous Play)...");
     Serial.println("[GbTest] Controls: JOY=D-pad, GPIO13=A, GPIO32=B, GPIO25=START (hold 2s to exit)");
     Serial.println("-------------------------------------------------------------------------------------------------------------------------");
     Serial.println(" Frame |   PC   |   SP   | ROM/RAM | Emu (ms) | Scale (us) | TFT (ms) | Total (ms) |  FPS  | FreeHeap | Decomp |  Hits  | Evict");
@@ -190,14 +190,14 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
     uint32_t accumTotalUs  = 0;
     uint32_t frameCountSec = 0;
 
-    bool exitedEarly = false;
+    uint32_t f = 0;
 
-    for (uint32_t f = 1; f <= targetFrames; f++) {
+    while (true) {
+        f++;
         // Poll physical Game Boy controls (D-Pad, A, B, START, and safe exit gesture)
         GbInput::update();
         if (GbInput::isExitRequested()) {
             Serial.printf("[GbTest] Safe exit triggered via BTN_BACK long-hold at frame %u.\n", f);
-            exitedEarly = true;
             break;
         }
         gnuboy_set_pad(GbInput::getPadState());
@@ -220,7 +220,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
         frameCountSec++;
 
         // Print telemetry checkpoint at frame 1, 10, 30, and every 60 frames (~1s interval)
-        if (f == 1 || f == 10 || f == 30 || (f % 60 == 0) || f == targetFrames) {
+        if (f == 1 || f == 10 || f == 30 || (f % 60 == 0)) {
             float avgEmuMs   = (float)accumEmuUs   / (frameCountSec * 1000.0f);
             float avgScaleUs = (float)accumScaleUs / (float)frameCountSec;
             float avgTftMs   = (float)accumTftUs   / (frameCountSec * 1000.0f);
@@ -249,7 +249,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
         }
 
         // Periodic slot occupancy snapshot every 300 frames
-        if (f % 300 == 0 || f == targetFrames) {
+        if (f % 300 == 0) {
             uint8_t b0, b1, b2, b3;
             bool v0, v1, v2, v3;
             uint32_t a0, a1, a2, a3;
@@ -289,9 +289,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
     Serial.printf("[GbTest] Decompression Time: Avg: %.1f us | Max: %u us | Total Spent: %.2f ms\n",
                   avgDecompTimeUs, gb_rom_bridge_get_max_decomp_us(), (float)gb_rom_bridge_get_total_decomp_us() / 1000.0f);
 
-    if (exitedEarly) {
-        GbInput::waitForExitRelease();
-    }
+    GbInput::waitForExitRelease();
 
     Serial.println("[GbTest] Step 3: Tearing Down & Checking Memory Safety...");
     uint32_t heapBeforeDeinit    = ESP.getFreeHeap();
@@ -313,7 +311,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
         Serial.printf("[GbTest] Note: %d-byte residual delta is within expected asynchronous Wi-Fi/lwIP stack activity.\n", residualLeak);
     }
 
-    bool success = (!exitedEarly || totalFramesRendered >= 10) && (residualLeak <= 512);
+    bool success = (totalFramesRendered >= 10) && (residualLeak <= 512);
     Serial.println("==================================================================");
     Serial.printf("       Gnuboy TFT Display Integration Test: %s           \n",
                   success ? "SUCCESS!" : "FAILED!");

@@ -10,12 +10,12 @@ class GbDisplayTest {
 public:
     // Executes the standalone Game Boy display integration test:
     // Initializes the TFT, GbRomBridge, Gnuboy core, framebuffer, and resets CPU.
-    // Executes targetFrames (default: 1200 frames = ~20-40 seconds of runtime emulation)
-    // with actual nearest-neighbor scaling and 40 MHz SPI transfers to the physical ST7735 TFT.
+    // Executes continuously with actual nearest-neighbor scaling and 40 MHz SPI transfers
+    // to the physical ST7735 TFT until user holds BTN_BACK (GPIO 25) >= 2s to exit.
     // Logs comprehensive performance telemetry to Serial once per second (every 60 frames).
-    // Monitors BTN_BACK (GPIO 25) for early exit and BTN_ENTER (GPIO 13) for Game Boy START.
-    // Shuts down cleanly on completion, releasing the framebuffer and verifying zero memory leaks.
-    static bool run(Adafruit_ST7735& tft, uint32_t targetFrames = 1200);
+    // Monitors physical controls (Joystick D-pad, GPIO 13 A, GPIO 32 B, GPIO 25 START/EXIT).
+    // Shuts down cleanly on exit, releasing the framebuffer and verifying zero memory leaks.
+    static bool run(Adafruit_ST7735& tft);
 
     // Modular lifecycle methods
     static bool init(Adafruit_ST7735& tft);
