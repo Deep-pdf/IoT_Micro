@@ -1,34 +1,21 @@
 #include "GbDisplayAdapter.h"
+#include "config.h"
 #include <Arduino.h>
 #include <stdlib.h>
 #include <string.h>
 
-static Adafruit_ST7735* s_tft = nullptr;
+static Adafruit_ST7735* s_tft         = nullptr;
 static uint8_t*         s_framebuffer = nullptr;
 static bool             s_initialized = false;
 
-// Precomputed 2D nearest-neighbor scaling look-up tables in Flash (.rodata)
-static const uint8_t s_xLut[GbDisplayAdapter::TFT_TARGET_WIDTH] PROGMEM = {
-      0,   1,   3,   4,   5,   6,   8,   9,  10,  11,  13,  14,  15,  16,  18,  19,
-     20,  21,  23,  24,  25,  26,  28,  29,  30,  31,  33,  34,  35,  36,  38,  39,
-     40,  41,  43,  44,  45,  46,  48,  49,  50,  51,  53,  54,  55,  56,  58,  59,
-     60,  61,  63,  64,  65,  66,  68,  69,  70,  71,  73,  74,  75,  76,  78,  79,
-     80,  81,  83,  84,  85,  86,  88,  89,  90,  91,  93,  94,  95,  96,  98,  99,
-    100, 101, 103, 104, 105, 106, 108, 109, 110, 111, 113, 114, 115, 116, 118, 119,
-    120, 121, 123, 124, 125, 126, 128, 129, 130, 131, 133, 134, 135, 136, 138, 139,
-    140, 141, 143, 144, 145, 146, 148, 149, 150, 151, 153, 154, 155, 156, 158, 159
-};
+#ifdef GB_DISPLAY_DEFAULT_PALETTE
+static GbPaletteMode    s_paletteMode = (GbPaletteMode)GB_DISPLAY_DEFAULT_PALETTE;
+#else
+static GbPaletteMode    s_paletteMode = GB_PALETTE_HIGH_CONTRAST;
+#endif
 
-static const uint8_t s_yLut[GbDisplayAdapter::TFT_TARGET_HEIGHT] PROGMEM = {
-      0,   1,   3,   4,   5,   6,   8,   9,  10,  11,  13,  14,  15,  16,  18,  19,
-     20,  21,  23,  24,  25,  26,  28,  29,  30,  31,  33,  34,  35,  36,  38,  39,
-     40,  41,  43,  44,  45,  46,  48,  49,  50,  51,  53,  54,  55,  56,  58,  59,
-     60,  61,  63,  64,  65,  66,  68,  69,  70,  71,  73,  74,  75,  76,  78,  79,
-     80,  81,  83,  84,  85,  86,  88,  89,  90,  91,  93,  94,  95,  96,  98,  99,
-    100, 101, 103, 104, 105, 106, 108, 109, 110, 111, 113, 114, 115, 116, 118, 119,
-    120, 121, 123, 124, 125, 126, 128, 129, 130, 131, 133, 134, 135, 136, 138, 139,
-    140, 141, 143
-};
+// Adapted palette storage for High-Contrast / DMG display modes (128 bytes in BSS)
+static uint16_t         s_adaptedPalette[64];
 
 // Multi-line burst buffer dynamically allocated from heap during init()
 static uint16_t* s_burstBuffer = nullptr;
@@ -54,9 +41,13 @@ bool GbDisplayAdapter::init(Adafruit_ST7735* display) {
         s_tft->setSPISpeed(40000000UL);
     }
 
-    // 2. Nearest-neighbor scaling LUTs are precomputed and stored in Flash (.rodata / PROGMEM)
+#ifdef GB_DISPLAY_DEFAULT_PALETTE
+    s_paletteMode = (GbPaletteMode)GB_DISPLAY_DEFAULT_PALETTE;
+#else
+    s_paletteMode = GB_PALETTE_HIGH_CONTRAST;
+#endif
 
-    // 3. Allocate multi-line burst buffer dynamically (8 lines * 128 px * 2 bytes = 2048 bytes)
+    // 2. Allocate multi-line burst buffer dynamically (8 lines * 128 px * 2 bytes = 2048 bytes)
     if (!s_burstBuffer) {
         s_burstBuffer = (uint16_t*)malloc(BURST_PIXELS * sizeof(uint16_t));
         if (!s_burstBuffer) {
@@ -66,7 +57,7 @@ bool GbDisplayAdapter::init(Adafruit_ST7735* display) {
         }
     }
 
-    // 4. Allocate the single 160x144 8-bit framebuffer dynamically (23,040 bytes)
+    // 3. Allocate the single 160x144 8-bit framebuffer dynamically (23,040 bytes)
     if (!s_framebuffer) {
         s_framebuffer = (uint8_t*)calloc(1, GB_NATIVE_WIDTH * GB_NATIVE_HEIGHT);
         if (!s_framebuffer) {
@@ -85,10 +76,9 @@ bool GbDisplayAdapter::init(Adafruit_ST7735* display) {
     s_totalFramesRendered = 0;
     s_initialized         = true;
 
-    Serial.printf("[GbDisplayAdapter] Initialized | Viewport: %dx%d at (%d, %d) | Framebuffer: %d bytes | Burst: %d bytes\n",
+    Serial.printf("[GbDisplayAdapter] Initialized | Viewport: %dx%d at (%d, %d) | Native Scanlines: 144 | Palette: %s\n",
                   TFT_TARGET_WIDTH, TFT_TARGET_HEIGHT, TFT_OFFSET_X, TFT_OFFSET_Y,
-                  GB_NATIVE_WIDTH * GB_NATIVE_HEIGHT,
-                  (int)(BURST_PIXELS * sizeof(uint16_t)));
+                  getPaletteModeName());
     return true;
 }
 
@@ -122,19 +112,79 @@ void GbDisplayAdapter::clearBorders() {
     if (!s_tft) return;
     s_tft->setRotation(0); // 128x160 portrait
 
-    // Top letterbox band: 22 pixels tall (Y=0..21)
+    // Top letterbox band: 8 pixels tall (Y=0..7)
     s_tft->fillRect(0, 0, TFT_TOTAL_WIDTH, TFT_OFFSET_Y, 0x0000);
 
-    // Bottom letterbox band: 23 pixels tall (Y=137..159)
-    constexpr int bottomY = TFT_OFFSET_Y + TFT_TARGET_HEIGHT; // 22 + 115 = 137
-    constexpr int bottomH = TFT_TOTAL_HEIGHT - bottomY;       // 160 - 137 = 23
+    // Bottom letterbox band: 8 pixels tall (Y=152..159)
+    constexpr int bottomY = TFT_OFFSET_Y + TFT_TARGET_HEIGHT; // 8 + 144 = 152
+    constexpr int bottomH = TFT_TOTAL_HEIGHT - bottomY;       // 160 - 152 = 8
     s_tft->fillRect(0, bottomY, TFT_TOTAL_WIDTH, bottomH, 0x0000);
+}
+
+void GbDisplayAdapter::setPaletteMode(GbPaletteMode mode) {
+    s_paletteMode = mode;
+}
+
+GbPaletteMode GbDisplayAdapter::getPaletteMode() {
+    return s_paletteMode;
+}
+
+const char* GbDisplayAdapter::getPaletteModeName() {
+    switch (s_paletteMode) {
+        case GB_PALETTE_ORIGINAL:      return "Original GBC (Red Tint)";
+        case GB_PALETTE_HIGH_CONTRAST: return "High-Contrast Monochrome (Crisp B&W)";
+        case GB_PALETTE_DMG_GREEN:     return "Classic DMG Green";
+        default:                       return "Unknown";
+    }
 }
 
 void GbDisplayAdapter::renderFrame(const uint8_t* gbFrame160x144, const uint16_t* palette64) {
     if (!s_tft || !gbFrame160x144 || !s_burstBuffer) return;
 
-    const uint16_t* pal = palette64 ? palette64 : s_fallbackPalette;
+    const uint16_t* inPal = palette64 ? palette64 : s_fallbackPalette;
+    const uint16_t* pal = inPal;
+
+    // 1. Apply selected display palette mode
+    if (s_paletteMode == GB_PALETTE_HIGH_CONTRAST) {
+        for (int i = 0; i < 64; i++) {
+            uint16_t c = inPal[i];
+            uint32_t lum = (((c >> 11) & 0x1F) * 2) + (((c >> 5) & 0x3F) * 3) + (c & 0x1F);
+            if (lum >= 200) {
+                s_adaptedPalette[i] = 0xFFFF; // Pure White (#FFFFFF)
+            } else if (lum >= 120) {
+                s_adaptedPalette[i] = 0xBDF7; // Crisp Light Gray (75%)
+            } else if (lum >= 50) {
+                s_adaptedPalette[i] = 0x4208; // Dark Charcoal (25%)
+            } else {
+                s_adaptedPalette[i] = 0x0000; // Pure Black (#000000)
+            }
+        }
+        pal = s_adaptedPalette;
+    } else if (s_paletteMode == GB_PALETTE_DMG_GREEN) {
+        for (int i = 0; i < 64; i++) {
+            uint16_t c = inPal[i];
+            uint32_t lum = (((c >> 11) & 0x1F) * 2) + (((c >> 5) & 0x3F) * 3) + (c & 0x1F);
+            if (lum >= 200) {
+                s_adaptedPalette[i] = 0x9E66; // DMG Lightest (#9BBC0F)
+            } else if (lum >= 120) {
+                s_adaptedPalette[i] = 0x8DE1; // DMG Light (#8BAC0F)
+            } else if (lum >= 50) {
+                s_adaptedPalette[i] = 0x3344; // DMG Dark (#306230)
+            } else {
+                s_adaptedPalette[i] = 0x09E1; // DMG Darkest (#0F380F)
+            }
+        }
+        pal = s_adaptedPalette;
+    }
+    // When s_paletteMode == GB_PALETTE_ORIGINAL:
+    // pal remains pointing to inPal directly (original GBC colorization).
+
+    // 2. Precompute 64-entry luminance table for stroke-preserving horizontal filter
+    uint8_t palLum[64];
+    for (int i = 0; i < 64; i++) {
+        uint16_t c = pal[i];
+        palLum[i] = (uint8_t)((((c >> 11) & 0x1F) * 2) + (((c >> 5) & 0x3F) * 3) + (c & 0x1F));
+    }
 
     uint32_t renderTimeTotal = 0;
     uint32_t tftTimeTotal    = 0;
@@ -142,25 +192,43 @@ void GbDisplayAdapter::renderFrame(const uint8_t* gbFrame160x144, const uint16_t
     s_tft->setRotation(0);
     s_tft->startWrite();
 
-    // Set destination active window on ST7735: X=0..127, Y=22..136 (128x115)
+    // Set destination active window on ST7735: X=0..127, Y=8..151 (128x144)
     s_tft->setAddrWindow(TFT_OFFSET_X, TFT_OFFSET_Y, TFT_TARGET_WIDTH, TFT_TARGET_HEIGHT);
 
     int bufferedLines = 0;
 
     for (int y = 0; y < TFT_TARGET_HEIGHT; y++) {
         uint32_t r0 = micros();
-        const uint8_t* srcScanline = gbFrame160x144 + ((uint32_t)s_yLut[y] * GB_NATIVE_WIDTH);
+
+        // 1:1 Direct Scanline Mapping (no vertical decimation, all 144 lines rendered)
+        const uint8_t* srcScanline = gbFrame160x144 + (y * GB_NATIVE_WIDTH);
         uint16_t* lineDest = &s_burstBuffer[bufferedLines * TFT_TARGET_WIDTH];
 
-        // Horizontal scaling & color translation
-        for (int x = 0; x < TFT_TARGET_WIDTH; x++) {
-            lineDest[x] = pal[srcScanline[s_xLut[x]] & 0x3F];
+        // Stroke-preserving horizontal decimation (160 px -> 128 px):
+        // 32 groups of 5 source pixels map to 4 destination pixels.
+        // For the shared middle pixel D2, select the darker pixel between S2 and S3
+        // to preserve 1-pixel font stems and punctuation.
+        for (int g = 0; g < 32; g++) {
+            int s = g * 5;
+            int d = g * 4;
+
+            uint8_t s0 = srcScanline[s + 0] & 0x3F;
+            uint8_t s1 = srcScanline[s + 1] & 0x3F;
+            uint8_t s2 = srcScanline[s + 2] & 0x3F;
+            uint8_t s3 = srcScanline[s + 3] & 0x3F;
+            uint8_t s4 = srcScanline[s + 4] & 0x3F;
+
+            lineDest[d + 0] = pal[s0];
+            lineDest[d + 1] = pal[s1];
+            lineDest[d + 2] = pal[(palLum[s2] < palLum[s3]) ? s2 : s3];
+            lineDest[d + 3] = pal[s4];
         }
+
         bufferedLines++;
         uint32_t r1 = micros();
         renderTimeTotal += (r1 - r0);
 
-        // When the burst buffer reaches BURST_LINES (8 lines), flush over SPI
+        // When the burst buffer reaches BURST_LINES (8 lines), flush over 40 MHz SPI
         if (bufferedLines >= BURST_LINES) {
             uint32_t s0 = micros();
             s_tft->writePixels(s_burstBuffer, BURST_PIXELS);
@@ -170,7 +238,7 @@ void GbDisplayAdapter::renderFrame(const uint8_t* gbFrame160x144, const uint16_t
         }
     }
 
-    // Flush any remaining buffered scanlines (115 % 8 = 3 lines)
+    // Flush any remaining buffered scanlines (144 % 8 == 0, guarded for robustness)
     if (bufferedLines > 0) {
         uint32_t s0 = micros();
         s_tft->writePixels(s_burstBuffer, bufferedLines * TFT_TARGET_WIDTH);
@@ -203,4 +271,3 @@ void GbDisplayAdapter::resetMetrics() {
     s_lastTftTimeUs       = 0;
     s_totalFramesRendered = 0;
 }
-

@@ -37,4 +37,10 @@
 // on boot. Set to 0 (default) for standard Micro_IOT OS operation.
 #define GB_HARDWARE_DISPLAY_TEST  1
 
+// -- Game Boy Display Palette Mode --------------------------------------------
+// 0 = Original Pokémon Red GBC Colorization (red/sepia tint)
+// 1 = High-Contrast Game Boy Pocket Monochrome (crisp B&W)
+// 2 = Classic DMG Retro Green
+#define GB_DISPLAY_DEFAULT_PALETTE 1
+
 #endif // CONFIG_H

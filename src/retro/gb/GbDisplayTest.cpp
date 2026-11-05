@@ -149,7 +149,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft) {
 
     Serial.println();
     Serial.println("==================================================================");
-    Serial.println("       Gnuboy TFT Display Integration Test (Phase 4.1.3)          ");
+    Serial.println("       Gnuboy TFT Display Integration Test (Phase 4.1.4)          ");
     Serial.println("==================================================================");
     Serial.printf("[GbTest] Initial Free Heap:       %6u bytes\n", heapBefore);
     Serial.printf("[GbTest] Initial Max Free Block:  %6u bytes\n", maxBlockBefore);
@@ -169,7 +169,11 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft) {
 
     Serial.printf("[GbTest] Cartridge: %s | MBC3 | ROM Code: 0x%02X | RAM Code: 0x%02X\n",
                   meta.title, meta.rom_size_code, meta.ram_size_code);
-    Serial.printf("[GbTest] Display: 128x160 TFT Portrait | Active Game Area: 128x115 at (0, 22)\n");
+    Serial.printf("[GbTest] Display: 128x160 TFT Portrait | Active Game Area: %dx%d at (%d, %d)\n",
+                  GbDisplayAdapter::TFT_TARGET_WIDTH, GbDisplayAdapter::TFT_TARGET_HEIGHT,
+                  GbDisplayAdapter::TFT_OFFSET_X, GbDisplayAdapter::TFT_OFFSET_Y);
+    Serial.printf("[GbTest] Viewport: 1:1 Native Vertical (144 lines) | Stroke-Preserving Filter: Active\n");
+    Serial.printf("[GbTest] Palette Mode: %s\n", GbDisplayAdapter::getPaletteModeName());
     Serial.printf("[GbTest] Free Heap after Init:    %6u bytes (Used by Init: %u bytes)\n",
                   heapAfterInit, initAllocBytes);
     Serial.printf("[GbTest] Max Free Block after:    %6u bytes\n", maxBlockAfterInit);

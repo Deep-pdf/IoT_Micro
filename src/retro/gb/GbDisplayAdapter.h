@@ -7,15 +7,22 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 
+// Selectable Game Boy Display Palette Modes
+enum GbPaletteMode {
+    GB_PALETTE_ORIGINAL      = 0, // Original Pokémon Red GBC colorization (red/sepia tint)
+    GB_PALETTE_HIGH_CONTRAST = 1, // High-contrast Game Boy Pocket monochrome (crisp B&W)
+    GB_PALETTE_DMG_GREEN     = 2  // Classic DMG retro green
+};
+
 class GbDisplayAdapter {
 public:
     // Physical display and emulator dimension constants
     static constexpr int GB_NATIVE_WIDTH   = 160;
     static constexpr int GB_NATIVE_HEIGHT  = 144;
     static constexpr int TFT_TARGET_WIDTH  = 128;
-    static constexpr int TFT_TARGET_HEIGHT = 115;
+    static constexpr int TFT_TARGET_HEIGHT = 144; // 1:1 Native vertical scanlines (zero decimation)
     static constexpr int TFT_OFFSET_X      = 0;
-    static constexpr int TFT_OFFSET_Y      = 22;
+    static constexpr int TFT_OFFSET_Y      = 8;   // Centered letterbox: (160 - 144) / 2 = 8
     static constexpr int TFT_TOTAL_WIDTH   = 128;
     static constexpr int TFT_TOTAL_HEIGHT  = 160;
 
@@ -23,7 +30,7 @@ public:
     static constexpr int BURST_LINES       = 8;
     static constexpr int BURST_PIXELS      = TFT_TARGET_WIDTH * BURST_LINES;
 
-    // Initializes adapter, sets 40 MHz SPI, precomputes scaling LUTs,
+    // Initializes adapter, sets 40 MHz SPI, configures palette mode,
     // and allocates the single 160x144 8-bit framebuffer (23,040 bytes).
     static bool init(Adafruit_ST7735* display);
 
@@ -37,13 +44,19 @@ public:
     static uint8_t* getFramebuffer();
     static size_t getFramebufferSize();
 
-    // Clears the 22px top and 23px bottom letterbox bands to solid black.
+    // Clears the 8px top and 8px bottom letterbox bands to solid black.
     static void clearBorders();
 
+    // Palette Mode Management
+    static void setPaletteMode(GbPaletteMode mode);
+    static GbPaletteMode getPaletteMode();
+    static const char* getPaletteModeName();
+
     // Renders one completed 160x144 8-bit Game Boy frame to ST7735:
-    // 1. Scales 160x144 proportionally to 128x115 via precomputed nearest-neighbor LUTs.
-    // 2. Converts 8-bit palette indices to RGB565 via the provided palette64.
-    // 3. Sends chunks to ST7735 via hardware SPI burst transfers.
+    // 1. Applies stroke-preserving horizontal decimation filter (160 -> 128).
+    // 2. Maps all 144 native Game Boy scanlines 1:1 directly to ST7735 Y=8..151.
+    // 3. Translates palette according to active GbPaletteMode.
+    // 4. Sends chunks to ST7735 via hardware SPI burst transfers.
     static void renderFrame(const uint8_t* gbFrame160x144, const uint16_t* palette64);
 
     // Frame performance telemetry (in microseconds)
@@ -54,4 +67,3 @@ public:
 };
 
 #endif // GB_DISPLAY_ADAPTER_H
-
