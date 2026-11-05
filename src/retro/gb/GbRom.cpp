@@ -462,6 +462,17 @@ bool GbRom::validate() {
     Serial.printf("[GbRom] All 63 Compressed Banks Validated (Avg: %.1f us, Worst: %u us at B%02d)\n",
                   (float)totalDecompUs / 63.0f, maxDecompUs, worstBank);
 
+    // Invalidate cache metadata corrupted by direct scratch use of s_slots[0].buffer in Step 3
+    for (int i = 0; i < GB_ROM_CACHE_SLOTS; i++) {
+        s_slots[i].bankNum    = 0xFF;
+        s_slots[i].valid      = false;
+        s_slots[i].lastAccess = 0;
+    }
+    s_activeSwitchableBank = nullptr;
+    s_currentLoadedBank    = 0xFF;
+    s_accessCounter        = 0;
+    resetMetrics();
+
     // 4. Test MBC3 Register Remapping & Masking
     // Bank 0 should map to Bank 1
     if (!selectRomBank(0) || getCurrentBank() != 1) {
