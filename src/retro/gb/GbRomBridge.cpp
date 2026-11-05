@@ -99,12 +99,46 @@ bool gb_rom_bridge_validate_cartridge(void) {
     return true;
 }
 
-uint32_t gb_rom_bridge_get_decompression_count(void) {
-    return GbRom::getDecompressionCount();
+uint32_t gb_rom_bridge_get_total_requests(void) {
+    return GbRom::getTotalRequests();
 }
 
 uint32_t gb_rom_bridge_get_cache_hit_count(void) {
     return GbRom::getCacheHitCount();
+}
+
+uint32_t gb_rom_bridge_get_cache_miss_count(void) {
+    return GbRom::getCacheMissCount();
+}
+
+uint32_t gb_rom_bridge_get_decompression_count(void) {
+    return GbRom::getDecompressionCount();
+}
+
+uint32_t gb_rom_bridge_get_eviction_count(void) {
+    return GbRom::getEvictionCount();
+}
+
+uint32_t gb_rom_bridge_get_total_decomp_us(void) {
+    return GbRom::getTotalDecompUs();
+}
+
+uint32_t gb_rom_bridge_get_max_decomp_us(void) {
+    return GbRom::getMaxDecompUs();
+}
+
+uint16_t gb_rom_bridge_get_bank_decomp_count(uint8_t bank) {
+    return GbRom::getBankDecompCount(bank);
+}
+
+void gb_rom_bridge_get_slot_info(uint8_t slot_idx, uint8_t *out_bank, bool *out_valid, uint32_t *out_last_access) {
+    uint8_t b = 0xFF;
+    bool v = false;
+    uint32_t a = 0;
+    GbRom::getSlotInfo(slot_idx, b, v, a);
+    if (out_bank) *out_bank = b;
+    if (out_valid) *out_valid = v;
+    if (out_last_access) *out_last_access = a;
 }
 
 void gb_rom_bridge_reset_metrics(void) {
@@ -133,4 +167,3 @@ void gb_diag_log_heap(const char *checkpoint_tag, int bank_idx, size_t req_size,
 }
 
 } // extern "C"
-

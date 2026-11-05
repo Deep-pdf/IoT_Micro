@@ -34,13 +34,20 @@ bool GbDisplayTest::init(Adafruit_ST7735& tft) {
     s_activeTft->setSPISpeed(40000000UL);
     s_activeTft->fillScreen(0x0000);
 
-    // 2. Initialize ROM Backend Bridge
+    // 2. Initialize ROM Bridge Subsystem (allocates 4-slot LRU cache)
     if (!gb_rom_bridge_init()) {
         Serial.println("[GbDisplayTest] ERROR: gb_rom_bridge_init() failed!");
         return false;
     }
 
     gb_diag_log_heap("2. After GbRom::init()", -1, 0, NULL, NULL);
+
+    // Run complete 64-bank integrity, MBC3, and 4-slot LRU validation suite
+    if (!GbRom::validate()) {
+        Serial.println("[GbDisplayTest] ERROR: GbRom::validate() failed!");
+        GbRom::deinit();
+        return false;
+    }
 
     // 3. Validate Cartridge
     if (!gb_rom_bridge_validate_cartridge()) {
@@ -123,7 +130,7 @@ void GbDisplayTest::deinit() {
         GbDisplayAdapter::deinit();
         gb_diag_log_heap("Teardown 3: After GbDisplayAdapter::deinit()", -1, 0, NULL, NULL);
 
-        // 4. ROM Subsystem teardown (frees 16 KB switchable ROM bank buffer)
+        // 4. ROM Subsystem teardown (frees 4-slot 64 KB ROM cache)
         GbRom::deinit();
         gb_diag_log_heap("Teardown 4: After GbRom::deinit()", -1, 0, NULL, NULL);
 
@@ -142,7 +149,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
 
     Serial.println();
     Serial.println("==================================================================");
-    Serial.println("       Gnuboy TFT Display Integration Test (Phase 3)              ");
+    Serial.println("       Gnuboy TFT Display Integration Test (Phase 4.1.2)          ");
     Serial.println("==================================================================");
     Serial.printf("[GbTest] Initial Free Heap:       %6u bytes\n", heapBefore);
     Serial.printf("[GbTest] Initial Max Free Block:  %6u bytes\n", maxBlockBefore);
@@ -171,12 +178,11 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
 
     Serial.printf("[GbTest] Step 2: Executing & Rendering %u Frames on TFT...\n", targetFrames);
     Serial.println("[GbTest] Controls: JOY=D-pad, GPIO13=A, GPIO32=B, GPIO25=START (hold 2s to exit)");
-    Serial.println("--------------------------------------------------------------------------------------------------------");
-    Serial.println(" Frame |   PC   |   SP   | ROM/RAM | Emu (ms) | Scale (us) | TFT (ms) | Total (ms) |  FPS  | FreeHeap | Decomp/Hit");
-    Serial.println("--------------------------------------------------------------------------------------------------------");
+    Serial.println("-------------------------------------------------------------------------------------------------------------------------");
+    Serial.println(" Frame |   PC   |   SP   | ROM/RAM | Emu (ms) | Scale (us) | TFT (ms) | Total (ms) |  FPS  | FreeHeap | Decomp |  Hits  | Evict");
+    Serial.println("-------------------------------------------------------------------------------------------------------------------------");
 
     uint32_t wallStartMs = millis();
-    uint32_t lastPrintMs = wallStartMs;
 
     uint32_t accumEmuUs    = 0;
     uint32_t accumScaleUs  = 0;
@@ -224,7 +230,7 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
             uint8_t curRomBank = cart.rombank;
             uint8_t curRamBank = cart.rambank;
 
-            Serial.printf("%6u | 0x%04X | 0x%04X |  %2u/%-2u  |  %5.2f   |   %5.0f    |  %5.2f   |   %5.2f    | %5.1f |  %6u  | %4u/%-4u\n",
+            Serial.printf("%6u | 0x%04X | 0x%04X |  %2u/%-2u  |  %5.2f   |   %5.0f    |  %5.2f   |   %5.2f    | %5.1f |  %6u  | %6u | %6u | %5u\n",
                           f,
                           (unsigned)GB.cpu->pc.w,
                           (unsigned)GB.cpu->sp.w,
@@ -232,7 +238,8 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
                           avgEmuMs, avgScaleUs, avgTftMs, avgTotalMs, fps,
                           ESP.getFreeHeap(),
                           gb_rom_bridge_get_decompression_count(),
-                          gb_rom_bridge_get_cache_hit_count());
+                          gb_rom_bridge_get_cache_hit_count(),
+                          gb_rom_bridge_get_eviction_count());
 
             accumEmuUs    = 0;
             accumScaleUs  = 0;
@@ -240,15 +247,47 @@ bool GbDisplayTest::run(Adafruit_ST7735& tft, uint32_t targetFrames) {
             accumTotalUs  = 0;
             frameCountSec = 0;
         }
+
+        // Periodic slot occupancy snapshot every 300 frames
+        if (f % 300 == 0 || f == targetFrames) {
+            uint8_t b0, b1, b2, b3;
+            bool v0, v1, v2, v3;
+            uint32_t a0, a1, a2, a3;
+            gb_rom_bridge_get_slot_info(0, &b0, &v0, &a0);
+            gb_rom_bridge_get_slot_info(1, &b1, &v1, &a1);
+            gb_rom_bridge_get_slot_info(2, &b2, &v2, &a2);
+            gb_rom_bridge_get_slot_info(3, &b3, &v3, &a3);
+            uint32_t totalReq = gb_rom_bridge_get_total_requests();
+            uint32_t hits = gb_rom_bridge_get_cache_hit_count();
+            float hitRate = (totalReq > 0) ? ((float)hits * 100.0f / (float)totalReq) : 0.0f;
+            Serial.printf("[GbCache @ F%u] Slots: [S0:B%02d S1:B%02d S2:B%02d S3:B%02d] | Req: %u | Hits: %u (%.1f%%) | Decomp: %u | Evict: %u | MaxDecomp: %u us\n",
+                          f,
+                          v0 ? b0 : 0, v1 ? b1 : 0, v2 ? b2 : 0, v3 ? b3 : 0,
+                          totalReq, hits, hitRate,
+                          gb_rom_bridge_get_decompression_count(),
+                          gb_rom_bridge_get_eviction_count(),
+                          gb_rom_bridge_get_max_decomp_us());
+        }
     }
 
     uint32_t totalDurationMs = millis() - wallStartMs;
     uint32_t totalFramesRendered = GbDisplayAdapter::getTotalFramesRendered();
     float overallFps = (totalDurationMs > 0) ? ((float)totalFramesRendered * 1000.0f / totalDurationMs) : 0.0f;
 
-    Serial.println("--------------------------------------------------------------------------------------------------------");
+    Serial.println("-------------------------------------------------------------------------------------------------------------------------");
     Serial.printf("[GbTest] Rendered %u frames in %u ms (Overall Average: %.1f FPS)\n",
                   totalFramesRendered, totalDurationMs, overallFps);
+
+    uint32_t totalReqFinal = gb_rom_bridge_get_total_requests();
+    uint32_t hitsFinal     = gb_rom_bridge_get_cache_hit_count();
+    uint32_t decompsFinal  = gb_rom_bridge_get_decompression_count();
+    uint32_t evictsFinal   = gb_rom_bridge_get_eviction_count();
+    float hitRateFinal     = (totalReqFinal > 0) ? ((float)hitsFinal * 100.0f / (float)totalReqFinal) : 0.0f;
+    float avgDecompTimeUs  = (decompsFinal > 0) ? ((float)gb_rom_bridge_get_total_decomp_us() / (float)decompsFinal) : 0.0f;
+    Serial.printf("[GbTest] Cache Performance: Total Requests: %u | Hits: %u (%.2f%%) | Decompressions: %u | Evictions: %u\n",
+                  totalReqFinal, hitsFinal, hitRateFinal, decompsFinal, evictsFinal);
+    Serial.printf("[GbTest] Decompression Time: Avg: %.1f us | Max: %u us | Total Spent: %.2f ms\n",
+                  avgDecompTimeUs, gb_rom_bridge_get_max_decomp_us(), (float)gb_rom_bridge_get_total_decomp_us() / 1000.0f);
 
     if (exitedEarly) {
         GbInput::waitForExitRelease();

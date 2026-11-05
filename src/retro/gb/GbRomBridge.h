@@ -39,8 +39,15 @@ bool gb_rom_bridge_get_metadata(gb_rom_metadata_t *out_metadata);
 bool gb_rom_bridge_validate_cartridge(void);
 
 // Telemetry & metrics
-uint32_t gb_rom_bridge_get_decompression_count(void);
+uint32_t gb_rom_bridge_get_total_requests(void);
 uint32_t gb_rom_bridge_get_cache_hit_count(void);
+uint32_t gb_rom_bridge_get_cache_miss_count(void);
+uint32_t gb_rom_bridge_get_decompression_count(void);
+uint32_t gb_rom_bridge_get_eviction_count(void);
+uint32_t gb_rom_bridge_get_total_decomp_us(void);
+uint32_t gb_rom_bridge_get_max_decomp_us(void);
+uint16_t gb_rom_bridge_get_bank_decomp_count(uint8_t bank);
+void     gb_rom_bridge_get_slot_info(uint8_t slot_idx, uint8_t *out_bank, bool *out_valid, uint32_t *out_last_access);
 void     gb_rom_bridge_reset_metrics(void);
 
 // Diagnostic Heap Logging
@@ -51,4 +58,3 @@ void gb_diag_log_heap(const char *checkpoint_tag, int bank_idx, size_t req_size,
 #endif
 
 #endif // GB_ROM_BRIDGE_H
-
