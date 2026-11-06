@@ -9,6 +9,7 @@
 #include "GbRomBridge.h"
 #include "GbRom.h"
 #include "GbInput.h"
+#include "GbSave.h"
 #include "core/gnuboy.h"
 #include "core/hw.h"
 #include "core/cpu.h"
@@ -66,7 +67,7 @@ bool GbBridge::init(Adafruit_ST7735* display) {
     gnuboy_set_framebuffer(GbDisplayAdapter::getFramebuffer());
     gnuboy_set_soundbuffer(NULL, 0);
 
-    // 6. Load Cartridge & MBC3 via Bridge
+    // 6. Load Cartridge & MBC3 via Bridge (allocates 4 cartridge RAM banks)
     int loadRes = gnuboy_load_rom_from_bridge();
     if (loadRes != 0) {
         Serial.printf("[GbBridge] ERROR: gnuboy_load_rom_from_bridge() failed: %d\n", loadRes);
@@ -76,10 +77,14 @@ bool GbBridge::init(Adafruit_ST7735* display) {
         return false;
     }
 
-    // 7. Hard reset CPU & PPU
+    // 7. Hard reset CPU & PPU (initializes cartridge RAM to 0xFF)
     gnuboy_reset(true);
 
-    // 8. Initialize Game Boy controls
+    // 8. Persistent Save: Mount LittleFS and restore cartridge SRAM
+    GbSave::init();
+    GbSave::load();
+
+    // 9. Initialize Game Boy controls
     GbInput::init();
     s_running = true;
 
@@ -96,6 +101,9 @@ void GbBridge::runFrame() {
 
     // Execute 1 complete emulated Game Boy frame with actual TFT rendering
     gnuboy_run(true);
+
+    // Service debounced persistent save if Cartridge RAM was modified
+    GbSave::update();
 }
 
 void GbBridge::stop() {
@@ -104,13 +112,24 @@ void GbBridge::stop() {
         s_activeTft = nullptr;
         GbInput::deinit();
 
-        // 1. Gnuboy Core teardown (frees Cartridge RAM, WRAM, VRAM, Sound, LCD BUF)
+        // 1. Flush any pending dirty SRAM to flash before freeing memory
+        if (GbSave::isDirty()) {
+            Serial.println("[GbBridge] SRAM is dirty on exit. Flushing to flash...");
+            if (GbSave::save()) {
+                Serial.println("[GbBridge] Persistent save committed successfully on exit.");
+            } else {
+                Serial.println("[GbBridge] ERROR: Failed to commit persistent save on exit!");
+            }
+        }
+        GbSave::deinit();
+
+        // 2. Gnuboy Core teardown (frees Cartridge RAM, WRAM, VRAM, Sound, LCD BUF)
         gnuboy_deinit();
 
-        // 2. Display Adapter teardown (frees Framebuffer & Burst Buffer)
+        // 3. Display Adapter teardown (frees Framebuffer & Burst Buffer)
         GbDisplayAdapter::deinit();
 
-        // 3. ROM Subsystem teardown (frees 4-slot 64 KB ROM cache)
+        // 4. ROM Subsystem teardown (frees 4-slot 64 KB ROM cache)
         GbRom::deinit();
 
         Serial.println("[GbBridge] Teardown complete. All Game Boy resources freed.");
@@ -128,4 +147,3 @@ bool GbBridge::isExitRequested() {
 void GbBridge::waitForExitRelease() {
     GbInput::waitForExitRelease();
 }
-
