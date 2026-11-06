@@ -14,8 +14,9 @@ public:
     static constexpr const char* BACKUP_FILE_PATH = "/pokemon_red.sav.bak";
 
     // Initializes LittleFS on the 896 KB 'spiffs' flash partition.
-    // Mounts LittleFS once without formatting on failure.
-    // Performs recovery of any interrupted atomic commits if needed.
+    // Mounts LittleFS safely. If virgin (100% 0xFF) flash is detected, performs a one-time format.
+    // If existing non-blank data exists and mount fails, preserves data without formatting.
+    // Verifies filesystem read/write/delete functionality and recovers interrupted commits.
     static bool init();
 
     // Loads persistent save data into cart.rambanks[0..3].
@@ -41,11 +42,13 @@ public:
     // Cleans up save manager state across emulator sessions.
     static void deinit();
 
-    // Diagnostic accessors
+    // Diagnostic accessors & helpers
     static bool isFilesystemReady();
     static size_t getSaveFileSize();
     static uint32_t getLastSaveMs();
     static uint32_t getSaveCount();
+    static uint32_t getBankCrc32(int bank);
+    static uint32_t calcCrc32(const uint8_t* data, size_t length);
 };
 
 #endif // GB_SAVE_H

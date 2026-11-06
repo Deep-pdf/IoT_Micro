@@ -33,8 +33,6 @@
 #define TFT_RST   4             // Reset
 
 // -- Retro Game Boy Hardware Test Mode ----------------------------------------
-// Set to 1 to run the standalone Game Boy (Pokémon Red) TFT display verification test
-// on boot. Set to 0 (default) for standard Micro_IOT OS operation.
 // (Hardware test mode retired - Pokémon Red integrated into Retro Arcade)
 
 // -- Game Boy Display Palette Mode --------------------------------------------
@@ -44,8 +42,8 @@
 #define GB_DISPLAY_DEFAULT_PALETTE 0
 
 // -- Game Boy Persistent Save Configuration -----------------------------------
-// When true, LittleFS will format the partition if mounting fails.
-// When false (safe default), mount failure will not erase flash, and gameplay continues without saves.
-#define GB_SAVE_FORMAT_ON_FAIL false
+// Safe First-Time Initialization: detects virgin (100% 0xFF) partition and formats exactly once.
+// Preserves existing filesystems and never blindly erases user data on mount failure.
+#define GB_SAVE_SAFE_FIRST_TIME_INIT true
 
 #endif // CONFIG_H

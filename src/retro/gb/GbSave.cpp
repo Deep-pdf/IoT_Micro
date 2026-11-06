@@ -2,6 +2,7 @@
 #include "config.h"
 #include <LittleFS.h>
 #include <Arduino.h>
+#include <esp_partition.h>
 
 #ifdef F
 #undef F
@@ -21,19 +22,146 @@ static constexpr uint32_t SAVE_DEBOUNCE_MS     = 2000;
 // Minimum interval between successive automatic flash writes to protect flash endurance
 static constexpr uint32_t MIN_SAVE_INTERVAL_MS = 10000;
 
+// Standard IEEE 802.3 32-bit CRC calculation (matches zlib / standard tools)
+uint32_t GbSave::calcCrc32(const uint8_t* data, size_t length) {
+    if (!data || length == 0) return 0;
+    uint32_t crc = 0xFFFFFFFF;
+    for (size_t i = 0; i < length; i++) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++) {
+            crc = (crc >> 1) ^ (0xEDB88320UL & (-(int32_t)(crc & 1)));
+        }
+    }
+    return ~crc;
+}
+
+uint32_t GbSave::getBankCrc32(int bank) {
+    if (bank < 0 || bank >= 4 || !cart.rambanks[bank]) return 0;
+    return calcCrc32(cart.rambanks[bank], SRAM_BANK_SIZE);
+}
+
+// Safely inspects the physical flash partition to confirm if it is genuinely blank / unformatted.
+// Returns true ONLY if all inspected blocks are 100% erased flash (0xFF).
+static bool isPartitionVirgin(const char* label = nullptr) {
+    const esp_partition_t* part = esp_partition_find_first(
+        ESP_PARTITION_TYPE_DATA,
+        ESP_PARTITION_SUBTYPE_DATA_SPIFFS,
+        label
+    );
+    if (!part) {
+        Serial.println("[GbSave] ERROR: SPIFFS/LittleFS partition not found in partition table!");
+        return false;
+    }
+
+    uint8_t buf[256];
+
+    // Check first 4 KB block (where LittleFS superblock is written)
+    for (size_t offset = 0; offset < 4096; offset += sizeof(buf)) {
+        if (esp_partition_read(part, offset, buf, sizeof(buf)) != ESP_OK) {
+            return false;
+        }
+        for (size_t i = 0; i < sizeof(buf); i++) {
+            if (buf[i] != 0xFF) return false; // Contains non-0xFF data -> not virgin!
+        }
+    }
+
+    // Check final 4 KB block of the partition
+    size_t lastBlockOffset = part->size - 4096;
+    for (size_t offset = lastBlockOffset; offset < part->size; offset += sizeof(buf)) {
+        if (esp_partition_read(part, offset, buf, sizeof(buf)) != ESP_OK) {
+            return false;
+        }
+        for (size_t i = 0; i < sizeof(buf); i++) {
+            if (buf[i] != 0xFF) return false;
+        }
+    }
+
+    return true; // Genuinely blank/unformatted flash confirmed!
+}
+
+// Verifies write, read, and delete functionality on the mounted filesystem
+static bool verifyFilesystemIO() {
+    const char* testPath = "/.fs_test";
+    const char* testData = "POKEMON_SRAM_OK";
+    size_t testLen = strlen(testData);
+
+    // 1. Write test file
+    File f = LittleFS.open(testPath, "w");
+    if (!f) {
+        Serial.println("[GbSave] ERROR: Filesystem I/O test failed to create test file!");
+        return false;
+    }
+    size_t written = f.write((const uint8_t*)testData, testLen);
+    f.flush();
+    f.close();
+    if (written != testLen) {
+        Serial.println("[GbSave] ERROR: Filesystem I/O test wrote incomplete data!");
+        LittleFS.remove(testPath);
+        return false;
+    }
+
+    // 2. Read test file back
+    f = LittleFS.open(testPath, "r");
+    if (!f) {
+        Serial.println("[GbSave] ERROR: Filesystem I/O test failed to re-open test file!");
+        LittleFS.remove(testPath);
+        return false;
+    }
+    char readBuf[32] = {0};
+    size_t readLen = f.read((uint8_t*)readBuf, sizeof(readBuf) - 1);
+    f.close();
+    LittleFS.remove(testPath);
+
+    if (readLen != testLen || strcmp(readBuf, testData) != 0) {
+        Serial.println("[GbSave] ERROR: Filesystem I/O test data verification failed!");
+        return false;
+    }
+
+    return true;
+}
+
 bool GbSave::init() {
     if (s_fsReady) return true;
 
     Serial.println("[GbSave] Initializing LittleFS storage subsystem...");
 
-    bool formatOnFail = false;
-#ifdef GB_SAVE_FORMAT_ON_FAIL
-    formatOnFail = GB_SAVE_FORMAT_ON_FAIL;
-#endif
+    // 1. Initial attempt: mount existing filesystem without automatic formatting
+    bool mounted = LittleFS.begin(false);
 
-    // Mount LittleFS on the default 'spiffs' partition label
-    if (!LittleFS.begin(formatOnFail)) {
-        Serial.println("[GbSave] ERROR: LittleFS.begin() failed! Persistent save disabled.");
+    // 2. If initial mount fails, perform safe first-time initialization check
+    if (!mounted) {
+        Serial.println("[GbSave] Initial LittleFS mount failed. Inspecting physical partition...");
+        if (isPartitionVirgin()) {
+            Serial.println("[GbSave] Virgin unformatted flash partition confirmed (100% 0xFF).");
+            Serial.println("[GbSave] Performing safe one-time LittleFS format...");
+            uint32_t t0 = millis();
+            if (LittleFS.format()) {
+                uint32_t fmtDuration = millis() - t0;
+                Serial.printf("[GbSave] One-time LittleFS format completed in %u ms.\n", fmtDuration);
+                mounted = LittleFS.begin(false);
+                if (mounted) {
+                    Serial.println("[GbSave] LittleFS mounted successfully after initial format.");
+                } else {
+                    Serial.println("[GbSave] ERROR: LittleFS failed to mount after successful format!");
+                }
+            } else {
+                Serial.println("[GbSave] ERROR: LittleFS.format() failed!");
+            }
+        } else {
+            Serial.println("[GbSave] ERROR: Partition is NOT blank! Preserving existing non-blank data.");
+            Serial.println("[GbSave] Blanket format rejected to prevent data loss. Persistent save disabled.");
+        }
+    }
+
+    if (!mounted) {
+        s_fsReady = false;
+        return false;
+    }
+
+    // 3. Verify read/write/delete functionality on the mounted filesystem
+    if (!verifyFilesystemIO()) {
+        Serial.println("[GbSave] ERROR: Filesystem I/O verification failed! Persistent save disabled.");
+        LittleFS.end();
         s_fsReady = false;
         return false;
     }
@@ -43,7 +171,7 @@ bool GbSave::init() {
     // Report partition telemetry
     size_t total = LittleFS.totalBytes();
     size_t used  = LittleFS.usedBytes();
-    Serial.printf("[GbSave] LittleFS mounted successfully | Partition: %u KB | Used: %u KB | Free: %u KB\n",
+    Serial.printf("[GbSave] LittleFS verified & ready | Partition: %u KB | Used: %u KB | Free: %u KB\n",
                   (unsigned)(total / 1024), (unsigned)(used / 1024), (unsigned)((total - used) / 1024));
 
     // Recovery check for interrupted atomic commits:
@@ -161,6 +289,8 @@ bool GbSave::load() {
     uint32_t durationMs = millis() - startMs;
     Serial.printf("[GbSave] Successfully loaded 32,768 B from %s across 4 banks in %u ms.\n",
                   SAVE_FILE_PATH, durationMs);
+    Serial.printf("[GbSave] Restored Bank CRCs | Bank0: 0x%08X | Bank1: 0x%08X | Bank2: 0x%08X | Bank3: 0x%08X\n",
+                  getBankCrc32(0), getBankCrc32(1), getBankCrc32(2), getBankCrc32(3));
     return true;
 }
 
@@ -290,6 +420,8 @@ bool GbSave::save() {
     uint32_t durationMs = millis() - startMs;
     Serial.printf("[GbSave] Successfully saved 32,768 B to %s in %u ms (Save #%u)\n",
                   SAVE_FILE_PATH, durationMs, s_saveCount);
+    Serial.printf("[GbSave] Committed Bank CRCs | Bank0: 0x%08X | Bank1: 0x%08X | Bank2: 0x%08X | Bank3: 0x%08X\n",
+                  getBankCrc32(0), getBankCrc32(1), getBankCrc32(2), getBankCrc32(3));
     return true;
 }
 
