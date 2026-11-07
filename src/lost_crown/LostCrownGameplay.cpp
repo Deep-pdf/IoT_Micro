@@ -18,6 +18,9 @@
  *  - 100% flicker-free differential background restoration and transparent sprite composition.
  */
 
+#include "config.h"
+#if ENABLE_LOST_CROWN
+
 #include "LostCrownGameplay.h"
 #include "LostCrownGameAssets.h"
 #include "LostCrownConfig.h"
@@ -775,3 +778,5 @@ bool hasExitedRight() {
 }
 
 } // namespace LostCrownGameplay
+
+#endif // ENABLE_LOST_CROWN

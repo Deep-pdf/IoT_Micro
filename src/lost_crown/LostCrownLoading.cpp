@@ -16,6 +16,9 @@
  *       - Sacred river water reflections shimmering
  */
 
+#include "config.h"
+#if ENABLE_LOST_CROWN
+
 #include "LostCrownLoading.h"
 #include "LostCrownConfig.h"
 #include "LostCrownAssets.h"
@@ -228,3 +231,5 @@ void reset() {
 }
 
 } // namespace LostCrownLoading
+
+#endif // ENABLE_LOST_CROWN

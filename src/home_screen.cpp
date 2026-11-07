@@ -173,10 +173,14 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
 
   // 6.1 Draw Three Pixel Art Icons
   // Width: 32px, Height: 32px, Vertically centered (Y = 125)
-  // Horizontal layout: X = 8 (Pixel Wars), 48 (AI Icon), 88 (Lost Crown)
+  // Horizontal layout: X = 8 (Pixel Wars), 48 (AI Icon), 88 (Lost Crown / Spotify)
   tft.drawRGBBitmap(8, 125, icon_pixelwars, 32, 32);
   tft.drawRGBBitmap(48, 125, icon_gpt, 32, 32);
+#if ENABLE_LOST_CROWN
   tft.drawRGBBitmap(88, 125, icon_lostcrown, 32, 32);
+#else
+  tft.drawRGBBitmap(88, 125, icon_spotify, 32, 32);
+#endif
 }
 
 void updateWiFiIcon(Adafruit_ST7735 &tft, bool connected) {
@@ -260,7 +264,8 @@ void drawAppsPage2(Adafruit_ST7735 &tft) {
   // 4. Draw Title "apps" in black (Dream Orphans font, size 2, centered at Y = 25)
   drawCenteredText(tft, "apps", 25, ST77XX_BLACK, 2);
 
-  // 5. Draw 3x2 Grid of 32x32 Pixel Art Icons
+  // 5. Draw Grid of 32x32 Pixel Art Icons
+#if ENABLE_LOST_CROWN
   // Row 0 (Y = 34): Pixel Wars (X=8), Gemini AI (X=48), Lost Crown (X=88)
   tft.drawRGBBitmap(8, 34, icon_pixelwars, 32, 32);
   tft.drawRGBBitmap(48, 34, icon_gpt, 32, 32);
@@ -273,6 +278,17 @@ void drawAppsPage2(Adafruit_ST7735 &tft) {
 
   // Row 2 (Y = 114): Retro Arcade under Spotify (X=8)
   tft.drawRGBBitmap(8, 114, icon_arcade, 32, 32);
+#else
+  // Row 0 (Y = 34): Pixel Wars (X=8), Gemini AI (X=48), Spotify (X=88)
+  tft.drawRGBBitmap(8, 34, icon_pixelwars, 32, 32);
+  tft.drawRGBBitmap(48, 34, icon_gpt, 32, 32);
+  tft.drawRGBBitmap(88, 34, icon_spotify, 32, 32);
+
+  // Row 1 (Y = 74): Calculator (X=8), HackingGo (X=48), Retro Arcade (X=88)
+  tft.drawRGBBitmap(8, 74, icon_calculator, 32, 32);
+  tft.drawRGBBitmap(48, 74, icon_hackinggo, 32, 32);
+  tft.drawRGBBitmap(88, 74, icon_arcade, 32, 32);
+#endif
 }
 
 void updateWiFiIconPage2(Adafruit_ST7735 &tft, bool connected) {
@@ -291,6 +307,7 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
     // Quote card highlight: draw/clear border slightly outside the card
     uint16_t color = highlighted ? myOrange : ST77XX_BLACK;
     tft.drawRoundRect(14, 76, 100, 32, 5, color);
+#if ENABLE_LOST_CROWN
   } else if (element == FOCUS_PIXEL_WARS || element == FOCUS_AI || element == FOCUS_LOST_CROWN) {
     // Page 1 Bottom icons highlight (Y = 125, border at Y = 123)
     int16_t x = 0;
@@ -316,6 +333,32 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
     uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
     tft.drawRect(x - 2, y - 2, 36, 36, color);
   }
+#else
+  } else if (element == FOCUS_PIXEL_WARS || element == FOCUS_AI || element == FOCUS_SPOTIFY) {
+    // Page 1 Bottom icons highlight (Y = 125, border at Y = 123)
+    int16_t x = 0;
+    if (element == FOCUS_PIXEL_WARS) x = 8;
+    else if (element == FOCUS_AI) x = 48;
+    else if (element == FOCUS_SPOTIFY) x = 88;
+
+    uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
+    tft.drawRect(x - 2, 123, 36, 36, color);
+  } else {
+    // Page 2 Grid icons highlight (Row 0 at Y = 34 / border 32, Row 1 at Y = 74 / border 72)
+    int16_t x = 0;
+    int16_t y = 0;
+
+    if (element == FOCUS_PAGE2_PIXEL_WARS)        { x = 8;  y = 34; }
+    else if (element == FOCUS_PAGE2_AI)           { x = 48; y = 34; }
+    else if (element == FOCUS_PAGE2_SPOTIFY)      { x = 88; y = 34; }
+    else if (element == FOCUS_PAGE2_CALCULATOR)   { x = 8;  y = 74; }
+    else if (element == FOCUS_PAGE2_HACKING_GO)   { x = 48; y = 74; }
+    else if (element == FOCUS_PAGE2_RETRO_ARCADE) { x = 88; y = 74; }
+
+    uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
+    tft.drawRect(x - 2, y - 2, 36, 36, color);
+  }
+#endif
 }
 
 void drawFullscreenQuote(Adafruit_ST7735 &tft, const char *quote, uint16_t bgColor, uint16_t textColor) {

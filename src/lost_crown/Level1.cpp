@@ -12,6 +12,9 @@
  *  - 100% flicker-free single-buffer compositing and blitting.
  */
 
+#include "config.h"
+#if ENABLE_LOST_CROWN
+
 #include "Level1.h"
 #include "Level1Assets.h"
 #include "Level1Collision.h"
@@ -572,3 +575,5 @@ bool isGrounded() {
 }
 
 } // namespace LostCrownLevel1
+
+#endif // ENABLE_LOST_CROWN

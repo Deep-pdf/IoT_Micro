@@ -1,0 +1,1616 @@
+{
+  "top_rodata": [
+    {
+      "name": "esp_app_desc",
+      "raw": "esp_app_desc",
+      "size": 256,
+      "addr": "0x3f400020"
+    }
+  ],
+  "top_dram": [
+    {
+      "name": "level1_bg_pixels",
+      "raw": "_ZL16level1_bg_pixels",
+      "size": 245760,
+      "addr": "0x3f41494c",
+      "type": "d"
+    },
+    {
+      "name": "image_withoutmenu_pixels",
+      "raw": "_ZL24image_withoutmenu_pixels",
+      "size": 40960,
+      "addr": "0x3f4732b4",
+      "type": "d"
+    },
+    {
+      "name": "image_LostCrown_background",
+      "raw": "_ZL26image_LostCrown_background",
+      "size": 40960,
+      "addr": "0x3f4692aa",
+      "type": "d"
+    },
+    {
+      "name": "image_Traning_ground_pixels",
+      "raw": "_ZL27image_Traning_ground_pixels",
+      "size": 40960,
+      "addr": "0x3f45ee60",
+      "type": "d"
+    },
+    {
+      "name": "retro_asset_contra",
+      "raw": "_ZL18retro_asset_contra",
+      "size": 24257,
+      "addr": "0x3f48437c",
+      "type": "d"
+    },
+    {
+      "name": "retro_asset_pokemon",
+      "raw": "_ZL19retro_asset_pokemon",
+      "size": 23373,
+      "addr": "0x3f47e82f",
+      "type": "d"
+    },
+    {
+      "name": "retro_asset_mario",
+      "raw": "_ZL17retro_asset_mario",
+      "size": 19407,
+      "addr": "0x3f48a23d",
+      "type": "d"
+    },
+    {
+      "name": "LostCrownGameplay::stripBuffer",
+      "raw": "_ZN17LostCrownGameplayL11stripBufferE",
+      "size": 5336,
+      "addr": "0x3ffc66ac",
+      "type": "b"
+    },
+    {
+      "name": "LostCrownGameplay::spriteCompositeBuffer",
+      "raw": "_ZN17LostCrownGameplayL21spriteCompositeBufferE",
+      "size": 5336,
+      "addr": "0x3ffc7b84",
+      "type": "b"
+    },
+    {
+      "name": "veera_attack1_pixels",
+      "raw": "_ZL20veera_attack1_pixels",
+      "size": 5336,
+      "addr": "0x3f458358",
+      "type": "d"
+    },
+    {
+      "name": "veera_attack1_pixels",
+      "raw": "_ZL20veera_attack1_pixels",
+      "size": 5336,
+      "addr": "0x3f40de44",
+      "type": "d"
+    },
+    {
+      "name": "veera_attack2_pixels",
+      "raw": "_ZL20veera_attack2_pixels",
+      "size": 5336,
+      "addr": "0x3f40c96c",
+      "type": "d"
+    },
+    {
+      "name": "veera_attack2_pixels",
+      "raw": "_ZL20veera_attack2_pixels",
+      "size": 5336,
+      "addr": "0x3f456e80",
+      "type": "d"
+    },
+    {
+      "name": "veera_attack3_pixels",
+      "raw": "_ZL20veera_attack3_pixels",
+      "size": 5336,
+      "addr": "0x3f4559a8",
+      "type": "d"
+    },
+    {
+      "name": "veera_attack3_pixels",
+      "raw": "_ZL20veera_attack3_pixels",
+      "size": 5336,
+      "addr": "0x3f40b494",
+      "type": "d"
+    },
+    {
+      "name": "veera_attack4_pixels",
+      "raw": "_ZL20veera_attack4_pixels",
+      "size": 5336,
+      "addr": "0x3f409fbc",
+      "type": "d"
+    },
+    {
+      "name": "veera_attack4_pixels",
+      "raw": "_ZL20veera_attack4_pixels",
+      "size": 5336,
+      "addr": "0x3f4544d0",
+      "type": "d"
+    },
+    {
+      "name": "ciphersuite_definitions",
+      "raw": "ciphersuite_definitions",
+      "size": 4840,
+      "addr": "0x3f598cf8",
+      "type": "d"
+    },
+    {
+      "name": "artworkBuffer",
+      "raw": "_ZL13artworkBuffer",
+      "size": 4608,
+      "addr": "0x3ffcaf72",
+      "type": "b"
+    },
+    {
+      "name": "Ppu2C02::display_buffer",
+      "raw": "_ZN7Ppu2C0214display_bufferE",
+      "size": 4096,
+      "addr": "0x3ffc0934",
+      "type": "D"
+    },
+    {
+      "name": "g_cnxMgr",
+      "raw": "g_cnxMgr",
+      "size": 3800,
+      "addr": "0x3ffd06b8",
+      "type": "B"
+    },
+    {
+      "name": "g_aps",
+      "raw": "_ZL5g_aps",
+      "size": 2560,
+      "addr": "0x3ffc58f4",
+      "type": "b"
+    },
+    {
+      "name": "veera_idle_pixels",
+      "raw": "_ZL17veera_idle_pixels",
+      "size": 2448,
+      "addr": "0x3f413fbc",
+      "type": "d"
+    },
+    {
+      "name": "veera_idle_pixels",
+      "raw": "_ZL17veera_idle_pixels",
+      "size": 2448,
+      "addr": "0x3f45e4d0",
+      "type": "d"
+    },
+    {
+      "name": "veera_run1_pixels",
+      "raw": "_ZL17veera_run1_pixels",
+      "size": 2448,
+      "addr": "0x3f41362c",
+      "type": "d"
+    },
+    {
+      "name": "veera_run1_pixels",
+      "raw": "_ZL17veera_run1_pixels",
+      "size": 2448,
+      "addr": "0x3f45db40",
+      "type": "d"
+    },
+    {
+      "name": "veera_run2_pixels",
+      "raw": "_ZL17veera_run2_pixels",
+      "size": 2448,
+      "addr": "0x3f45d1b0",
+      "type": "d"
+    },
+    {
+      "name": "veera_run2_pixels",
+      "raw": "_ZL17veera_run2_pixels",
+      "size": 2448,
+      "addr": "0x3f412c9c",
+      "type": "d"
+    },
+    {
+      "name": "veera_run3_pixels",
+      "raw": "_ZL17veera_run3_pixels",
+      "size": 2448,
+      "addr": "0x3f45c820",
+      "type": "d"
+    },
+    {
+      "name": "veera_run3_pixels",
+      "raw": "_ZL17veera_run3_pixels",
+      "size": 2448,
+      "addr": "0x3f41230c",
+      "type": "d"
+    },
+    {
+      "name": "veera_run4_pixels",
+      "raw": "_ZL17veera_run4_pixels",
+      "size": 2448,
+      "addr": "0x3f41197c",
+      "type": "d"
+    },
+    {
+      "name": "veera_run4_pixels",
+      "raw": "_ZL17veera_run4_pixels",
+      "size": 2448,
+      "addr": "0x3f45be90",
+      "type": "d"
+    },
+    {
+      "name": "veera_run5_pixels",
+      "raw": "_ZL17veera_run5_pixels",
+      "size": 2448,
+      "addr": "0x3f45b500",
+      "type": "d"
+    },
+    {
+      "name": "veera_run5_pixels",
+      "raw": "_ZL17veera_run5_pixels",
+      "size": 2448,
+      "addr": "0x3f410fec",
+      "type": "d"
+    },
+    {
+      "name": "veera_jump1_pixels",
+      "raw": "_ZL18veera_jump1_pixels",
+      "size": 2448,
+      "addr": "0x3f410648",
+      "type": "d"
+    },
+    {
+      "name": "veera_jump1_pixels",
+      "raw": "_ZL18veera_jump1_pixels",
+      "size": 2448,
+      "addr": "0x3f45ab5c",
+      "type": "d"
+    },
+    {
+      "name": "veera_jump2_pixels",
+      "raw": "_ZL18veera_jump2_pixels",
+      "size": 2448,
+      "addr": "0x3f45a1cc",
+      "type": "d"
+    },
+    {
+      "name": "veera_jump2_pixels",
+      "raw": "_ZL18veera_jump2_pixels",
+      "size": 2448,
+      "addr": "0x3f40fcb8",
+      "type": "d"
+    },
+    {
+      "name": "veera_jump3_pixels",
+      "raw": "_ZL18veera_jump3_pixels",
+      "size": 2448,
+      "addr": "0x3f40f328",
+      "type": "d"
+    },
+    {
+      "name": "veera_jump3_pixels",
+      "raw": "_ZL18veera_jump3_pixels",
+      "size": 2448,
+      "addr": "0x3f45983c",
+      "type": "d"
+    },
+    {
+      "name": "veera_throw1_pixels",
+      "raw": "_ZL19veera_throw1_pixels",
+      "size": 2448,
+      "addr": "0x3f453b30",
+      "type": "d"
+    },
+    {
+      "name": "veera_throw1_pixels",
+      "raw": "_ZL19veera_throw1_pixels",
+      "size": 2448,
+      "addr": "0x3f40961c",
+      "type": "d"
+    },
+    {
+      "name": "veera_throw2_pixels",
+      "raw": "_ZL19veera_throw2_pixels",
+      "size": 2448,
+      "addr": "0x3f408c8c",
+      "type": "d"
+    },
+    {
+      "name": "veera_throw2_pixels",
+      "raw": "_ZL19veera_throw2_pixels",
+      "size": 2448,
+      "addr": "0x3f4531a0",
+      "type": "d"
+    },
+    {
+      "name": "veera_throw3_pixels",
+      "raw": "_ZL19veera_throw3_pixels",
+      "size": 2448,
+      "addr": "0x3f452810",
+      "type": "d"
+    },
+    {
+      "name": "veera_throw3_pixels",
+      "raw": "_ZL19veera_throw3_pixels",
+      "size": 2448,
+      "addr": "0x3f4082fc",
+      "type": "d"
+    },
+    {
+      "name": "veera_throw4_pixels",
+      "raw": "_ZL19veera_throw4_pixels",
+      "size": 2448,
+      "addr": "0x3f40796c",
+      "type": "d"
+    },
+    {
+      "name": "veera_throw4_pixels",
+      "raw": "_ZL19veera_throw4_pixels",
+      "size": 2448,
+      "addr": "0x3f451e80",
+      "type": "d"
+    },
+    {
+      "name": "burstBuffer",
+      "raw": "_ZL11burstBuffer",
+      "size": 2048,
+      "addr": "0x3ffca144",
+      "type": "b"
+    },
+    {
+      "name": "icon_arcade",
+      "raw": "_ZL11icon_arcade",
+      "size": 2048,
+      "addr": "0x3f4024ec",
+      "type": "d"
+    },
+    {
+      "name": "icon_spotify",
+      "raw": "_ZL12icon_spotify",
+      "size": 2048,
+      "addr": "0x3f403cec",
+      "type": "d"
+    },
+    {
+      "name": "icon_hackinggo",
+      "raw": "_ZL14icon_hackinggo",
+      "size": 2048,
+      "addr": "0x3f402cec",
+      "type": "d"
+    },
+    {
+      "name": "icon_lostcrown",
+      "raw": "_ZL14icon_lostcrown",
+      "size": 2048,
+      "addr": "0x3f4044ec",
+      "type": "d"
+    },
+    {
+      "name": "icon_pixelwars",
+      "raw": "_ZL14icon_pixelwars",
+      "size": 2048,
+      "addr": "0x3f4054ec",
+      "type": "d"
+    },
+    {
+      "name": "icon_calculator",
+      "raw": "_ZL15icon_calculator",
+      "size": 2048,
+      "addr": "0x3f4034ec",
+      "type": "d"
+    },
+    {
+      "name": "icon_gpt",
+      "raw": "_ZL8icon_gpt",
+      "size": 2048,
+      "addr": "0x3f404cec",
+      "type": "d"
+    },
+    {
+      "name": "esp_err_msg_table",
+      "raw": "esp_err_msg_table",
+      "size": 1720,
+      "addr": "0x3f591918",
+      "type": "d"
+    },
+    {
+      "name": "respLines",
+      "raw": "_ZL9respLines",
+      "size": 1600,
+      "addr": "0x3ffc5194",
+      "type": "b"
+    },
+    {
+      "name": "font",
+      "raw": "_ZL4font",
+      "size": 1280,
+      "addr": "0x3f583844",
+      "type": "d"
+    },
+    {
+      "name": "dns_table",
+      "raw": "dns_table",
+      "size": 1184,
+      "addr": "0x3ffccda8",
+      "type": "b"
+    },
+    {
+      "name": "s_wifi_nvs",
+      "raw": "s_wifi_nvs",
+      "size": 1180,
+      "addr": "0x3ffcfff8",
+      "type": "B"
+    },
+    {
+      "name": "colorization_palettes",
+      "raw": "colorization_palettes",
+      "size": 1152,
+      "addr": "0x3f500410",
+      "type": "d"
+    },
+    {
+      "name": "s_coredump_stack",
+      "raw": "s_coredump_stack",
+      "size": 1124,
+      "addr": "0x3ffcdc50",
+      "type": "b"
+    },
+    {
+      "name": "enemies",
+      "raw": "enemies",
+      "size": 1120,
+      "addr": "0x3ffc989c",
+      "type": "B"
+    },
+    {
+      "name": "NesPalette::s_enhancedPalette",
+      "raw": "_ZN10NesPalette17s_enhancedPaletteE",
+      "size": 1024,
+      "addr": "0x3ffca956",
+      "type": "B"
+    },
+    {
+      "name": "palette_NTSC565",
+      "raw": "_ZL15palette_NTSC565",
+      "size": 1024,
+      "addr": "0x3f500fac",
+      "type": "d"
+    },
+    {
+      "name": "palette_NTSC565",
+      "raw": "_ZL15palette_NTSC565",
+      "size": 1024,
+      "addr": "0x3f50098a",
+      "type": "d"
+    },
+    {
+      "name": "GB_ROM_BANKS",
+      "raw": "GB_ROM_BANKS",
+      "size": 1024,
+      "addr": "0x3f4fee1c",
+      "type": "D"
+    },
+    {
+      "name": "rtc_io_desc",
+      "raw": "rtc_io_desc",
+      "size": 1008,
+      "addr": "0x3f58f810",
+      "type": "D"
+    },
+    {
+      "name": "GB",
+      "raw": "GB",
+      "size": 1004,
+      "addr": "0x3ffcefc4",
+      "type": "B"
+    },
+    {
+      "name": "TxRxCxt",
+      "raw": "TxRxCxt",
+      "size": 960,
+      "addr": "0x3ffc0168",
+      "type": "D"
+    },
+    {
+      "name": "gWpaSm",
+      "raw": "gWpaSm",
+      "size": 844,
+      "addr": "0x3ffcf3b4",
+      "type": "B"
+    },
+    {
+      "name": "ciphersuite_preference",
+      "raw": "ciphersuite_preference",
+      "size": 832,
+      "addr": "0x3f599fe0",
+      "type": "d"
+    },
+    {
+      "name": "two_over_pi",
+      "raw": "two_over_pi",
+      "size": 792,
+      "addr": "0x3f5a2db8",
+      "type": "d"
+    },
+    {
+      "name": "Dream_Orphans_Bd6pt7bGlyphs",
+      "raw": "_ZL27Dream_Orphans_Bd6pt7bGlyphs",
+      "size": 760,
+      "addr": "0x3f47d4a8",
+      "type": "d"
+    },
+    {
+      "name": "Dream_Orphans_Bd6pt7bGlyphs",
+      "raw": "_ZL27Dream_Orphans_Bd6pt7bGlyphs",
+      "size": 760,
+      "addr": "0x3f47da28",
+      "type": "d"
+    },
+    {
+      "name": "Dream_Orphans_Bd6pt7bGlyphs",
+      "raw": "_ZL27Dream_Orphans_Bd6pt7bGlyphs",
+      "size": 760,
+      "addr": "0x3f47e060",
+      "type": "d"
+    },
+    {
+      "name": "Dream_Orphans_Bd6pt7bGlyphs",
+      "raw": "_ZL27Dream_Orphans_Bd6pt7bGlyphs",
+      "size": 760,
+      "addr": "0x3f405cfc",
+      "type": "d"
+    },
+    {
+      "name": "soc_memory_regions",
+      "raw": "soc_memory_regions",
+      "size": 704,
+      "addr": "0x3f58f284",
+      "type": "D"
+    },
+    {
+      "name": "small_prime",
+      "raw": "small_prime",
+      "size": 672,
+      "addr": "0x3f59a320",
+      "type": "d"
+    },
+    {
+      "name": "LostCrownGameplay::boomerangCompositeBuffer",
+      "raw": "_ZN17LostCrownGameplayL24boomerangCompositeBufferE",
+      "size": 648,
+      "addr": "0x3ffc6424",
+      "type": "b"
+    },
+    {
+      "name": "boomerang_rot_frame0_pixels",
+      "raw": "_ZL27boomerang_rot_frame0_pixels",
+      "size": 648,
+      "addr": "0x3f451be8",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame0_pixels",
+      "raw": "_ZL27boomerang_rot_frame0_pixels",
+      "size": 648,
+      "addr": "0x3f4076d4",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame1_pixels",
+      "raw": "_ZL27boomerang_rot_frame1_pixels",
+      "size": 648,
+      "addr": "0x3f40744c",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame1_pixels",
+      "raw": "_ZL27boomerang_rot_frame1_pixels",
+      "size": 648,
+      "addr": "0x3f451960",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame2_pixels",
+      "raw": "_ZL27boomerang_rot_frame2_pixels",
+      "size": 648,
+      "addr": "0x3f4516d8",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame2_pixels",
+      "raw": "_ZL27boomerang_rot_frame2_pixels",
+      "size": 648,
+      "addr": "0x3f4071c4",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame3_pixels",
+      "raw": "_ZL27boomerang_rot_frame3_pixels",
+      "size": 648,
+      "addr": "0x3f406f3c",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame3_pixels",
+      "raw": "_ZL27boomerang_rot_frame3_pixels",
+      "size": 648,
+      "addr": "0x3f451450",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame4_pixels",
+      "raw": "_ZL27boomerang_rot_frame4_pixels",
+      "size": 648,
+      "addr": "0x3f406cb4",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame4_pixels",
+      "raw": "_ZL27boomerang_rot_frame4_pixels",
+      "size": 648,
+      "addr": "0x3f4511c8",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame5_pixels",
+      "raw": "_ZL27boomerang_rot_frame5_pixels",
+      "size": 648,
+      "addr": "0x3f450f40",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame5_pixels",
+      "raw": "_ZL27boomerang_rot_frame5_pixels",
+      "size": 648,
+      "addr": "0x3f406a2c",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame6_pixels",
+      "raw": "_ZL27boomerang_rot_frame6_pixels",
+      "size": 648,
+      "addr": "0x3f450cb8",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame6_pixels",
+      "raw": "_ZL27boomerang_rot_frame6_pixels",
+      "size": 648,
+      "addr": "0x3f4067a4",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame7_pixels",
+      "raw": "_ZL27boomerang_rot_frame7_pixels",
+      "size": 648,
+      "addr": "0x3f450a30",
+      "type": "d"
+    },
+    {
+      "name": "boomerang_rot_frame7_pixels",
+      "raw": "_ZL27boomerang_rot_frame7_pixels",
+      "size": 648,
+      "addr": "0x3f40651c",
+      "type": "d"
+    },
+    {
+      "name": "K",
+      "raw": "K",
+      "size": 640,
+      "addr": "0x3f59ce50",
+      "type": "d"
+    },
+    {
+      "name": "g_ic",
+      "raw": "g_ic",
+      "size": 636,
+      "addr": "0x3ffcfcb0",
+      "type": "B"
+    },
+    {
+      "name": "quotes_db",
+      "raw": "_ZL9quotes_db",
+      "size": 600,
+      "addr": "0x3f406218",
+      "type": "d"
+    }
+  ],
+  "top_text": [
+    {
+      "name": "_vfprintf_r",
+      "raw": "_vfprintf_r",
+      "size": 12258,
+      "addr": "0x4018a0e8"
+    },
+    {
+      "name": "_svfprintf_r",
+      "raw": "_svfprintf_r",
+      "size": 11979,
+      "addr": "0x40186d14"
+    },
+    {
+      "name": "http_parser_execute",
+      "raw": "http_parser_execute",
+      "size": 9024,
+      "addr": "0x40133f54"
+    },
+    {
+      "name": "_vfiprintf_r",
+      "raw": "_vfiprintf_r",
+      "size": 8362,
+      "addr": "0x4019397c"
+    },
+    {
+      "name": "_svfiprintf_r",
+      "raw": "_svfiprintf_r",
+      "size": 8130,
+      "addr": "0x4018f3b8"
+    },
+    {
+      "name": "__ssvfiscanf_r",
+      "raw": "__ssvfiscanf_r",
+      "size": 8081,
+      "addr": "0x401914ec"
+    },
+    {
+      "name": "gb_cpu_emulate",
+      "raw": "gb_cpu_emulate",
+      "size": 7662,
+      "addr": "0x400e130c"
+    },
+    {
+      "name": "mbedtls_ssl_handshake_server_step",
+      "raw": "mbedtls_ssl_handshake_server_step",
+      "size": 7150,
+      "addr": "0x4013cb54"
+    },
+    {
+      "name": "mbedtls_ssl_handshake_client_step",
+      "raw": "mbedtls_ssl_handshake_client_step",
+      "size": 6626,
+      "addr": "0x4013af20"
+    },
+    {
+      "name": "esp_internal_sha1_parallel_engine_process",
+      "raw": "esp_internal_sha1_parallel_engine_process",
+      "size": 4548,
+      "addr": "0x4014a5ac"
+    },
+    {
+      "name": "tcp_input",
+      "raw": "tcp_input",
+      "size": 4096,
+      "addr": "0x40113e54"
+    },
+    {
+      "name": "nd6_input",
+      "raw": "nd6_input",
+      "size": 3749,
+      "addr": "0x4011c39c"
+    },
+    {
+      "name": "mbedtls_sha512_software_process",
+      "raw": "mbedtls_sha512_software_process",
+      "size": 3538,
+      "addr": "0x4014c628"
+    },
+    {
+      "name": "_dtoa_r",
+      "raw": "_dtoa_r",
+      "size": 3200,
+      "addr": "0x4018d380"
+    },
+    {
+      "name": "tcp_receive",
+      "raw": "tcp_receive",
+      "size": 3192,
+      "addr": "0x401131dc"
+    },
+    {
+      "name": "ieee80211_sta_new_state",
+      "raw": "ieee80211_sta_new_state",
+      "size": 3137,
+      "addr": "0x40165068"
+    },
+    {
+      "name": "lcd_renderline",
+      "raw": "lcd_renderline",
+      "size": 2630,
+      "addr": "0x400e42a0"
+    },
+    {
+      "name": "AIApp::update(Adafruit_ST7735&)",
+      "raw": "_ZN5AIApp6updateER15Adafruit_ST7735",
+      "size": 2474,
+      "addr": "0x400d35fc"
+    },
+    {
+      "name": "start_ssl_client(sslclient_context*, IPAddress const&, unsigned int, char const*, int, char const*, bool, char const*, char const*, char const*, char const*, bool, char const**)",
+      "raw": "_Z16start_ssl_clientP17sslclient_contextRK9IPAddressjPKciS5_bS5_S5_S5_S5_bPS5_",
+      "size": 2419,
+      "addr": "0x40180b50"
+    },
+    {
+      "name": "wpa_sm_rx_eapol",
+      "raw": "wpa_sm_rx_eapol",
+      "size": 2371,
+      "addr": "0x40105be4"
+    },
+    {
+      "name": "hostap_recv_mgmt",
+      "raw": "hostap_recv_mgmt",
+      "size": 2356,
+      "addr": "0x401565d8"
+    },
+    {
+      "name": "mbedtls_x509_crt_parse_der_internal$part$13",
+      "raw": "mbedtls_x509_crt_parse_der_internal$part$13",
+      "size": 2332,
+      "addr": "0x40151bd8"
+    },
+    {
+      "name": "mbedtls_high_level_strerr",
+      "raw": "mbedtls_high_level_strerr",
+      "size": 2322,
+      "addr": "0x40183598"
+    },
+    {
+      "name": "mbedtls_ssl_read_record",
+      "raw": "mbedtls_ssl_read_record",
+      "size": 2304,
+      "addr": "0x40137fe4"
+    },
+    {
+      "name": "LostCrownGameplay::update(Adafruit_ST7735&)",
+      "raw": "_ZN17LostCrownGameplay6updateER15Adafruit_ST7735",
+      "size": 2206,
+      "addr": "0x400d8270"
+    },
+    {
+      "name": "sta_recv_mgmt",
+      "raw": "sta_recv_mgmt",
+      "size": 2191,
+      "addr": "0x40167180"
+    },
+    {
+      "name": "scan_parse_beacon",
+      "raw": "scan_parse_beacon",
+      "size": 2088,
+      "addr": "0x40164614"
+    },
+    {
+      "name": "mbedtls_sha256_software_process",
+      "raw": "mbedtls_sha256_software_process",
+      "size": 2080,
+      "addr": "0x4014ba40"
+    },
+    {
+      "name": "uart_rx_intr_handler_default",
+      "raw": "uart_rx_intr_handler_default",
+      "size": 2019,
+      "addr": "0x400f746c"
+    },
+    {
+      "name": "drawPixelWarsLoadingScreen(int)",
+      "raw": "_Z26drawPixelWarsLoadingScreeni",
+      "size": 1938,
+      "addr": "0x400dd4bc"
+    },
+    {
+      "name": "gb_hw_write",
+      "raw": "gb_hw_write",
+      "size": 1926,
+      "addr": "0x400e39e8"
+    },
+    {
+      "name": "lwip_setsockopt_callback",
+      "raw": "lwip_setsockopt_callback",
+      "size": 1921,
+      "addr": "0x4010abf8"
+    },
+    {
+      "name": "HTTPClient::setCookie(String, String)",
+      "raw": "_ZN10HTTPClient9setCookieE6StringS0_",
+      "size": 1874,
+      "addr": "0x400efa94"
+    },
+    {
+      "name": "SpotifyConnection::getState(SpotifyTrackState&)",
+      "raw": "_ZN17SpotifyConnection8getStateER17SpotifyTrackState",
+      "size": 1864,
+      "addr": "0x400e9938"
+    },
+    {
+      "name": "set_esp_interface_ip(esp_interface_t, IPAddress, IPAddress, IPAddress, IPAddress)",
+      "raw": "_Z20set_esp_interface_ip15esp_interface_t9IPAddressS0_S0_S0_",
+      "size": 1858,
+      "addr": "0x400ecf78"
+    },
+    {
+      "name": "AIConnection::postAsk(String const&)",
+      "raw": "_ZN12AIConnection7postAskERK6String",
+      "size": 1687,
+      "addr": "0x400d4084"
+    },
+    {
+      "name": "LostCrownLevel1::update(Adafruit_ST7735&)",
+      "raw": "_ZN15LostCrownLevel16updateER15Adafruit_ST7735",
+      "size": 1674,
+      "addr": "0x400d77e8"
+    },
+    {
+      "name": "pbus_rx_dco_cal_1step",
+      "raw": "pbus_rx_dco_cal_1step",
+      "size": 1657,
+      "addr": "0x40179850"
+    },
+    {
+      "name": "diag_log_add",
+      "raw": "diag_log_add",
+      "size": 1648,
+      "addr": "0x40125ce4"
+    },
+    {
+      "name": "hostap_input",
+      "raw": "hostap_input",
+      "size": 1638,
+      "addr": "0x40157068"
+    },
+    {
+      "name": "sswu",
+      "raw": "sswu",
+      "size": 1638,
+      "addr": "0x40130f0c"
+    },
+    {
+      "name": "wifi_softap_set_config",
+      "raw": "wifi_softap_set_config",
+      "size": 1628,
+      "addr": "0x4015beec"
+    },
+    {
+      "name": "ieee80211_parse_beacon",
+      "raw": "ieee80211_parse_beacon",
+      "size": 1494,
+      "addr": "0x4015a278"
+    },
+    {
+      "name": "runGameplayUpdate()",
+      "raw": "_Z17runGameplayUpdatev",
+      "size": 1475,
+      "addr": "0x400dc8bc"
+    },
+    {
+      "name": "mbedtls_camellia_setkey_enc",
+      "raw": "mbedtls_camellia_setkey_enc",
+      "size": 1472,
+      "addr": "0x4014f5dc"
+    },
+    {
+      "name": "ip6_input",
+      "raw": "ip6_input",
+      "size": 1468,
+      "addr": "0x4011a7d8"
+    },
+    {
+      "name": "wifi_nvs_cfg_init",
+      "raw": "wifi_nvs_cfg_init",
+      "size": 1444,
+      "addr": "0x4015e25c"
+    },
+    {
+      "name": "sta_recv_assoc",
+      "raw": "sta_recv_assoc",
+      "size": 1430,
+      "addr": "0x40166504"
+    },
+    {
+      "name": "tcp_output",
+      "raw": "tcp_output",
+      "size": 1425,
+      "addr": "0x40115b88"
+    },
+    {
+      "name": "ieee80211_parse_rsn",
+      "raw": "ieee80211_parse_rsn",
+      "size": 1421,
+      "addr": "0x4015ab04"
+    },
+    {
+      "name": "ecp_mod_p384",
+      "raw": "ecp_mod_p384",
+      "size": 1407,
+      "addr": "0x401442bc"
+    },
+    {
+      "name": "bt_i2c_write_set",
+      "raw": "bt_i2c_write_set",
+      "size": 1392,
+      "addr": "0x4017ba00"
+    },
+    {
+      "name": "esp_core_dump_do_write_elf_pass$constprop$3",
+      "raw": "esp_core_dump_do_write_elf_pass$constprop$3",
+      "size": 1363,
+      "addr": "0x4012d19c"
+    },
+    {
+      "name": "handle_dhcp",
+      "raw": "handle_dhcp",
+      "size": 1346,
+      "addr": "0x4011e9d8"
+    },
+    {
+      "name": "sta_input",
+      "raw": "sta_input",
+      "size": 1346,
+      "addr": "0x4019cf2c"
+    },
+    {
+      "name": "__kernel_rem_pio2f",
+      "raw": "__kernel_rem_pio2f",
+      "size": 1327,
+      "addr": "0x40184878"
+    },
+    {
+      "name": "GbSave::init()",
+      "raw": "_ZN6GbSave4initEv",
+      "size": 1312,
+      "addr": "0x400e0c94"
+    },
+    {
+      "name": "updateEnemies(unsigned int)",
+      "raw": "_Z13updateEnemiesj",
+      "size": 1279,
+      "addr": "0x400dabbc"
+    },
+    {
+      "name": "dhcp_recv",
+      "raw": "dhcp_recv",
+      "size": 1263,
+      "addr": "0x40117be0"
+    },
+    {
+      "name": "uartBegin",
+      "raw": "uartBegin",
+      "size": 1256,
+      "addr": "0x400f4220"
+    },
+    {
+      "name": "x509_crt_verify_restartable_ca_cb$isra$11",
+      "raw": "x509_crt_verify_restartable_ca_cb$isra$11",
+      "size": 1248,
+      "addr": "0x401515c0"
+    },
+    {
+      "name": "HTTPClient::handleHeaderResponse()",
+      "raw": "_ZN10HTTPClient20handleHeaderResponseEv",
+      "size": 1242,
+      "addr": "0x400f01e8"
+    },
+    {
+      "name": "bt_get_i2c_data",
+      "raw": "bt_get_i2c_data",
+      "size": 1235,
+      "addr": "0x4017c0d4"
+    },
+    {
+      "name": "dns_recv",
+      "raw": "dns_recv",
+      "size": 1231,
+      "addr": "0x4010d01c"
+    },
+    {
+      "name": "ieee80211_encap_esfbuf",
+      "raw": "ieee80211_encap_esfbuf",
+      "size": 1225,
+      "addr": "0x4019a1b0"
+    },
+    {
+      "name": "get_arg$isra$0",
+      "raw": "get_arg$isra$0",
+      "size": 1216,
+      "addr": "0x40186854"
+    },
+    {
+      "name": "get_arg$isra$0",
+      "raw": "get_arg$isra$0",
+      "size": 1216,
+      "addr": "0x40189c28"
+    },
+    {
+      "name": "get_arg$isra$0",
+      "raw": "get_arg$isra$0",
+      "size": 1216,
+      "addr": "0x4018edec"
+    },
+    {
+      "name": "get_arg$isra$0",
+      "raw": "get_arg$isra$0",
+      "size": 1216,
+      "addr": "0x40193498"
+    },
+    {
+      "name": "lfs_dir_fetchmatch",
+      "raw": "lfs_dir_fetchmatch",
+      "size": 1207,
+      "addr": "0x40129158"
+    },
+    {
+      "name": "esp_core_dump_get_task_regs_dump",
+      "raw": "esp_core_dump_get_task_regs_dump",
+      "size": 1172,
+      "addr": "0x4012da00"
+    },
+    {
+      "name": "lfs_dir_relocatingcommit",
+      "raw": "lfs_dir_relocatingcommit",
+      "size": 1146,
+      "addr": "0x4012a418"
+    },
+    {
+      "name": "ecp_mul_comb",
+      "raw": "ecp_mul_comb",
+      "size": 1138,
+      "addr": "0x40143184"
+    },
+    {
+      "name": "mbedtls_ssl_derive_keys",
+      "raw": "mbedtls_ssl_derive_keys",
+      "size": 1132,
+      "addr": "0x40139410"
+    },
+    {
+      "name": "mbedtls_ecp_mul_restartable",
+      "raw": "mbedtls_ecp_mul_restartable",
+      "size": 1127,
+      "addr": "0x40143af0"
+    },
+    {
+      "name": "wifi_prov_mgr_event_handler_internal",
+      "raw": "wifi_prov_mgr_event_handler_internal",
+      "size": 1103,
+      "addr": "0x401253dc"
+    },
+    {
+      "name": "tcp_slowtmr",
+      "raw": "tcp_slowtmr",
+      "size": 1090,
+      "addr": "0x40112a98"
+    },
+    {
+      "name": "drawPixelWarsStartMenu()",
+      "raw": "_Z22drawPixelWarsStartMenuv",
+      "size": 1079,
+      "addr": "0x400dddc4"
+    },
+    {
+      "name": "RetroApp::update(Adafruit_ST7735&)",
+      "raw": "_ZN8RetroApp6updateER15Adafruit_ST7735",
+      "size": 1079,
+      "addr": "0x400deb50"
+    },
+    {
+      "name": "lwip_getsockopt_callback",
+      "raw": "lwip_getsockopt_callback",
+      "size": 1079,
+      "addr": "0x4010a7c0"
+    },
+    {
+      "name": "dns_gethostbyname_addrtype",
+      "raw": "dns_gethostbyname_addrtype",
+      "size": 1067,
+      "addr": "0x4010d594"
+    },
+    {
+      "name": "esp_vfs_select",
+      "raw": "esp_vfs_select",
+      "size": 1063,
+      "addr": "0x40101320"
+    },
+    {
+      "name": "mbedtls_rsa_private",
+      "raw": "mbedtls_rsa_private",
+      "size": 1063,
+      "addr": "0x40148134"
+    },
+    {
+      "name": "select",
+      "raw": "select",
+      "size": 1063,
+      "addr": "0x40101320"
+    },
+    {
+      "name": "nd6_get_next_hop_addr_or_queue",
+      "raw": "nd6_get_next_hop_addr_or_queue",
+      "size": 1059,
+      "addr": "0x4011d57c"
+    },
+    {
+      "name": "wpa_sm_step",
+      "raw": "wpa_sm_step",
+      "size": 1045,
+      "addr": "0x4012fd14"
+    },
+    {
+      "name": "ecp_mod_p256",
+      "raw": "ecp_mod_p256",
+      "size": 1039,
+      "addr": "0x4014483c"
+    },
+    {
+      "name": "mbedtls_ecp_group_load",
+      "raw": "mbedtls_ecp_group_load",
+      "size": 1037,
+      "addr": "0x401450a4"
+    },
+    {
+      "name": "sae_parse_commit",
+      "raw": "sae_parse_commit",
+      "size": 1022,
+      "addr": "0x40132d9c"
+    },
+    {
+      "name": "esp_intr_alloc_intrstatus",
+      "raw": "esp_intr_alloc_intrstatus",
+      "size": 1015,
+      "addr": "0x40121d68"
+    },
+    {
+      "name": "ppRxFragmentProc",
+      "raw": "ppRxFragmentProc",
+      "size": 1006,
+      "addr": "0x4019d6a0"
+    },
+    {
+      "name": "mpi_mul_hlp",
+      "raw": "mpi_mul_hlp",
+      "size": 999,
+      "addr": "0x40198838"
+    },
+    {
+      "name": "WiFiClient::connect(IPAddress, unsigned short, int)",
+      "raw": "_ZN10WiFiClient7connectE9IPAddressti",
+      "size": 992,
+      "addr": "0x4017ff24"
+    },
+    {
+      "name": "ccm_auth_crypt",
+      "raw": "ccm_auth_crypt",
+      "size": 982,
+      "addr": "0x40150008"
+    },
+    {
+      "name": "mbedtls_ssl_decrypt_buf",
+      "raw": "mbedtls_ssl_decrypt_buf",
+      "size": 980,
+      "addr": "0x40136c3c"
+    },
+    {
+      "name": "drawPlayerShip(short, short)",
+      "raw": "_Z14drawPlayerShipss",
+      "size": 976,
+      "addr": "0x400de2f4"
+    },
+    {
+      "name": "http_parser_parse_url",
+      "raw": "http_parser_parse_url",
+      "size": 964,
+      "addr": "0x40136300"
+    },
+    {
+      "name": "rtc_init",
+      "raw": "rtc_init",
+      "size": 962,
+      "addr": "0x401a0674"
+    },
+    {
+      "name": "wpa_gen_wpa_ie",
+      "raw": "wpa_gen_wpa_ie",
+      "size": 962,
+      "addr": "0x40106d74"
+    },
+    {
+      "name": "GbSave::save()",
+      "raw": "_ZN6GbSave4saveEv",
+      "size": 958,
+      "addr": "0x400e085c"
+    }
+  ],
+  "top_iram": [
+    {
+      "name": "_ZN7Cpu65025clockEi$part$21",
+      "raw": "_ZN7Cpu65025clockEi$part$21",
+      "size": 6331,
+      "addr": "0x400814c8"
+    },
+    {
+      "name": "strptime_l",
+      "raw": "strptime_l",
+      "size": 1884,
+      "addr": "0x4008ce9c"
+    },
+    {
+      "name": "_tzset_unlocked_r",
+      "raw": "_tzset_unlocked_r",
+      "size": 932,
+      "addr": "0x4008db94"
+    },
+    {
+      "name": "tlsf_realloc",
+      "raw": "tlsf_realloc",
+      "size": 932,
+      "addr": "0x400949ac"
+    },
+    {
+      "name": "mktime",
+      "raw": "mktime",
+      "size": 898,
+      "addr": "0x4008c1bc"
+    },
+    {
+      "name": "tx_pwctrl_cal",
+      "raw": "tx_pwctrl_cal",
+      "size": 787,
+      "addr": "0x40089de8"
+    },
+    {
+      "name": "tlsf_malloc",
+      "raw": "tlsf_malloc",
+      "size": 761,
+      "addr": "0x400946b0"
+    },
+    {
+      "name": "tlsf_free",
+      "raw": "tlsf_free",
+      "size": 754,
+      "addr": "0x400943ac"
+    },
+    {
+      "name": "coex_force_wifi_mode",
+      "raw": "coex_force_wifi_mode",
+      "size": 718,
+      "addr": "0x40087e2c"
+    },
+    {
+      "name": "__sfvwrite_r",
+      "raw": "__sfvwrite_r",
+      "size": 685,
+      "addr": "0x4008b3cc"
+    },
+    {
+      "name": "set_chan_dig_gain",
+      "raw": "set_chan_dig_gain",
+      "size": 663,
+      "addr": "0x40089b30"
+    },
+    {
+      "name": "localtime_r",
+      "raw": "localtime_r",
+      "size": 621,
+      "addr": "0x4008b9c0"
+    },
+    {
+      "name": "spi_flash_mmap_pages",
+      "raw": "spi_flash_mmap_pages",
+      "size": 608,
+      "addr": "0x400836f4"
+    },
+    {
+      "name": "wdt_hal_init",
+      "raw": "wdt_hal_init",
+      "size": 590,
+      "addr": "0x40093e14"
+    },
+    {
+      "name": "call_start_cpu0",
+      "raw": "call_start_cpu0",
+      "size": 569,
+      "addr": "0x40084b78"
+    },
+    {
+      "name": "validate_structure",
+      "raw": "validate_structure",
+      "size": 553,
+      "addr": "0x4008bf90"
+    },
+    {
+      "name": "vTaskSwitchContext",
+      "raw": "vTaskSwitchContext",
+      "size": 539,
+      "addr": "0x40091794"
+    },
+    {
+      "name": "spi_flash_hal_configure_host_io_mode",
+      "raw": "spi_flash_hal_configure_host_io_mode",
+      "size": 529,
+      "addr": "0x40093710"
+    },
+    {
+      "name": "esp_flash_erase_region",
+      "raw": "esp_flash_erase_region",
+      "size": 522,
+      "addr": "0x40083e40"
+    },
+    {
+      "name": "BT_init_rx_filters",
+      "raw": "BT_init_rx_filters",
+      "size": 516,
+      "addr": "0x400954b8"
+    },
+    {
+      "name": "xTaskResumeAll",
+      "raw": "xTaskResumeAll",
+      "size": 481,
+      "addr": "0x40092268"
+    },
+    {
+      "name": "bootloader_flash_gpio_config",
+      "raw": "bootloader_flash_gpio_config",
+      "size": 473,
+      "addr": "0x4008761c"
+    },
+    {
+      "name": "bootloader_flash_execute_command_common",
+      "raw": "bootloader_flash_execute_command_common",
+      "size": 469,
+      "addr": "0x40083384"
+    },
+    {
+      "name": "rtc_clk_cal_internal",
+      "raw": "rtc_clk_cal_internal",
+      "size": 433,
+      "addr": "0x4008eabc"
+    },
+    {
+      "name": "set_most_pwr_reg",
+      "raw": "set_most_pwr_reg",
+      "size": 432,
+      "addr": "0x40088e88"
+    },
+    {
+      "name": "gmtime_r",
+      "raw": "gmtime_r",
+      "size": 430,
+      "addr": "0x4008b7b0"
+    },
+    {
+      "name": "xTaskIncrementTick",
+      "raw": "xTaskIncrementTick",
+      "size": 423,
+      "addr": "0x400915ec"
+    },
+    {
+      "name": "xQueueGenericSend",
+      "raw": "xQueueGenericSend",
+      "size": 416,
+      "addr": "0x40090738"
+    },
+    {
+      "name": "xQueueSemaphoreTake",
+      "raw": "xQueueSemaphoreTake",
+      "size": 396,
+      "addr": "0x40090c90"
+    },
+    {
+      "name": "rtc_clk_bbpll_configure",
+      "raw": "rtc_clk_bbpll_configure",
+      "size": 392,
+      "addr": "0x4008e5ec"
+    },
+    {
+      "name": "wDev_ProcessFiq",
+      "raw": "wDev_ProcessFiq",
+      "size": 386,
+      "addr": "0x40088834"
+    },
+    {
+      "name": "esp_flash_write_encrypted",
+      "raw": "esp_flash_write_encrypted",
+      "size": 380,
+      "addr": "0x400842c4"
+    },
+    {
+      "name": "esp_restart_noos",
+      "raw": "esp_restart_noos",
+      "size": 371,
+      "addr": "0x400850fc"
+    },
+    {
+      "name": "prvAddNewTaskToReadyList$isra$6",
+      "raw": "prvAddNewTaskToReadyList$isra$6",
+      "size": 368,
+      "addr": "0x400912c0"
+    },
+    {
+      "name": "__tzcalc_limits",
+      "raw": "__tzcalc_limits",
+      "size": 362,
+      "addr": "0x4008d9f0"
+    },
+    {
+      "name": "spi_flash_hal_common_command",
+      "raw": "spi_flash_hal_common_command",
+      "size": 361,
+      "addr": "0x40093924"
+    },
+    {
+      "name": "Ppu2C02::cpuWrite(unsigned short, unsigned char)",
+      "raw": "_ZN7Ppu2C028cpuWriteEth",
+      "size": 355,
+      "addr": "0x40082e88"
+    },
+    {
+      "name": "write_txrate_power_offset",
+      "raw": "write_txrate_power_offset",
+      "size": 346,
+      "addr": "0x40089440"
+    },
+    {
+      "name": "vTaskPrioritySet",
+      "raw": "vTaskPrioritySet",
+      "size": 344,
+      "addr": "0x40091dc0"
+    },
+    {
+      "name": "__sflush_r",
+      "raw": "__sflush_r",
+      "size": 343,
+      "addr": "0x4008afa4"
+    },
+    {
+      "name": "_ungetc_r",
+      "raw": "_ungetc_r",
+      "size": 342,
+      "addr": "0x4008dfb0"
+    },
+    {
+      "name": "wdt_hal_config_stage",
+      "raw": "wdt_hal_config_stage",
+      "size": 342,
+      "addr": "0x40094064"
+    },
+    {
+      "name": "xPortEnterCriticalTimeout",
+      "raw": "xPortEnterCriticalTimeout",
+      "size": 338,
+      "addr": "0x40092f00"
+    },
+    {
+      "name": "esp_backtrace_print_from_frame",
+      "raw": "esp_backtrace_print_from_frame",
+      "size": 336,
+      "addr": "0x40085340"
+    },
+    {
+      "name": "xQueueReceive",
+      "raw": "xQueueReceive",
+      "size": 331,
+      "addr": "0x40090b44"
+    },
+    {
+      "name": "esp_flash_write",
+      "raw": "esp_flash_write",
+      "size": 318,
+      "addr": "0x4008415c"
+    },
+    {
+      "name": "pp_post",
+      "raw": "pp_post",
+      "size": 310,
+      "addr": "0x400885b8"
+    },
+    {
+      "name": "get_rate_fcc_index",
+      "raw": "get_rate_fcc_index",
+      "size": 306,
+      "addr": "0x40089720"
+    },
+    {
+      "name": "pxTaskGetNext",
+      "raw": "pxTaskGetNext",
+      "size": 306,
+      "addr": "0x40092bfc"
+    },
+    {
+      "name": "vTaskGenericNotifyGiveFromISR",
+      "raw": "vTaskGenericNotifyGiveFromISR",
+      "size": 297,
+      "addr": "0x40092834"
+    }
+  ]
+}

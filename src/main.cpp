@@ -10,10 +10,12 @@
 #include "pixel_wars/PixelWarsMenu.h"
 #include "ai/AIApp.h"
 #include "spotify/SpotifyApp.h"
+#if ENABLE_LOST_CROWN
 #include "lost_crown/LostCrownLoading.h"
 #include "lost_crown/LostCrownTitle.h"
 #include "lost_crown/LostCrownGameplay.h"
 #include "lost_crown/Level1.h"
+#endif
 #include "hackk/HackkApp.h"
 #include "status_led.h"
 #include "retro/RetroApp.h"
@@ -41,7 +43,9 @@ unsigned long lastQuoteChangeTime = 0;
 
 // Joystick control state
 bool joystickCentered = true;
+#if ENABLE_LOST_CROWN
 bool lostCrownLaunchSignalled = false;
+#endif
 
 enum JoyDirection {
   DIR_NONE,
@@ -110,7 +114,11 @@ void handleNavigation(JoyDirection dir) {
         drawFocusHighlight(tft, currentFocus, true);
       } else if (dir == DIR_RIGHT) {
         drawFocusHighlight(tft, currentFocus, false);
+#if ENABLE_LOST_CROWN
         currentFocus = FOCUS_LOST_CROWN;
+#else
+        currentFocus = FOCUS_SPOTIFY;
+#endif
         drawFocusHighlight(tft, currentFocus, true);
       } else if (dir == DIR_DOWN) {
         // ON LAST ROW + DOWN AGAIN -> SWITCH TO PAGE 2!
@@ -121,7 +129,9 @@ void handleNavigation(JoyDirection dir) {
         bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
         updateWiFiIconPage2(tft, currentWiFiConnected);
       }
-    } else if (currentFocus == FOCUS_LOST_CROWN) {
+    }
+#if ENABLE_LOST_CROWN
+    else if (currentFocus == FOCUS_LOST_CROWN) {
       if (dir == DIR_UP) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_QUOTE_CARD;
@@ -140,14 +150,33 @@ void handleNavigation(JoyDirection dir) {
         updateWiFiIconPage2(tft, currentWiFiConnected);
       }
     }
+#else
+    else if (currentFocus == FOCUS_SPOTIFY) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_QUOTE_CARD;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        // ON LAST ROW + DOWN AGAIN -> SWITCH TO PAGE 2!
+        currentAppsPage = APPS_PAGE_2;
+        currentFocus = FOCUS_PAGE2_SPOTIFY;
+        drawAppsPage2(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIconPage2(tft, currentWiFiConnected);
+      }
+    }
+#endif
 
   } else if (currentAppsPage == APPS_PAGE_2) {
     // -------------------------------------------------------------
-    // PAGE 2 NAVIGATION (Apps Grid - Image 2)
+    // PAGE 2 NAVIGATION
     // -------------------------------------------------------------
-    // Row 0: FOCUS_PAGE2_PIXEL_WARS (col 0), FOCUS_PAGE2_AI (col 1), FOCUS_PAGE2_LOST_CROWN (col 2)
-    // Row 1: FOCUS_PAGE2_SPOTIFY (col 0), FOCUS_PAGE2_CALCULATOR (col 1)
-
+#if ENABLE_LOST_CROWN
     if (currentFocus == FOCUS_PAGE2_PIXEL_WARS) {
       if (dir == DIR_UP) {
         // UP FROM PAGE 2 ROW 0 -> RETURN TO PAGE 1!
@@ -255,6 +284,104 @@ void handleNavigation(JoyDirection dir) {
         drawFocusHighlight(tft, currentFocus, true);
       }
     }
+#else
+    // 6-app 3x2 Grid Navigation:
+    // Row 0 (Y=34): PIXEL_WARS (col 0), AI (col 1), SPOTIFY (col 2)
+    // Row 1 (Y=74): CALCULATOR (col 0), HACKING_GO (col 1), RETRO_ARCADE (col 2)
+    if (currentFocus == FOCUS_PAGE2_PIXEL_WARS) {
+      if (dir == DIR_UP) {
+        // UP FROM PAGE 2 ROW 0 -> RETURN TO PAGE 1!
+        currentAppsPage = APPS_PAGE_1;
+        currentFocus = FOCUS_PIXEL_WARS;
+        drawHomeScreen(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIcon(tft, currentWiFiConnected);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_AI) {
+      if (dir == DIR_UP) {
+        // UP FROM PAGE 2 ROW 0 -> RETURN TO PAGE 1!
+        currentAppsPage = APPS_PAGE_1;
+        currentFocus = FOCUS_AI;
+        drawHomeScreen(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIcon(tft, currentWiFiConnected);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_PIXEL_WARS;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_SPOTIFY;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_HACKING_GO;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_SPOTIFY) {
+      if (dir == DIR_UP) {
+        // UP FROM PAGE 2 ROW 0 -> RETURN TO PAGE 1!
+        currentAppsPage = APPS_PAGE_1;
+        currentFocus = FOCUS_SPOTIFY;
+        drawHomeScreen(tft);
+        drawFocusHighlight(tft, currentFocus, true);
+        bool currentWiFiConnected = (WiFi.status() == WL_CONNECTED);
+        updateWiFiIcon(tft, currentWiFiConnected);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_RETRO_ARCADE;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_CALCULATOR) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_PIXEL_WARS;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_HACKING_GO;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_HACKING_GO) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_AI;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_RETRO_ARCADE;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_RETRO_ARCADE) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_SPOTIFY;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_HACKING_GO;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    }
+#endif
   }
 }
 
@@ -337,6 +464,7 @@ void exitAI() {
   redrawCurrentAppsPage();
 }
 
+#if ENABLE_LOST_CROWN
 void enterLostCrownPlaceholder() {
   clearButtonEvents();
   currentScreen = STATE_LOST_CROWN_LOADING;
@@ -391,6 +519,7 @@ void exitLostCrownLevel1() {
   LostCrownTitle::begin(tft);
   Serial.println("Lost Crown: Returned from Level 1 to Title Screen");
 }
+#endif
 
 void enterSpotify() {
   clearButtonEvents();
@@ -474,6 +603,7 @@ void handleCurrentSelection() {
       case FOCUS_PAGE2_AI:
         enterAI();
         break;
+#if ENABLE_LOST_CROWN
       case FOCUS_LOST_CROWN:
       case FOCUS_PAGE2_LOST_CROWN:
         enterLostCrownPlaceholder();
@@ -481,6 +611,12 @@ void handleCurrentSelection() {
       case FOCUS_PAGE2_SPOTIFY:
         enterSpotify();
         break;
+#else
+      case FOCUS_SPOTIFY:
+      case FOCUS_PAGE2_SPOTIFY:
+        enterSpotify();
+        break;
+#endif
       case FOCUS_PAGE2_RETRO_ARCADE:
         enterRetroArcade();
         break;
@@ -640,6 +776,7 @@ void loop() {
     if (HackkApp::shouldExit()) {
       exitHackingGo();
     }
+#if ENABLE_LOST_CROWN
   } else if (currentScreen == STATE_LOST_CROWN_LOADING) {
     if (isBackPressed()) {
       exitLostCrownLoading();
@@ -673,6 +810,7 @@ void loop() {
     if (LostCrownLevel1::shouldExit()) {
       exitLostCrownLevel1();
     }
+#endif
   } else {
     // 1. Process Enter Button Click (Non-blocking debounced edge detection)
 

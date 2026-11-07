@@ -1,0 +1,944 @@
+
+--- Session started at 2026-11-06 12:33:04 ---
+[12:33:07] [RetroApp] Game: Pokémon Red | FPS: 24.1 | Frame: 41.3ms | FreeHeap: 58660 B
+[12:33:10] [RetroApp] Game: Pokémon Red | FPS: 24.1 | Frame: 41.3ms | FreeHeap: 58660 B
+[12:33:13] [RetroApp] Game: Pokémon Red | FPS: 23.2 | Frame: 43.0ms | FreeHeap: 58660 B
+[12:33:16] [RetroApp] Game: Pokémon Red | FPS: 26.2 | Frame: 38.1ms | FreeHeap: 58660 B
+[12:33:19] [RetroApp] Game: Pokémon Red | FPS: 26.3 | Frame: 37.8ms | FreeHeap: 58660 B
+[12:33:22] [RetroApp] Game: Pokémon Red | FPS: 26.3 | Frame: 37.9ms | FreeHeap: 58660 B
+[12:33:25] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[12:33:29] [RetroApp] Game: Pokémon Red | FPS: 34.7 | Frame: 28.6ms | FreeHeap: 58660 B
+[12:33:32] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[12:33:35] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:33:38] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.8ms | FreeHeap: 58660 B
+[12:33:41] [RetroApp] Game: Pokémon Red | FPS: 35.2 | Frame: 28.3ms | FreeHeap: 58660 B
+[12:33:44] [RetroApp] Game: Pokémon Red | FPS: 35.0 | Frame: 28.4ms | FreeHeap: 58660 B
+[12:33:47] [RetroApp] Game: Pokémon Red | FPS: 31.4 | Frame: 31.7ms | FreeHeap: 58660 B
+[12:33:50] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.2ms | FreeHeap: 58660 B
+[12:33:51] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[12:33:51] [573233][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:33:51] [573375][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:33:51] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 198 ms (Save #16)
+[12:33:51] [GbSave] Committed Bank CRCs | Bank0: 0x0F93E30D | Bank1: 0xE23E2543 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:33:51] [GbSave] Auto-save #16 committed successfully.
+[12:33:53] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:33:56] [RetroApp] Game: Pokémon Red | FPS: 26.2 | Frame: 38.0ms | FreeHeap: 58660 B
+[12:33:59] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.8ms | FreeHeap: 58660 B
+[12:34:01] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[12:34:01] [583455][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:34:01] [583599][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:34:01] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 217 ms (Save #17)
+[12:34:01] [GbSave] Committed Bank CRCs | Bank0: 0xCE3BAA40 | Bank1: 0xE23E2543 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:34:01] [GbSave] Auto-save #17 committed successfully.
+[12:34:02] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.9ms | FreeHeap: 58660 B
+[12:34:05] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:34:08] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.8ms | FreeHeap: 58660 B
+[12:34:11] [RetroApp] Game: Pokémon Red | FPS: 33.4 | Frame: 29.8ms | FreeHeap: 58660 B
+[12:34:14] [RetroApp] Game: Pokémon Red | FPS: 29.3 | Frame: 33.9ms | FreeHeap: 58660 B
+[12:34:17] [RetroApp] Game: Pokémon Red | FPS: 35.0 | Frame: 28.4ms | FreeHeap: 58660 B
+[12:34:20] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:34:23] [RetroApp] Game: Pokémon Red | FPS: 26.7 | Frame: 37.3ms | FreeHeap: 58660 B
+[12:34:26] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.3ms | FreeHeap: 58660 B
+[12:34:29] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:34:32] [RetroApp] Game: Pokémon Red | FPS: 34.8 | Frame: 28.5ms | FreeHeap: 58660 B
+[12:34:35] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.8ms | FreeHeap: 58660 B
+[12:34:38] [RetroApp] Game: Pokémon Red | FPS: 26.9 | Frame: 37.1ms | FreeHeap: 58660 B
+[12:34:41] [RetroApp] Game: Pokémon Red | FPS: 34.1 | Frame: 29.2ms | FreeHeap: 58660 B
+[12:34:44] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[12:34:47] [RetroApp] Game: Pokémon Red | FPS: 22.9 | Frame: 43.4ms | FreeHeap: 58660 B
+[12:34:50] [RetroApp] Game: Pokémon Red | FPS: 29.9 | Frame: 33.3ms | FreeHeap: 58660 B
+[12:34:53] [RetroApp] Game: Pokémon Red | FPS: 29.1 | Frame: 34.1ms | FreeHeap: 58660 B
+[12:34:56] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:34:59] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[12:35:02] [RetroApp] Game: Pokémon Red | FPS: 21.7 | Frame: 45.9ms | FreeHeap: 58660 B
+[12:35:05] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.4ms | FreeHeap: 58660 B
+[12:35:08] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:35:11] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:35:14] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.3ms | FreeHeap: 58660 B
+[12:35:17] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.1ms | FreeHeap: 58660 B
+[12:35:20] [RetroApp] Game: Pokémon Red | FPS: 26.6 | Frame: 37.5ms | FreeHeap: 58660 B
+[12:35:23] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.1ms | FreeHeap: 58660 B
+[12:35:26] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:35:29] [RetroApp] Game: Pokémon Red | FPS: 29.6 | Frame: 33.6ms | FreeHeap: 58660 B
+[12:35:32] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:35:35] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.4ms | FreeHeap: 58660 B
+[12:35:38] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:35:41] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:35:44] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:35:47] [RetroApp] Game: Pokémon Red | FPS: 29.2 | Frame: 34.1ms | FreeHeap: 58660 B
+[12:35:50] [RetroApp] Game: Pokémon Red | FPS: 24.9 | Frame: 40.0ms | FreeHeap: 58660 B
+[12:35:53] [RetroApp] Game: Pokémon Red | FPS: 25.3 | Frame: 39.4ms | FreeHeap: 58660 B
+[12:35:56] [RetroApp] Game: Pokémon Red | FPS: 29.2 | Frame: 34.1ms | FreeHeap: 58660 B
+[12:35:59] [RetroApp] Game: Pokémon Red | FPS: 34.8 | Frame: 28.6ms | FreeHeap: 58660 B
+[12:36:01] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[12:36:01] [703617][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:36:01] [703772][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:36:01] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 242 ms (Save #18)
+[12:36:02] [GbSave] Committed Bank CRCs | Bank0: 0x0F93E30D | Bank1: 0xE23E2543 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:36:02] [GbSave] Auto-save #18 committed successfully.
+[12:36:02] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.2ms | FreeHeap: 58660 B
+[12:36:05] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 36.0ms | FreeHeap: 58660 B
+[12:36:08] [RetroApp] Game: Pokémon Red | FPS: 22.4 | Frame: 44.4ms | FreeHeap: 58660 B
+[12:36:11] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.8ms | FreeHeap: 58660 B
+[12:36:14] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[12:36:14] [716590][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:36:14] [716747][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:36:14] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 264 ms (Save #19)
+[12:36:15] [GbSave] Committed Bank CRCs | Bank0: 0xCE3BAA40 | Bank1: 0xE23E2543 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:36:15] [GbSave] Auto-save #19 committed successfully.
+[12:36:15] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[12:36:18] [RetroApp] Game: Pokémon Red | FPS: 29.1 | Frame: 34.2ms | FreeHeap: 58660 B
+[12:36:21] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:36:24] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:36:27] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:36:30] [RetroApp] Game: Pokémon Red | FPS: 29.5 | Frame: 33.8ms | FreeHeap: 58660 B
+[12:36:33] [RetroApp] Game: Pokémon Red | FPS: 23.9 | Frame: 41.6ms | FreeHeap: 58660 B
+[12:36:36] [RetroApp] Game: Pokémon Red | FPS: 24.2 | Frame: 41.1ms | FreeHeap: 58660 B
+[12:36:39] [RetroApp] Game: Pokémon Red | FPS: 26.0 | Frame: 38.3ms | FreeHeap: 58660 B
+[12:36:42] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[12:36:45] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[12:36:48] [RetroApp] Game: Pokémon Red | FPS: 33.5 | Frame: 29.7ms | FreeHeap: 58660 B
+[12:36:51] [RetroApp] Game: Pokémon Red | FPS: 25.3 | Frame: 39.3ms | FreeHeap: 58660 B
+[12:36:54] [RetroApp] Game: Pokémon Red | FPS: 32.6 | Frame: 30.5ms | FreeHeap: 58660 B
+[12:36:57] [RetroApp] Game: Pokémon Red | FPS: 26.3 | Frame: 37.9ms | FreeHeap: 58660 B
+[12:37:00] [RetroApp] Game: Pokémon Red | FPS: 22.1 | Frame: 45.1ms | FreeHeap: 58660 B
+[12:37:03] [RetroApp] Game: Pokémon Red | FPS: 26.2 | Frame: 37.9ms | FreeHeap: 58660 B
+[12:37:06] [RetroApp] Game: Pokémon Red | FPS: 22.4 | Frame: 44.5ms | FreeHeap: 58660 B
+[12:37:09] [RetroApp] Game: Pokémon Red | FPS: 23.1 | Frame: 43.0ms | FreeHeap: 58660 B
+[12:37:12] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[12:37:15] [RetroApp] Game: Pokémon Red | FPS: 34.1 | Frame: 29.2ms | FreeHeap: 58660 B
+[12:37:18] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[12:37:21] [RetroApp] Game: Pokémon Red | FPS: 34.6 | Frame: 28.8ms | FreeHeap: 58660 B
+[12:37:24] [RetroApp] Game: Pokémon Red | FPS: 23.2 | Frame: 42.9ms | FreeHeap: 58660 B
+[12:37:27] [RetroApp] Game: Pokémon Red | FPS: 25.5 | Frame: 39.1ms | FreeHeap: 58660 B
+[12:37:30] [RetroApp] Game: Pokémon Red | FPS: 34.4 | Frame: 28.9ms | FreeHeap: 58660 B
+[12:37:33] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 38.9ms | FreeHeap: 58660 B
+[12:37:36] [RetroApp] Game: Pokémon Red | FPS: 25.3 | Frame: 39.3ms | FreeHeap: 58660 B
+[12:37:39] [RetroApp] Game: Pokémon Red | FPS: 24.1 | Frame: 41.3ms | FreeHeap: 58660 B
+[12:37:42] [RetroApp] Game: Pokémon Red | FPS: 32.2 | Frame: 30.9ms | FreeHeap: 58660 B
+[12:37:45] [RetroApp] Game: Pokémon Red | FPS: 24.0 | Frame: 41.5ms | FreeHeap: 58660 B
+[12:37:48] [RetroApp] Game: Pokémon Red | FPS: 22.0 | Frame: 45.3ms | FreeHeap: 58660 B
+[12:37:51] [RetroApp] Game: Pokémon Red | FPS: 30.9 | Frame: 32.1ms | FreeHeap: 58660 B
+[12:37:54] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:37:57] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:38:00] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:38:03] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:06] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:09] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:12] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:38:15] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:18] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:21] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:38:24] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:38:27] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:30] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:38:33] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:36] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:38:39] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:42] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:38:45] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:48] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:38:51] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:38:54] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:38:57] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:01] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:04] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:07] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:10] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:13] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:39:16] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:39:19] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:39:22] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:25] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:39:28] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:31] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:34] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:37] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:39:40] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:39:43] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:39:46] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:39:49] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:39:52] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:39:55] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:39:58] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:40:01] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:40:04] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:07] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:40:10] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:13] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:16] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:40:19] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:40:22] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:40:25] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:28] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:40:31] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:34] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:37] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:40:40] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:43] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:46] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:49] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:40:52] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:55] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:40:58] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:41:01] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:41:04] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:07] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:41:11] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:14] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:41:17] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:20] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:23] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:26] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:29] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:32] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:41:35] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:38] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:41:41] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:44] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:41:47] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:41:50] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:41:53] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:41:56] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:41:59] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:02] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:42:05] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:08] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:42:11] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:14] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:17] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:20] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:23] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:26] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:42:29] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:32] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:42:35] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:38] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:42:41] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:44] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:42:47] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:50] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:53] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:42:56] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:42:59] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:02] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:43:05] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:08] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:43:11] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:14] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:43:17] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:21] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:43:24] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:27] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:43:30] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:43:33] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:43:36] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:39] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:43:42] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:45] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:48] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:43:51] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:43:54] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:43:57] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:00] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:44:03] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:06] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:44:09] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:12] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:44:15] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:18] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:44:21] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:44:24] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:44:27] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:30] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:44:33] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:36] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:44:39] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:42] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:44:45] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:48] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:44:51] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:44:54] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:44:57] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:00] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:03] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:06] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:09] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:45:12] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:15] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:45:18] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:21] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:45:24] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:27] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:45:31] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:34] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:45:37] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:40] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.4ms | FreeHeap: 58660 B
+[12:45:43] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:45:46] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:49] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:52] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:55] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:45:58] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:01] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:04] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:07] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:10] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:13] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:16] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:19] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:22] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:25] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:28] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:31] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:34] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:37] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:40] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:43] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:46] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:49] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:52] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:46:55] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:46:58] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:47:01] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[12:47:04] [RetroApp] Game: Pokémon Red | FPS: 33.0 | Frame: 30.1ms | FreeHeap: 58660 B
+[12:47:07] [RetroApp] Game: Pokémon Red | FPS: 29.5 | Frame: 33.8ms | FreeHeap: 58660 B
+[12:47:10] [RetroApp] Game: Pokémon Red | FPS: 31.7 | Frame: 31.4ms | FreeHeap: 58660 B
+[12:47:13] [RetroApp] Game: Pokémon Red | FPS: 29.9 | Frame: 33.3ms | FreeHeap: 58660 B
+[12:47:16] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.3ms | FreeHeap: 58660 B
+[12:47:19] [RetroApp] Game: Pokémon Red | FPS: 31.4 | Frame: 31.7ms | FreeHeap: 58660 B
+[12:47:22] [RetroApp] Game: Pokémon Red | FPS: 30.6 | Frame: 32.5ms | FreeHeap: 58660 B
+[12:47:25] [RetroApp] Game: Pokémon Red | FPS: 29.7 | Frame: 33.5ms | FreeHeap: 58660 B
+[12:47:28] [RetroApp] Game: Pokémon Red | FPS: 30.4 | Frame: 32.7ms | FreeHeap: 58660 B
+[12:47:31] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:47:34] [RetroApp] Game: Pokémon Red | FPS: 32.3 | Frame: 30.8ms | FreeHeap: 58660 B
+[12:47:37] [RetroApp] Game: Pokémon Red | FPS: 33.0 | Frame: 30.1ms | FreeHeap: 58660 B
+[12:47:38] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[12:47:38] [1400183][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:47:38] [1400457][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:47:38] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 312 ms (Save #20)
+[12:47:38] [GbSave] Committed Bank CRCs | Bank0: 0x0F93E30D | Bank1: 0xE23E2543 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:47:38] [GbSave] Auto-save #20 committed successfully.
+[12:47:40] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 38.9ms | FreeHeap: 58660 B
+[12:47:43] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.5ms | FreeHeap: 58660 B
+[12:47:46] [RetroApp] Game: Pokémon Red | FPS: 31.4 | Frame: 31.6ms | FreeHeap: 58660 B
+[12:47:48] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[12:47:48] [1410519][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:47:48] [1410655][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:47:48] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 191 ms (Save #21)
+[12:47:48] [GbSave] Committed Bank CRCs | Bank0: 0xCE3BAA40 | Bank1: 0xE23E2543 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:47:48] [GbSave] Auto-save #21 committed successfully.
+[12:47:49] [RetroApp] Game: Pokémon Red | FPS: 30.6 | Frame: 32.5ms | FreeHeap: 58660 B
+[12:47:52] [RetroApp] Game: Pokémon Red | FPS: 25.7 | Frame: 38.7ms | FreeHeap: 58660 B
+[12:47:56] [RetroApp] Game: Pokémon Red | FPS: 25.4 | Frame: 39.1ms | FreeHeap: 58660 B
+[12:47:59] [RetroApp] Game: Pokémon Red | FPS: 32.9 | Frame: 30.2ms | FreeHeap: 58660 B
+[12:48:02] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:48:05] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.4ms | FreeHeap: 58660 B
+[12:48:08] [RetroApp] Game: Pokémon Red | FPS: 33.2 | Frame: 29.9ms | FreeHeap: 58660 B
+[12:48:11] [RetroApp] Game: Pokémon Red | FPS: 31.0 | Frame: 32.1ms | FreeHeap: 58660 B
+[12:48:14] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.4ms | FreeHeap: 58660 B
+[12:48:17] [RetroApp] Game: Pokémon Red | FPS: 26.5 | Frame: 37.6ms | FreeHeap: 58660 B
+[12:48:20] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 38.9ms | FreeHeap: 58660 B
+[12:48:23] [RetroApp] Game: Pokémon Red | FPS: 31.3 | Frame: 31.8ms | FreeHeap: 58660 B
+[12:48:26] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.2ms | FreeHeap: 58660 B
+[12:48:29] [RetroApp] Game: Pokémon Red | FPS: 37.0 | Frame: 26.9ms | FreeHeap: 58660 B
+[12:48:32] [RetroApp] Game: Pokémon Red | FPS: 30.1 | Frame: 33.0ms | FreeHeap: 58660 B
+[12:48:35] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:48:38] [RetroApp] Game: Pokémon Red | FPS: 26.0 | Frame: 38.3ms | FreeHeap: 58660 B
+[12:48:41] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:48:44] [RetroApp] Game: Pokémon Red | FPS: 32.0 | Frame: 31.1ms | FreeHeap: 58660 B
+[12:48:47] [RetroApp] Game: Pokémon Red | FPS: 30.0 | Frame: 33.2ms | FreeHeap: 58660 B
+[12:48:50] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[12:48:53] [RetroApp] Game: Pokémon Red | FPS: 31.2 | Frame: 31.9ms | FreeHeap: 58660 B
+[12:48:56] [RetroApp] Game: Pokémon Red | FPS: 27.3 | Frame: 36.5ms | FreeHeap: 58660 B
+[12:48:59] [RetroApp] Game: Pokémon Red | FPS: 27.1 | Frame: 36.7ms | FreeHeap: 58660 B
+[12:49:02] [RetroApp] Game: Pokémon Red | FPS: 27.2 | Frame: 36.6ms | FreeHeap: 58660 B
+[12:49:05] [RetroApp] Game: Pokémon Red | FPS: 29.6 | Frame: 33.6ms | FreeHeap: 58660 B
+[12:49:08] [RetroApp] Game: Pokémon Red | FPS: 24.8 | Frame: 40.2ms | FreeHeap: 58660 B
+[12:49:11] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.4ms | FreeHeap: 58660 B
+[12:49:14] [RetroApp] Game: Pokémon Red | FPS: 25.1 | Frame: 39.7ms | FreeHeap: 58660 B
+[12:49:17] [RetroApp] Game: Pokémon Red | FPS: 23.7 | Frame: 42.1ms | FreeHeap: 58660 B
+[12:49:20] [RetroApp] Game: Pokémon Red | FPS: 24.4 | Frame: 40.8ms | FreeHeap: 58660 B
+[12:49:23] [RetroApp] Game: Pokémon Red | FPS: 23.3 | Frame: 42.8ms | FreeHeap: 58660 B
+[12:49:26] [RetroApp] Game: Pokémon Red | FPS: 29.5 | Frame: 33.8ms | FreeHeap: 58660 B
+[12:49:29] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.1ms | FreeHeap: 58660 B
+[12:49:32] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.1ms | FreeHeap: 58660 B
+[12:49:35] [RetroApp] Game: Pokémon Red | FPS: 26.5 | Frame: 37.5ms | FreeHeap: 58660 B
+[12:49:38] [RetroApp] Game: Pokémon Red | FPS: 30.0 | Frame: 33.2ms | FreeHeap: 58660 B
+[12:49:41] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.5ms | FreeHeap: 58660 B
+[12:49:44] [RetroApp] Game: Pokémon Red | FPS: 30.0 | Frame: 33.2ms | FreeHeap: 58660 B
+[12:49:47] [RetroApp] Game: Pokémon Red | FPS: 32.8 | Frame: 30.4ms | FreeHeap: 58660 B
+[12:49:50] [RetroApp] Game: Pokémon Red | FPS: 25.4 | Frame: 39.1ms | FreeHeap: 58660 B
+[12:49:53] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.1ms | FreeHeap: 58660 B
+[12:49:56] [RetroApp] Game: Pokémon Red | FPS: 27.3 | Frame: 36.4ms | FreeHeap: 58660 B
+[12:49:59] [RetroApp] Game: Pokémon Red | FPS: 33.7 | Frame: 29.5ms | FreeHeap: 58660 B
+[12:50:02] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[12:50:05] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.2ms | FreeHeap: 58660 B
+[12:50:08] [RetroApp] Game: Pokémon Red | FPS: 33.1 | Frame: 30.0ms | FreeHeap: 58660 B
+[12:50:11] [RetroApp] Game: Pokémon Red | FPS: 32.1 | Frame: 31.0ms | FreeHeap: 58660 B
+[12:50:14] [RetroApp] Game: Pokémon Red | FPS: 32.6 | Frame: 30.5ms | FreeHeap: 58660 B
+[12:50:17] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.6ms | FreeHeap: 58660 B
+[12:50:20] [RetroApp] Game: Pokémon Red | FPS: 25.5 | Frame: 39.1ms | FreeHeap: 58660 B
+[12:50:23] [RetroApp] Game: Pokémon Red | FPS: 24.5 | Frame: 40.7ms | FreeHeap: 58660 B
+[12:50:26] [RetroApp] Game: Pokémon Red | FPS: 29.9 | Frame: 33.3ms | FreeHeap: 58660 B
+[12:50:29] [RetroApp] Game: Pokémon Red | FPS: 33.5 | Frame: 29.7ms | FreeHeap: 58660 B
+[12:50:32] [RetroApp] Game: Pokémon Red | FPS: 31.6 | Frame: 31.5ms | FreeHeap: 58660 B
+[12:50:35] [RetroApp] Game: Pokémon Red | FPS: 32.2 | Frame: 31.0ms | FreeHeap: 58660 B
+[12:50:38] [RetroApp] Game: Pokémon Red | FPS: 32.1 | Frame: 31.0ms | FreeHeap: 58660 B
+[12:50:41] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:50:44] [RetroApp] Game: Pokémon Red | FPS: 36.2 | Frame: 27.5ms | FreeHeap: 58660 B
+[12:50:47] [RetroApp] Game: Pokémon Red | FPS: 30.2 | Frame: 33.0ms | FreeHeap: 58660 B
+[12:50:50] [GbSave] Auto-save debounce triggered (dirty mask: 0x2). Committing...
+[12:50:50] [1592447][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:50:50] [1592594][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:50:50] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 215 ms (Save #22)
+[12:50:50] [GbSave] Committed Bank CRCs | Bank0: 0xCE3BAA40 | Bank1: 0xB293F831 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:50:50] [GbSave] Auto-save #22 committed successfully.
+[12:50:50] [RetroApp] Game: Pokémon Red | FPS: 30.9 | Frame: 32.2ms | FreeHeap: 58660 B
+[12:50:53] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.9ms | FreeHeap: 58660 B
+[12:50:57] [RetroApp] Game: Pokémon Red | FPS: 32.6 | Frame: 30.5ms | FreeHeap: 58660 B
+[12:51:00] [RetroApp] Game: Pokémon Red | FPS: 34.1 | Frame: 29.2ms | FreeHeap: 58660 B
+[12:51:03] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[12:51:06] [RetroApp] Game: Pokémon Red | FPS: 36.0 | Frame: 27.7ms | FreeHeap: 58660 B
+[12:51:09] [RetroApp] Game: Pokémon Red | FPS: 25.7 | Frame: 38.7ms | FreeHeap: 58660 B
+[12:51:12] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.5ms | FreeHeap: 58660 B
+[12:51:15] [RetroApp] Game: Pokémon Red | FPS: 24.6 | Frame: 40.5ms | FreeHeap: 58660 B
+[12:51:18] [RetroApp] Game: Pokémon Red | FPS: 26.6 | Frame: 37.4ms | FreeHeap: 58660 B
+[12:51:21] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.8ms | FreeHeap: 58660 B
+[12:51:24] [RetroApp] Game: Pokémon Red | FPS: 24.9 | Frame: 40.0ms | FreeHeap: 58660 B
+[12:51:27] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:51:30] [RetroApp] Game: Pokémon Red | FPS: 26.9 | Frame: 37.0ms | FreeHeap: 58660 B
+[12:51:33] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.0ms | FreeHeap: 58660 B
+[12:51:36] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.8ms | FreeHeap: 58660 B
+[12:51:39] [RetroApp] Game: Pokémon Red | FPS: 26.3 | Frame: 37.9ms | FreeHeap: 58660 B
+[12:51:42] [RetroApp] Game: Pokémon Red | FPS: 29.2 | Frame: 34.0ms | FreeHeap: 58660 B
+[12:51:45] [RetroApp] Game: Pokémon Red | FPS: 25.8 | Frame: 38.6ms | FreeHeap: 58660 B
+[12:51:48] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 35.9ms | FreeHeap: 58660 B
+[12:51:51] [RetroApp] Game: Pokémon Red | FPS: 27.5 | Frame: 36.1ms | FreeHeap: 58660 B
+[12:51:54] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 35.9ms | FreeHeap: 58660 B
+[12:51:57] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.5ms | FreeHeap: 58660 B
+[12:52:00] [RetroApp] Game: Pokémon Red | FPS: 27.3 | Frame: 36.5ms | FreeHeap: 58660 B
+[12:52:03] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 35.9ms | FreeHeap: 58660 B
+[12:52:06] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:52:09] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.1ms | FreeHeap: 58660 B
+[12:52:12] [RetroApp] Game: Pokémon Red | FPS: 35.6 | Frame: 27.9ms | FreeHeap: 58660 B
+[12:52:15] [RetroApp] Game: Pokémon Red | FPS: 33.3 | Frame: 29.8ms | FreeHeap: 58660 B
+[12:52:18] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[12:52:21] [RetroApp] Game: Pokémon Red | FPS: 34.1 | Frame: 29.1ms | FreeHeap: 58660 B
+[12:52:24] [RetroApp] Game: Pokémon Red | FPS: 34.1 | Frame: 29.2ms | FreeHeap: 58660 B
+[12:52:27] [RetroApp] Game: Pokémon Red | FPS: 34.3 | Frame: 29.0ms | FreeHeap: 58660 B
+[12:52:30] [RetroApp] Game: Pokémon Red | FPS: 34.9 | Frame: 28.5ms | FreeHeap: 58660 B
+[12:52:33] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:52:36] [RetroApp] Game: Pokémon Red | FPS: 26.7 | Frame: 37.3ms | FreeHeap: 58660 B
+[12:52:39] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.5ms | FreeHeap: 58660 B
+[12:52:42] [RetroApp] Game: Pokémon Red | FPS: 25.3 | Frame: 39.3ms | FreeHeap: 58660 B
+[12:52:45] [RetroApp] Game: Pokémon Red | FPS: 25.3 | Frame: 39.3ms | FreeHeap: 58660 B
+[12:52:48] [RetroApp] Game: Pokémon Red | FPS: 24.9 | Frame: 40.1ms | FreeHeap: 58660 B
+[12:52:51] [RetroApp] Game: Pokémon Red | FPS: 24.5 | Frame: 40.6ms | FreeHeap: 58660 B
+[12:52:54] [RetroApp] Game: Pokémon Red | FPS: 27.3 | Frame: 36.5ms | FreeHeap: 58660 B
+[12:52:57] [RetroApp] Game: Pokémon Red | FPS: 24.5 | Frame: 40.6ms | FreeHeap: 58660 B
+[12:53:00] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.5ms | FreeHeap: 58660 B
+[12:53:03] [RetroApp] Game: Pokémon Red | FPS: 23.9 | Frame: 41.7ms | FreeHeap: 58660 B
+[12:53:06] [RetroApp] Game: Pokémon Red | FPS: 27.4 | Frame: 36.3ms | FreeHeap: 58660 B
+[12:53:09] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 38.8ms | FreeHeap: 58660 B
+[12:53:12] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.4ms | FreeHeap: 58660 B
+[12:53:15] [RetroApp] Game: Pokémon Red | FPS: 24.6 | Frame: 40.4ms | FreeHeap: 58660 B
+[12:53:18] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.0ms | FreeHeap: 58660 B
+[12:53:21] [RetroApp] Game: Pokémon Red | FPS: 24.8 | Frame: 40.1ms | FreeHeap: 58660 B
+[12:53:24] [RetroApp] Game: Pokémon Red | FPS: 25.7 | Frame: 38.8ms | FreeHeap: 58660 B
+[12:53:27] [RetroApp] Game: Pokémon Red | FPS: 24.6 | Frame: 40.4ms | FreeHeap: 58660 B
+[12:53:30] [RetroApp] Game: Pokémon Red | FPS: 22.4 | Frame: 44.5ms | FreeHeap: 58660 B
+[12:53:33] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.0ms | FreeHeap: 58660 B
+[12:53:36] [RetroApp] Game: Pokémon Red | FPS: 30.1 | Frame: 33.1ms | FreeHeap: 58660 B
+[12:53:39] [RetroApp] Game: Pokémon Red | FPS: 23.9 | Frame: 41.7ms | FreeHeap: 58660 B
+[12:53:43] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.2ms | FreeHeap: 58660 B
+[12:53:46] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:53:49] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[12:53:52] [RetroApp] Game: Pokémon Red | FPS: 24.9 | Frame: 40.0ms | FreeHeap: 58660 B
+[12:53:55] [RetroApp] Game: Pokémon Red | FPS: 23.2 | Frame: 42.9ms | FreeHeap: 58660 B
+[12:53:58] [RetroApp] Game: Pokémon Red | FPS: 24.0 | Frame: 41.5ms | FreeHeap: 58660 B
+[12:54:01] [RetroApp] Game: Pokémon Red | FPS: 25.7 | Frame: 38.8ms | FreeHeap: 58660 B
+[12:54:04] [RetroApp] Game: Pokémon Red | FPS: 25.8 | Frame: 38.5ms | FreeHeap: 58660 B
+[12:54:07] [RetroApp] Game: Pokémon Red | FPS: 23.5 | Frame: 42.5ms | FreeHeap: 58660 B
+[12:54:10] [RetroApp] Game: Pokémon Red | FPS: 24.5 | Frame: 40.7ms | FreeHeap: 58660 B
+[12:54:13] [RetroApp] Game: Pokémon Red | FPS: 26.3 | Frame: 37.8ms | FreeHeap: 58660 B
+[12:54:16] [RetroApp] Game: Pokémon Red | FPS: 25.0 | Frame: 39.9ms | FreeHeap: 58660 B
+[12:54:19] [RetroApp] Game: Pokémon Red | FPS: 25.8 | Frame: 38.6ms | FreeHeap: 58660 B
+[12:54:22] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[12:54:25] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[12:54:28] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[12:54:31] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:54:34] [RetroApp] Game: Pokémon Red | FPS: 29.6 | Frame: 33.7ms | FreeHeap: 58660 B
+[12:54:37] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[12:54:40] [RetroApp] Game: Pokémon Red | FPS: 33.4 | Frame: 29.7ms | FreeHeap: 58660 B
+[12:54:43] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[12:54:46] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.4ms | FreeHeap: 58660 B
+[12:54:49] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 34.9ms | FreeHeap: 58660 B
+[12:54:52] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:54:55] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:54:58] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.1ms | FreeHeap: 58660 B
+[12:55:01] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:55:04] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:55:07] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:55:10] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.1ms | FreeHeap: 58660 B
+[12:55:13] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.6ms | FreeHeap: 58660 B
+[12:55:16] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[12:55:19] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.2ms | FreeHeap: 58660 B
+[12:55:22] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:55:25] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:55:28] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:55:31] [RetroApp] Game: Pokémon Red | FPS: 27.2 | Frame: 36.6ms | FreeHeap: 58660 B
+[12:55:34] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.1ms | FreeHeap: 58660 B
+[12:55:37] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:55:40] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:55:43] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.2ms | FreeHeap: 58660 B
+[12:55:46] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 34.9ms | FreeHeap: 58660 B
+[12:55:49] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:55:52] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.4ms | FreeHeap: 58660 B
+[12:55:55] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.8ms | FreeHeap: 58660 B
+[12:55:58] [RetroApp] Game: Pokémon Red | FPS: 34.3 | Frame: 29.0ms | FreeHeap: 58660 B
+[12:56:00] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[12:56:00] [1902226][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:56:00] [1902375][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:56:00] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 236 ms (Save #23)
+[12:56:00] [GbSave] Committed Bank CRCs | Bank0: 0x0F93E30D | Bank1: 0xB293F831 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:56:00] [GbSave] Auto-save #23 committed successfully.
+[12:56:01] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[12:56:04] [RetroApp] Game: Pokémon Red | FPS: 27.0 | Frame: 36.8ms | FreeHeap: 58660 B
+[12:56:07] [RetroApp] Game: Pokémon Red | FPS: 31.2 | Frame: 31.9ms | FreeHeap: 58660 B
+[12:56:10] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[12:56:10] [1912492][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[12:56:10] [1912652][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[12:56:10] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 262 ms (Save #24)
+[12:56:10] [GbSave] Committed Bank CRCs | Bank0: 0xCE3BAA40 | Bank1: 0xB293F831 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[12:56:10] [GbSave] Auto-save #24 committed successfully.
+[12:56:10] [RetroApp] Game: Pokémon Red | FPS: 29.7 | Frame: 33.5ms | FreeHeap: 58660 B
+[12:56:13] [RetroApp] Game: Pokémon Red | FPS: 26.9 | Frame: 37.1ms | FreeHeap: 58660 B
+[12:56:16] [RetroApp] Game: Pokémon Red | FPS: 29.8 | Frame: 33.3ms | FreeHeap: 58660 B
+[12:56:19] [RetroApp] Game: Pokémon Red | FPS: 33.3 | Frame: 29.9ms | FreeHeap: 58660 B
+[12:56:23] [RetroApp] Game: Pokémon Red | FPS: 29.1 | Frame: 34.2ms | FreeHeap: 58660 B
+[12:56:26] [RetroApp] Game: Pokémon Red | FPS: 32.5 | Frame: 30.6ms | FreeHeap: 58660 B
+[12:56:29] [RetroApp] Game: Pokémon Red | FPS: 23.6 | Frame: 42.3ms | FreeHeap: 58660 B
+[12:56:32] [RetroApp] Game: Pokémon Red | FPS: 32.0 | Frame: 31.1ms | FreeHeap: 58660 B
+[12:56:35] [RetroApp] Game: Pokémon Red | FPS: 32.7 | Frame: 30.5ms | FreeHeap: 58660 B
+[12:56:38] [RetroApp] Game: Pokémon Red | FPS: 27.3 | Frame: 36.5ms | FreeHeap: 58660 B
+[12:56:41] [RetroApp] Game: Pokémon Red | FPS: 22.7 | Frame: 43.8ms | FreeHeap: 58660 B
+[12:56:44] [RetroApp] Game: Pokémon Red | FPS: 31.9 | Frame: 31.2ms | FreeHeap: 58660 B
+[12:56:47] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[12:56:50] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:56:53] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[12:56:56] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.1ms | FreeHeap: 58660 B
+[12:56:59] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:57:02] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:57:05] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[12:57:08] [RetroApp] Game: Pokémon Red | FPS: 27.5 | Frame: 36.2ms | FreeHeap: 58660 B
+[12:57:11] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:57:14] [RetroApp] Game: Pokémon Red | FPS: 27.5 | Frame: 36.2ms | FreeHeap: 58660 B
+[12:57:17] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:57:20] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.3ms | FreeHeap: 58660 B
+[12:57:23] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 34.9ms | FreeHeap: 58660 B
+[12:57:26] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[12:57:29] [RetroApp] Game: Pokémon Red | FPS: 31.9 | Frame: 31.2ms | FreeHeap: 58660 B
+[12:57:32] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[12:57:35] [RetroApp] Game: Pokémon Red | FPS: 33.5 | Frame: 29.6ms | FreeHeap: 58660 B
+[12:57:38] [RetroApp] Game: Pokémon Red | FPS: 33.0 | Frame: 30.1ms | FreeHeap: 58660 B
+[12:57:41] [RetroApp] Game: Pokémon Red | FPS: 33.9 | Frame: 29.3ms | FreeHeap: 58660 B
+[12:57:44] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.8ms | FreeHeap: 58660 B
+[12:57:47] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[12:57:50] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[12:57:53] [RetroApp] Game: Pokémon Red | FPS: 24.2 | Frame: 41.2ms | FreeHeap: 58660 B
+[12:57:56] [RetroApp] Game: Pokémon Red | FPS: 29.1 | Frame: 34.2ms | FreeHeap: 58660 B
+[12:57:59] [RetroApp] Game: Pokémon Red | FPS: 37.7 | Frame: 26.4ms | FreeHeap: 58660 B
+[12:58:02] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[12:58:05] [RetroApp] Game: Pokémon Red | FPS: 29.0 | Frame: 34.3ms | FreeHeap: 58660 B
+[12:58:08] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.5ms | FreeHeap: 58660 B
+[12:58:11] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.4ms | FreeHeap: 58660 B
+[12:58:14] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.4ms | FreeHeap: 58660 B
+[12:58:17] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.5ms | FreeHeap: 58660 B
+[12:58:20] [RetroApp] Game: Pokémon Red | FPS: 27.4 | Frame: 36.3ms | FreeHeap: 58660 B
+[12:58:23] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.1ms | FreeHeap: 58660 B
+[12:58:26] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.0ms | FreeHeap: 58660 B
+[12:58:29] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[12:58:32] [RetroApp] Game: Pokémon Red | FPS: 25.8 | Frame: 38.7ms | FreeHeap: 58660 B
+[12:58:35] [RetroApp] Game: Pokémon Red | FPS: 25.4 | Frame: 39.1ms | FreeHeap: 58660 B
+[12:58:38] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[12:58:41] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[12:58:44] [RetroApp] Game: Pokémon Red | FPS: 21.6 | Frame: 46.2ms | FreeHeap: 58660 B
+[12:58:47] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.3ms | FreeHeap: 58660 B
+[12:58:50] [RetroApp] Game: Pokémon Red | FPS: 29.1 | Frame: 34.2ms | FreeHeap: 58660 B
+[12:58:53] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:58:56] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.8ms | FreeHeap: 58660 B
+[12:58:59] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:03] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58524 B
+[12:59:06] [RetroApp] Game: Pokémon Red | FPS: 26.3 | Frame: 37.8ms | FreeHeap: 58660 B
+[12:59:09] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:12] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:15] [RetroApp] Game: Pokémon Red | FPS: 26.3 | Frame: 37.8ms | FreeHeap: 58660 B
+[12:59:18] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:21] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:24] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:27] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:30] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:33] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:36] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[12:59:39] [RetroApp] Game: Pokémon Red | FPS: 30.2 | Frame: 32.9ms | FreeHeap: 58660 B
+[12:59:42] [RetroApp] Game: Pokémon Red | FPS: 27.4 | Frame: 36.3ms | FreeHeap: 58660 B
+[12:59:45] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[12:59:48] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 35.9ms | FreeHeap: 58660 B
+[12:59:51] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 35.9ms | FreeHeap: 58660 B
+[12:59:54] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.7ms | FreeHeap: 58660 B
+[12:59:57] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.3ms | FreeHeap: 58660 B
+[13:00:00] [RetroApp] Game: Pokémon Red | FPS: 33.8 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:00:03] [RetroApp] Game: Pokémon Red | FPS: 32.7 | Frame: 30.4ms | FreeHeap: 58660 B
+[13:00:06] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[13:00:09] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[13:00:12] [RetroApp] Game: Pokémon Red | FPS: 33.7 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:00:15] [RetroApp] Game: Pokémon Red | FPS: 30.0 | Frame: 33.2ms | FreeHeap: 58660 B
+[13:00:18] [RetroApp] Game: Pokémon Red | FPS: 25.7 | Frame: 38.7ms | FreeHeap: 58660 B
+[13:00:21] [RetroApp] Game: Pokémon Red | FPS: 33.7 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:00:24] [RetroApp] Game: Pokémon Red | FPS: 24.6 | Frame: 40.6ms | FreeHeap: 58660 B
+[13:00:27] [RetroApp] Game: Pokémon Red | FPS: 32.0 | Frame: 31.1ms | FreeHeap: 58660 B
+[13:00:30] [RetroApp] Game: Pokémon Red | FPS: 32.5 | Frame: 30.7ms | FreeHeap: 58660 B
+[13:00:33] [RetroApp] Game: Pokémon Red | FPS: 25.7 | Frame: 38.7ms | FreeHeap: 58660 B
+[13:00:36] [RetroApp] Game: Pokémon Red | FPS: 32.0 | Frame: 31.1ms | FreeHeap: 58660 B
+[13:00:39] [RetroApp] Game: Pokémon Red | FPS: 32.3 | Frame: 30.8ms | FreeHeap: 58660 B
+[13:00:42] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 38.9ms | FreeHeap: 58660 B
+[13:00:45] [RetroApp] Game: Pokémon Red | FPS: 33.7 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:00:48] [RetroApp] Game: Pokémon Red | FPS: 33.2 | Frame: 29.9ms | FreeHeap: 58660 B
+[13:00:51] [RetroApp] Game: Pokémon Red | FPS: 33.8 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:00:54] [RetroApp] Game: Pokémon Red | FPS: 32.7 | Frame: 30.4ms | FreeHeap: 58660 B
+[13:00:57] [RetroApp] Game: Pokémon Red | FPS: 33.9 | Frame: 29.4ms | FreeHeap: 58660 B
+[13:01:00] [RetroApp] Game: Pokémon Red | FPS: 32.8 | Frame: 30.3ms | FreeHeap: 58660 B
+[13:01:03] [RetroApp] Game: Pokémon Red | FPS: 33.7 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:01:07] [RetroApp] Game: Pokémon Red | FPS: 33.5 | Frame: 29.7ms | FreeHeap: 58660 B
+[13:01:10] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[13:01:13] [RetroApp] Game: Pokémon Red | FPS: 33.3 | Frame: 29.8ms | FreeHeap: 58660 B
+[13:01:16] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[13:01:19] [RetroApp] Game: Pokémon Red | FPS: 34.4 | Frame: 28.9ms | FreeHeap: 58660 B
+[13:01:22] [RetroApp] Game: Pokémon Red | FPS: 33.7 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:01:25] [RetroApp] Game: Pokémon Red | FPS: 33.9 | Frame: 29.4ms | FreeHeap: 58660 B
+[13:01:28] [RetroApp] Game: Pokémon Red | FPS: 33.8 | Frame: 29.4ms | FreeHeap: 58660 B
+[13:01:31] [RetroApp] Game: Pokémon Red | FPS: 33.3 | Frame: 29.8ms | FreeHeap: 58660 B
+[13:01:34] [RetroApp] Game: Pokémon Red | FPS: 33.1 | Frame: 30.1ms | FreeHeap: 58660 B
+[13:01:37] [RetroApp] Game: Pokémon Red | FPS: 31.5 | Frame: 31.6ms | FreeHeap: 58660 B
+[13:01:40] [RetroApp] Game: Pokémon Red | FPS: 31.4 | Frame: 31.6ms | FreeHeap: 58660 B
+[13:01:43] [RetroApp] Game: Pokémon Red | FPS: 33.8 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:01:46] [RetroApp] Game: Pokémon Red | FPS: 34.3 | Frame: 29.0ms | FreeHeap: 58660 B
+[13:01:49] [RetroApp] Game: Pokémon Red | FPS: 34.4 | Frame: 28.9ms | FreeHeap: 58660 B
+[13:01:52] [RetroApp] Game: Pokémon Red | FPS: 34.3 | Frame: 29.0ms | FreeHeap: 58660 B
+[13:01:55] [RetroApp] Game: Pokémon Red | FPS: 34.6 | Frame: 28.8ms | FreeHeap: 58660 B
+[13:01:58] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[13:02:01] [RetroApp] Game: Pokémon Red | FPS: 30.8 | Frame: 32.4ms | FreeHeap: 58660 B
+[13:02:04] [RetroApp] Game: Pokémon Red | FPS: 31.9 | Frame: 31.2ms | FreeHeap: 58660 B
+[13:02:07] [RetroApp] Game: Pokémon Red | FPS: 33.2 | Frame: 30.0ms | FreeHeap: 58660 B
+[13:02:10] [RetroApp] Game: Pokémon Red | FPS: 30.6 | Frame: 32.5ms | FreeHeap: 58660 B
+[13:02:13] [RetroApp] Game: Pokémon Red | FPS: 27.0 | Frame: 36.9ms | FreeHeap: 58660 B
+[13:02:16] [RetroApp] Game: Pokémon Red | FPS: 30.7 | Frame: 32.4ms | FreeHeap: 58660 B
+[13:02:19] [RetroApp] Game: Pokémon Red | FPS: 29.9 | Frame: 33.3ms | FreeHeap: 58660 B
+[13:02:22] [RetroApp] Game: Pokémon Red | FPS: 32.9 | Frame: 30.2ms | FreeHeap: 58660 B
+[13:02:25] [RetroApp] Game: Pokémon Red | FPS: 29.9 | Frame: 33.3ms | FreeHeap: 58660 B
+[13:02:28] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.9ms | FreeHeap: 58660 B
+[13:02:31] [GbSave] Auto-save debounce triggered (dirty mask: 0x2). Committing...
+[13:02:31] [2293343][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:02:31] [2293504][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:02:31] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 350 ms (Save #25)
+[13:02:31] [GbSave] Committed Bank CRCs | Bank0: 0xCE3BAA40 | Bank1: 0x07C6DB21 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:02:31] [GbSave] Auto-save #25 committed successfully.
+[13:02:31] [RetroApp] Game: Pokémon Red | FPS: 29.2 | Frame: 34.1ms | FreeHeap: 58660 B
+[13:02:34] [RetroApp] Game: Pokémon Red | FPS: 30.4 | Frame: 32.8ms | FreeHeap: 58660 B
+[13:02:37] [RetroApp] Game: Pokémon Red | FPS: 32.5 | Frame: 30.6ms | FreeHeap: 58660 B
+[13:02:40] [RetroApp] Game: Pokémon Red | FPS: 31.6 | Frame: 31.5ms | FreeHeap: 58660 B
+[13:02:43] [RetroApp] Game: Pokémon Red | FPS: 31.5 | Frame: 31.6ms | FreeHeap: 58660 B
+[13:02:46] [RetroApp] Game: Pokémon Red | FPS: 34.1 | Frame: 29.2ms | FreeHeap: 58660 B
+[13:02:49] [RetroApp] Game: Pokémon Red | FPS: 31.5 | Frame: 31.6ms | FreeHeap: 58660 B
+[13:02:52] [RetroApp] Game: Pokémon Red | FPS: 32.3 | Frame: 30.8ms | FreeHeap: 58660 B
+[13:02:56] [RetroApp] Game: Pokémon Red | FPS: 33.9 | Frame: 29.3ms | FreeHeap: 58660 B
+[13:02:59] [RetroApp] Game: Pokémon Red | FPS: 32.8 | Frame: 30.3ms | FreeHeap: 58660 B
+[13:03:02] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[13:03:05] [RetroApp] Game: Pokémon Red | FPS: 34.3 | Frame: 29.0ms | FreeHeap: 58660 B
+[13:03:08] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.3ms | FreeHeap: 58660 B
+[13:03:11] [RetroApp] Game: Pokémon Red | FPS: 31.1 | Frame: 32.0ms | FreeHeap: 58660 B
+[13:03:13] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[13:03:13] [2335435][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:03:13] [2335770][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:03:13] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 386 ms (Save #26)
+[13:03:13] [GbSave] Committed Bank CRCs | Bank0: 0xEFF57B24 | Bank1: 0x07C6DB21 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:03:14] [GbSave] Auto-save #26 committed successfully.
+[13:03:14] [RetroApp] Game: Pokémon Red | FPS: 32.6 | Frame: 30.6ms | FreeHeap: 58660 B
+[13:03:17] [RetroApp] Game: Pokémon Red | FPS: 24.2 | Frame: 41.2ms | FreeHeap: 58660 B
+[13:03:20] [RetroApp] Game: Pokémon Red | FPS: 24.2 | Frame: 41.2ms | FreeHeap: 58660 B
+[13:03:23] [RetroApp] Game: Pokémon Red | FPS: 29.3 | Frame: 33.9ms | FreeHeap: 58660 B
+[13:03:26] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.9ms | FreeHeap: 58660 B
+[13:03:29] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[13:03:32] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[13:03:35] [RetroApp] Game: Pokémon Red | FPS: 32.9 | Frame: 30.3ms | FreeHeap: 58660 B
+[13:03:38] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[13:03:41] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[13:03:44] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 34.9ms | FreeHeap: 58660 B
+[13:03:47] [RetroApp] Game: Pokémon Red | FPS: 32.2 | Frame: 31.0ms | FreeHeap: 58660 B
+[13:03:50] [RetroApp] Game: Pokémon Red | FPS: 33.1 | Frame: 30.1ms | FreeHeap: 58660 B
+[13:03:50] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[13:03:50] [2372593][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:03:51] [2372979][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:03:51] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 453 ms (Save #27)
+[13:03:51] [GbSave] Committed Bank CRCs | Bank0: 0x0F93E30D | Bank1: 0x07C6DB21 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:03:51] [GbSave] Auto-save #27 committed successfully.
+[13:03:53] [RetroApp] Game: Pokémon Red | FPS: 24.6 | Frame: 40.5ms | FreeHeap: 58660 B
+[13:03:56] [RetroApp] Game: Pokémon Red | FPS: 26.0 | Frame: 38.3ms | FreeHeap: 58660 B
+[13:03:59] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.8ms | FreeHeap: 58660 B
+[13:04:01] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[13:04:01] [2383102][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:04:01] [2383493][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:04:01] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 473 ms (Save #28)
+[13:04:01] [GbSave] Committed Bank CRCs | Bank0: 0xCE3BAA40 | Bank1: 0x07C6DB21 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:04:01] [GbSave] Auto-save #28 committed successfully.
+[13:04:02] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.0ms | FreeHeap: 58660 B
+[13:04:05] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.9ms | FreeHeap: 58660 B
+[13:04:08] [RetroApp] Game: Pokémon Red | FPS: 30.9 | Frame: 32.2ms | FreeHeap: 58660 B
+[13:04:11] [RetroApp] Game: Pokémon Red | FPS: 33.4 | Frame: 29.8ms | FreeHeap: 58660 B
+[13:04:14] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:04:17] [RetroApp] Game: Pokémon Red | FPS: 30.3 | Frame: 32.9ms | FreeHeap: 58660 B
+[13:04:20] [RetroApp] Game: Pokémon Red | FPS: 25.0 | Frame: 39.8ms | FreeHeap: 58660 B
+[13:04:23] [RetroApp] Game: Pokémon Red | FPS: 34.4 | Frame: 28.9ms | FreeHeap: 58660 B
+[13:04:26] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[13:04:29] [RetroApp] Game: Pokémon Red | FPS: 32.8 | Frame: 30.4ms | FreeHeap: 58660 B
+[13:04:32] [RetroApp] Game: Pokémon Red | FPS: 25.4 | Frame: 39.2ms | FreeHeap: 58660 B
+[13:04:35] [RetroApp] Game: Pokémon Red | FPS: 28.8 | Frame: 34.6ms | FreeHeap: 58660 B
+[13:04:38] [RetroApp] Game: Pokémon Red | FPS: 33.9 | Frame: 29.3ms | FreeHeap: 58660 B
+[13:04:41] [RetroApp] Game: Pokémon Red | FPS: 25.1 | Frame: 39.7ms | FreeHeap: 58660 B
+[13:04:44] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.2ms | FreeHeap: 58660 B
+[13:04:47] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:04:50] [RetroApp] Game: Pokémon Red | FPS: 27.9 | Frame: 35.6ms | FreeHeap: 58660 B
+[13:04:53] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.0ms | FreeHeap: 58660 B
+[13:04:56] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.2ms | FreeHeap: 58660 B
+[13:04:59] [RetroApp] Game: Pokémon Red | FPS: 27.6 | Frame: 36.0ms | FreeHeap: 58660 B
+[13:05:02] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.1ms | FreeHeap: 58660 B
+[13:05:05] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[13:05:08] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[13:05:11] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.3ms | FreeHeap: 58660 B
+[13:05:14] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.1ms | FreeHeap: 58660 B
+[13:05:17] [RetroApp] Game: Pokémon Red | FPS: 29.0 | Frame: 34.4ms | FreeHeap: 58660 B
+[13:05:20] [RetroApp] Game: Pokémon Red | FPS: 26.4 | Frame: 37.7ms | FreeHeap: 58660 B
+[13:05:23] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[13:05:26] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:05:29] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:05:32] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.5ms | FreeHeap: 58660 B
+[13:05:35] [RetroApp] Game: Pokémon Red | FPS: 32.1 | Frame: 31.0ms | FreeHeap: 58660 B
+[13:05:38] [RetroApp] Game: Pokémon Red | FPS: 30.6 | Frame: 32.5ms | FreeHeap: 58660 B
+[13:05:41] [RetroApp] Game: Pokémon Red | FPS: 24.8 | Frame: 40.1ms | FreeHeap: 58660 B
+[13:05:44] [RetroApp] Game: Pokémon Red | FPS: 26.2 | Frame: 38.0ms | FreeHeap: 58660 B
+[13:05:48] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 38.9ms | FreeHeap: 58660 B
+[13:05:51] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.1ms | FreeHeap: 58660 B
+[13:05:54] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.4ms | FreeHeap: 58660 B
+[13:05:57] [RetroApp] Game: Pokémon Red | FPS: 32.2 | Frame: 30.9ms | FreeHeap: 58660 B
+[13:06:00] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.3ms | FreeHeap: 58660 B
+[13:06:03] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:06:06] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[13:06:09] [RetroApp] Game: Pokémon Red | FPS: 27.1 | Frame: 36.7ms | FreeHeap: 58660 B
+[13:06:12] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:06:15] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[13:06:18] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.1ms | FreeHeap: 58660 B
+[13:06:21] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.1ms | FreeHeap: 58660 B
+[13:06:24] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:06:27] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.2ms | FreeHeap: 58660 B
+[13:06:30] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.9ms | FreeHeap: 58660 B
+[13:06:33] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.3ms | FreeHeap: 58660 B
+[13:06:36] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[13:06:39] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.1ms | FreeHeap: 58660 B
+[13:06:42] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 34.9ms | FreeHeap: 58660 B
+[13:06:45] [RetroApp] Game: Pokémon Red | FPS: 33.1 | Frame: 30.0ms | FreeHeap: 58660 B
+[13:06:48] [RetroApp] Game: Pokémon Red | FPS: 33.8 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:06:51] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[13:06:54] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[13:06:57] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[13:07:00] [RetroApp] Game: Pokémon Red | FPS: 33.3 | Frame: 29.9ms | FreeHeap: 58660 B
+[13:07:03] [RetroApp] Game: Pokémon Red | FPS: 33.2 | Frame: 30.0ms | FreeHeap: 58660 B
+[13:07:06] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[13:07:09] [RetroApp] Game: Pokémon Red | FPS: 33.4 | Frame: 29.8ms | FreeHeap: 58660 B
+[13:07:12] [RetroApp] Game: Pokémon Red | FPS: 33.0 | Frame: 30.2ms | FreeHeap: 58660 B
+[13:07:15] [RetroApp] Game: Pokémon Red | FPS: 33.5 | Frame: 29.7ms | FreeHeap: 58660 B
+[13:07:18] [RetroApp] Game: Pokémon Red | FPS: 33.5 | Frame: 29.7ms | FreeHeap: 58660 B
+[13:07:21] [RetroApp] Game: Pokémon Red | FPS: 33.6 | Frame: 29.6ms | FreeHeap: 58660 B
+[13:07:24] [RetroApp] Game: Pokémon Red | FPS: 33.9 | Frame: 29.4ms | FreeHeap: 58660 B
+[13:07:27] [RetroApp] Game: Pokémon Red | FPS: 33.5 | Frame: 29.6ms | FreeHeap: 58660 B
+[13:07:30] [RetroApp] Game: Pokémon Red | FPS: 34.4 | Frame: 28.9ms | FreeHeap: 58660 B
+[13:07:33] [RetroApp] Game: Pokémon Red | FPS: 33.8 | Frame: 29.4ms | FreeHeap: 58660 B
+[13:07:36] [RetroApp] Game: Pokémon Red | FPS: 32.5 | Frame: 30.6ms | FreeHeap: 58660 B
+[13:07:39] [RetroApp] Game: Pokémon Red | FPS: 31.7 | Frame: 31.4ms | FreeHeap: 58660 B
+[13:07:42] [RetroApp] Game: Pokémon Red | FPS: 31.7 | Frame: 31.4ms | FreeHeap: 58660 B
+[13:07:43] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[13:07:43] [2605792][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:07:44] [2606200][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:07:44] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 508 ms (Save #29)
+[13:07:44] [GbSave] Committed Bank CRCs | Bank0: 0x19EB8553 | Bank1: 0x07C6DB21 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:07:44] [GbSave] Auto-save #29 committed successfully.
+[13:07:45] [RetroApp] Game: Pokémon Red | FPS: 22.3 | Frame: 44.8ms | FreeHeap: 58660 B
+[13:07:48] [RetroApp] Game: Pokémon Red | FPS: 23.9 | Frame: 41.7ms | FreeHeap: 58660 B
+[13:07:51] [RetroApp] Game: Pokémon Red | FPS: 23.9 | Frame: 41.6ms | FreeHeap: 58660 B
+[13:07:54] [RetroApp] Game: Pokémon Red | FPS: 23.7 | Frame: 42.1ms | FreeHeap: 58660 B
+[13:07:57] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.9ms | FreeHeap: 58660 B
+[13:08:00] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[13:08:03] [RetroApp] Game: Pokémon Red | FPS: 30.9 | Frame: 32.2ms | FreeHeap: 58660 B
+[13:08:06] [RetroApp] Game: Pokémon Red | FPS: 30.1 | Frame: 33.0ms | FreeHeap: 58660 B
+[13:08:09] [RetroApp] Game: Pokémon Red | FPS: 32.7 | Frame: 30.4ms | FreeHeap: 58660 B
+[13:08:12] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.3ms | FreeHeap: 58660 B
+[13:08:15] [RetroApp] Game: Pokémon Red | FPS: 34.4 | Frame: 28.9ms | FreeHeap: 58660 B
+[13:08:18] [RetroApp] Game: Pokémon Red | FPS: 34.4 | Frame: 28.9ms | FreeHeap: 58660 B
+[13:08:21] [RetroApp] Game: Pokémon Red | FPS: 33.7 | Frame: 29.6ms | FreeHeap: 58660 B
+[13:08:24] [RetroApp] Game: Pokémon Red | FPS: 31.7 | Frame: 31.4ms | FreeHeap: 58660 B
+[13:08:27] [RetroApp] Game: Pokémon Red | FPS: 31.6 | Frame: 31.4ms | FreeHeap: 58660 B
+[13:08:31] [RetroApp] Game: Pokémon Red | FPS: 32.7 | Frame: 30.4ms | FreeHeap: 58660 B
+[13:08:34] [RetroApp] Game: Pokémon Red | FPS: 33.8 | Frame: 29.4ms | FreeHeap: 58660 B
+[13:08:37] [RetroApp] Game: Pokémon Red | FPS: 34.3 | Frame: 29.0ms | FreeHeap: 58660 B
+[13:08:40] [RetroApp] Game: Pokémon Red | FPS: 33.7 | Frame: 29.5ms | FreeHeap: 58660 B
+[13:08:43] [RetroApp] Game: Pokémon Red | FPS: 33.9 | Frame: 29.3ms | FreeHeap: 58660 B
+[13:08:46] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[13:08:49] [RetroApp] Game: Pokémon Red | FPS: 34.2 | Frame: 29.1ms | FreeHeap: 58660 B
+[13:08:52] [RetroApp] Game: Pokémon Red | FPS: 29.6 | Frame: 33.5ms | FreeHeap: 58660 B
+[13:08:55] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.9ms | FreeHeap: 58660 B
+[13:08:58] [RetroApp] Game: Pokémon Red | FPS: 34.9 | Frame: 28.5ms | FreeHeap: 58636 B
+[13:09:00] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[13:09:00] [2682026][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:09:00] [2682436][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:09:00] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 637 ms (Save #30)
+[13:09:00] [GbSave] Committed Bank CRCs | Bank0: 0x0F93E30D | Bank1: 0x07C6DB21 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:09:00] [GbSave] Auto-save #30 committed successfully.
+[13:09:01] [RetroApp] Game: Pokémon Red | FPS: 24.9 | Frame: 40.1ms | FreeHeap: 58660 B
+[13:09:04] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.2ms | FreeHeap: 58660 B
+[13:09:07] [RetroApp] Game: Pokémon Red | FPS: 29.8 | Frame: 33.4ms | FreeHeap: 58660 B
+[13:09:10] [RetroApp] Game: Pokémon Red | FPS: 31.2 | Frame: 31.9ms | FreeHeap: 58660 B
+[13:09:10] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[13:09:10] [2692662][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:09:11] [2693054][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:09:11] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 439 ms (Save #31)
+[13:09:11] [GbSave] Committed Bank CRCs | Bank0: 0xCE3BAA40 | Bank1: 0x07C6DB21 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:09:11] [GbSave] Auto-save #31 committed successfully.
+[13:09:13] [RetroApp] Game: Pokémon Red | FPS: 25.1 | Frame: 39.7ms | FreeHeap: 58660 B
+[13:09:16] [RetroApp] Game: Pokémon Red | FPS: 26.5 | Frame: 37.6ms | FreeHeap: 58660 B
+[13:09:19] [RetroApp] Game: Pokémon Red | FPS: 34.3 | Frame: 29.0ms | FreeHeap: 58660 B
+[13:09:22] [RetroApp] Game: Pokémon Red | FPS: 29.3 | Frame: 34.0ms | FreeHeap: 58660 B
+[13:09:25] [RetroApp] Game: Pokémon Red | FPS: 26.3 | Frame: 37.9ms | FreeHeap: 58660 B
+[13:09:28] [RetroApp] Game: Pokémon Red | FPS: 25.5 | Frame: 39.0ms | FreeHeap: 58660 B
+[13:09:31] [RetroApp] Game: Pokémon Red | FPS: 34.4 | Frame: 28.9ms | FreeHeap: 58660 B
+[13:09:34] [RetroApp] Game: Pokémon Red | FPS: 31.4 | Frame: 31.7ms | FreeHeap: 58660 B
+[13:09:37] [RetroApp] Game: Pokémon Red | FPS: 23.0 | Frame: 43.2ms | FreeHeap: 58660 B
+[13:09:40] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 34.9ms | FreeHeap: 58660 B
+[13:09:43] [RetroApp] Game: Pokémon Red | FPS: 29.9 | Frame: 33.2ms | FreeHeap: 58660 B
+[13:09:46] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 38.9ms | FreeHeap: 58660 B
+[13:09:49] [RetroApp] Game: Pokémon Red | FPS: 30.1 | Frame: 33.0ms | FreeHeap: 58660 B
+[13:09:52] [RetroApp] Game: Pokémon Red | FPS: 28.3 | Frame: 35.2ms | FreeHeap: 58660 B
+[13:09:55] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.8ms | FreeHeap: 58660 B
+[13:09:58] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:10:01] [RetroApp] Game: Pokémon Red | FPS: 28.4 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:10:04] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[13:10:07] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.5ms | FreeHeap: 58660 B
+[13:10:10] [RetroApp] Game: Pokémon Red | FPS: 28.9 | Frame: 34.4ms | FreeHeap: 58660 B
+[13:10:13] [RetroApp] Game: Pokémon Red | FPS: 33.4 | Frame: 29.8ms | FreeHeap: 58660 B
+[13:10:16] [RetroApp] Game: Pokémon Red | FPS: 34.9 | Frame: 28.5ms | FreeHeap: 58660 B
+[13:10:19] [RetroApp] Game: Pokémon Red | FPS: 34.0 | Frame: 29.2ms | FreeHeap: 58660 B
+[13:10:22] [RetroApp] Game: Pokémon Red | FPS: 36.3 | Frame: 27.4ms | FreeHeap: 58660 B
+[13:10:25] [RetroApp] Game: Pokémon Red | FPS: 27.0 | Frame: 36.9ms | FreeHeap: 58660 B
+[13:10:28] [RetroApp] Game: Pokémon Red | FPS: 28.7 | Frame: 34.7ms | FreeHeap: 58660 B
+[13:10:31] [RetroApp] Game: Pokémon Red | FPS: 24.9 | Frame: 40.0ms | FreeHeap: 58660 B
+[13:10:34] [RetroApp] Game: Pokémon Red | FPS: 24.3 | Frame: 41.0ms | FreeHeap: 58660 B
+[13:10:37] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 38.9ms | FreeHeap: 58660 B
+[13:10:40] [RetroApp] Game: Pokémon Red | FPS: 24.3 | Frame: 41.0ms | FreeHeap: 58660 B
+[13:10:43] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.2ms | FreeHeap: 58660 B
+[13:10:46] [RetroApp] Game: Pokémon Red | FPS: 30.1 | Frame: 33.1ms | FreeHeap: 58660 B
+[13:10:49] [RetroApp] Game: Pokémon Red | FPS: 22.1 | Frame: 45.0ms | FreeHeap: 58660 B
+[13:10:53] [RetroApp] Game: Pokémon Red | FPS: 23.8 | Frame: 41.9ms | FreeHeap: 58660 B
+[13:10:56] [RetroApp] Game: Pokémon Red | FPS: 22.7 | Frame: 44.0ms | FreeHeap: 58660 B
+[13:10:59] [RetroApp] Game: Pokémon Red | FPS: 23.6 | Frame: 42.3ms | FreeHeap: 58660 B
+[13:11:02] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 35.9ms | FreeHeap: 58660 B
+[13:11:05] [RetroApp] Game: Pokémon Red | FPS: 26.5 | Frame: 37.5ms | FreeHeap: 58660 B
+[13:11:08] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.9ms | FreeHeap: 58660 B
+[13:11:11] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.4ms | FreeHeap: 58660 B
+[13:11:14] [RetroApp] Game: Pokémon Red | FPS: 24.5 | Frame: 40.6ms | FreeHeap: 58660 B
+[13:11:17] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 36.0ms | FreeHeap: 58660 B
+[13:11:20] [RetroApp] Game: Pokémon Red | FPS: 23.0 | Frame: 43.3ms | FreeHeap: 58660 B
+[13:11:23] [RetroApp] Game: Pokémon Red | FPS: 23.8 | Frame: 41.7ms | FreeHeap: 58660 B
+[13:11:26] [RetroApp] Game: Pokémon Red | FPS: 23.8 | Frame: 41.9ms | FreeHeap: 58660 B
+[13:11:29] [RetroApp] Game: Pokémon Red | FPS: 26.2 | Frame: 38.0ms | FreeHeap: 58660 B
+[13:11:32] [RetroApp] Game: Pokémon Red | FPS: 25.1 | Frame: 39.6ms | FreeHeap: 58660 B
+[13:11:35] [RetroApp] Game: Pokémon Red | FPS: 24.9 | Frame: 40.0ms | FreeHeap: 58660 B
+[13:11:38] [RetroApp] Game: Pokémon Red | FPS: 29.9 | Frame: 33.3ms | FreeHeap: 58660 B
+[13:11:41] [RetroApp] Game: Pokémon Red | FPS: 23.3 | Frame: 42.8ms | FreeHeap: 58660 B
+[13:11:44] [RetroApp] Game: Pokémon Red | FPS: 28.0 | Frame: 35.6ms | FreeHeap: 58660 B
+[13:11:47] [RetroApp] Game: Pokémon Red | FPS: 24.1 | Frame: 41.3ms | FreeHeap: 58660 B
+[13:11:50] [RetroApp] Game: Pokémon Red | FPS: 25.8 | Frame: 38.6ms | FreeHeap: 58660 B
+[13:11:53] [RetroApp] Game: Pokémon Red | FPS: 22.5 | Frame: 44.2ms | FreeHeap: 58660 B
+[13:11:56] [RetroApp] Game: Pokémon Red | FPS: 24.1 | Frame: 41.3ms | FreeHeap: 58660 B
+[13:11:59] [RetroApp] Game: Pokémon Red | FPS: 25.0 | Frame: 39.8ms | FreeHeap: 58660 B
+[13:12:02] [RetroApp] Game: Pokémon Red | FPS: 24.2 | Frame: 41.2ms | FreeHeap: 58660 B
+[13:12:05] [RetroApp] Game: Pokémon Red | FPS: 24.5 | Frame: 40.6ms | FreeHeap: 58660 B
+[13:12:08] [RetroApp] Game: Pokémon Red | FPS: 27.0 | Frame: 36.9ms | FreeHeap: 58660 B
+[13:12:11] [RetroApp] Game: Pokémon Red | FPS: 24.0 | Frame: 41.5ms | FreeHeap: 58660 B
+[13:12:14] [RetroApp] Game: Pokémon Red | FPS: 24.5 | Frame: 40.6ms | FreeHeap: 58660 B
+[13:12:17] [RetroApp] Game: Pokémon Red | FPS: 22.7 | Frame: 43.9ms | FreeHeap: 58660 B
+[13:12:20] [RetroApp] Game: Pokémon Red | FPS: 25.0 | Frame: 39.8ms | FreeHeap: 58660 B
+[13:12:23] [RetroApp] Game: Pokémon Red | FPS: 22.7 | Frame: 43.8ms | FreeHeap: 58660 B
+[13:12:26] [RetroApp] Game: Pokémon Red | FPS: 27.4 | Frame: 36.3ms | FreeHeap: 58660 B
+[13:12:29] [RetroApp] Game: Pokémon Red | FPS: 27.0 | Frame: 36.8ms | FreeHeap: 58660 B
+[13:12:32] [RetroApp] Game: Pokémon Red | FPS: 27.1 | Frame: 36.7ms | FreeHeap: 58660 B
+[13:12:35] [RetroApp] Game: Pokémon Red | FPS: 27.8 | Frame: 35.8ms | FreeHeap: 58660 B
+[13:12:38] [RetroApp] Game: Pokémon Red | FPS: 28.5 | Frame: 35.0ms | FreeHeap: 58660 B
+[13:12:41] [RetroApp] Game: Pokémon Red | FPS: 25.2 | Frame: 39.5ms | FreeHeap: 58660 B
+[13:12:44] [RetroApp] Game: Pokémon Red | FPS: 29.3 | Frame: 34.0ms | FreeHeap: 58660 B
+[13:12:47] [RetroApp] Game: Pokémon Red | FPS: 24.3 | Frame: 40.9ms | FreeHeap: 58660 B
+[13:12:50] [RetroApp] Game: Pokémon Red | FPS: 27.1 | Frame: 36.8ms | FreeHeap: 58660 B
+[13:12:53] [RetroApp] Game: Pokémon Red | FPS: 31.0 | Frame: 32.1ms | FreeHeap: 58660 B
+[13:12:56] [RetroApp] Game: Pokémon Red | FPS: 31.8 | Frame: 31.3ms | FreeHeap: 58660 B
+[13:12:59] [RetroApp] Game: Pokémon Red | FPS: 26.9 | Frame: 37.0ms | FreeHeap: 58660 B
+[13:13:02] [RetroApp] Game: Pokémon Red | FPS: 24.3 | Frame: 40.9ms | FreeHeap: 58660 B
+[13:13:06] [RetroApp] Game: Pokémon Red | FPS: 25.1 | Frame: 39.7ms | FreeHeap: 58660 B
+[13:13:09] [RetroApp] Game: Pokémon Red | FPS: 25.9 | Frame: 38.4ms | FreeHeap: 58660 B
+[13:13:12] [RetroApp] Game: Pokémon Red | FPS: 25.3 | Frame: 39.3ms | FreeHeap: 58660 B
+[13:13:15] [RetroApp] Game: Pokémon Red | FPS: 24.4 | Frame: 40.9ms | FreeHeap: 58660 B
+[13:13:18] [RetroApp] Game: Pokémon Red | FPS: 26.5 | Frame: 37.6ms | FreeHeap: 58660 B
+[13:13:21] [RetroApp] Game: Pokémon Red | FPS: 26.0 | Frame: 38.3ms | FreeHeap: 58660 B
+[13:13:24] [RetroApp] Game: Pokémon Red | FPS: 24.7 | Frame: 40.4ms | FreeHeap: 58660 B
+[13:13:27] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.2ms | FreeHeap: 58660 B
+[13:13:30] [RetroApp] Game: Pokémon Red | FPS: 25.6 | Frame: 39.0ms | FreeHeap: 58660 B
+[13:13:33] [RetroApp] Game: Pokémon Red | FPS: 25.8 | Frame: 38.6ms | FreeHeap: 58660 B
+[13:13:36] [RetroApp] Game: Pokémon Red | FPS: 23.5 | Frame: 42.3ms | FreeHeap: 58660 B
+[13:13:39] [RetroApp] Game: Pokémon Red | FPS: 23.0 | Frame: 43.2ms | FreeHeap: 58660 B
+[13:13:42] [RetroApp] Game: Pokémon Red | FPS: 23.6 | Frame: 42.2ms | FreeHeap: 58660 B
+[13:13:45] [RetroApp] Game: Pokémon Red | FPS: 28.6 | Frame: 34.9ms | FreeHeap: 58660 B
+[13:13:48] [RetroApp] Game: Pokémon Red | FPS: 24.9 | Frame: 40.0ms | FreeHeap: 58660 B
+[13:13:51] [RetroApp] Game: Pokémon Red | FPS: 24.3 | Frame: 40.9ms | FreeHeap: 58660 B
+[13:13:54] [RetroApp] Game: Pokémon Red | FPS: 24.8 | Frame: 40.2ms | FreeHeap: 58660 B
+[13:13:57] [RetroApp] Game: Pokémon Red | FPS: 23.5 | Frame: 42.4ms | FreeHeap: 58660 B
+[13:14:00] [RetroApp] Game: Pokémon Red | FPS: 28.1 | Frame: 35.4ms | FreeHeap: 58660 B
+[13:14:00] [GbSave] Auto-save debounce triggered (dirty mask: 0x1). Committing...
+[13:14:00] [2982555][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:14:01] [2982938][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:14:01] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 447 ms (Save #32)
+[13:14:01] [GbSave] Committed Bank CRCs | Bank0: 0x86A1578A | Bank1: 0x07C6DB21 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:14:01] [GbSave] Auto-save #32 committed successfully.
+[13:14:03] [RetroApp] Game: Pokémon Red | FPS: 24.8 | Frame: 40.2ms | FreeHeap: 58660 B
+[13:14:06] [RetroApp] Game: Pokémon Red | FPS: 24.7 | Frame: 40.3ms | FreeHeap: 58660 B
+[13:14:09] [RetroApp] Game: Pokémon Red | FPS: 23.7 | Frame: 42.0ms | FreeHeap: 58660 B
+[13:14:12] [RetroApp] Game: Pokémon Red | FPS: 23.8 | Frame: 41.8ms | FreeHeap: 58636 B
+[13:14:15] [RetroApp] Game: Pokémon Red | FPS: 29.3 | Frame: 33.9ms | FreeHeap: 58660 B
+[13:14:18] [RetroApp] Game: Pokémon Red | FPS: 26.1 | Frame: 38.1ms | FreeHeap: 58660 B
+[13:14:21] [RetroApp] Game: Pokémon Red | FPS: 27.7 | Frame: 36.0ms | FreeHeap: 58660 B
+[13:14:24] [RetroApp] Game: Pokémon Red | FPS: 27.4 | Frame: 36.3ms | FreeHeap: 58660 B
+[13:14:27] [RetroApp] Game: Pokémon Red | FPS: 27.4 | Frame: 36.3ms | FreeHeap: 58660 B
+[13:14:30] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.3ms | FreeHeap: 58660 B
+[13:14:33] [RetroApp] Game: Pokémon Red | FPS: 32.7 | Frame: 30.4ms | FreeHeap: 58660 B
+[13:14:36] [RetroApp] Game: Pokémon Red | FPS: 30.8 | Frame: 32.3ms | FreeHeap: 58660 B
+[13:14:37] [GbSave] Auto-save debounce triggered (dirty mask: 0x2). Committing...
+[13:14:37] [3018881][E][vfs_api.cpp:105] open(): /littlefs/pokemon_red.sav.tmp does not exist, no permits for creation
+[13:14:37] [3019274][E][vfs_api.cpp:182] remove(): /pokemon_red.sav.bak does not exists or is directory
+[13:14:37] [GbSave] Successfully saved 32,768 B to /pokemon_red.sav in 471 ms (Save #33)
+[13:14:37] [GbSave] Committed Bank CRCs | Bank0: 0x86A1578A | Bank1: 0xB300DD17 | Bank2: 0xB4293435 | Bank3: 0xB4293435
+[13:14:37] [GbSave] Auto-save #33 committed successfully.
+[13:14:39] [RetroApp] Game: Pokémon Red | FPS: 28.2 | Frame: 35.3ms | FreeHeap: 58660 B
+[13:14:42] [RetroApp] Game: Pokémon Red | FPS: 29.4 | Frame: 33.8ms | FreeHeap: 58660 B
+[13:14:45] [RetroApp] Game: Pokémon Red | FPS: 29.9 | Frame: 33.2ms | FreeHeap: 58660 B
+[13:14:46] [RetroApp] Game Boy exit triggered -> returning to launcher
+[13:14:46] [GbSave] LittleFS unmounted cleanly.
+[13:14:46] [GbDisplayAdapter] Deinitialized & dynamic buffers released.
+[13:14:46] [GbRom] Deinitialized: 4 cache slots released & state reset.
+[13:14:46] [GbBridge] Teardown complete. All Game Boy resources freed.
+[13:14:47] [Joystick] Calibrated Center: X=2277, Y=1849 | Active=+/-d, Release=+/-d

@@ -4,6 +4,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include "quote_library.h"
+#include "config.h"
 
 // Selects a new random quote from the database
 void selectRandomQuote();
@@ -22,10 +23,12 @@ enum ScreenState {
   STATE_PIXEL_WARS_HIGH_SCORE,
   STATE_AI,
   STATE_SPOTIFY,
+#if ENABLE_LOST_CROWN
   STATE_LOST_CROWN_LOADING,
   STATE_LOST_CROWN_TITLE,
   STATE_LOST_CROWN_GAMEPLAY,
   STATE_LOST_CROWN_LEVEL1,
+#endif
   STATE_HACKING_GO,
   STATE_RETRO_ARCADE
 };
@@ -36,7 +39,8 @@ enum AppsPage {
   APPS_PAGE_2 = 1  // Apps Grid Screen (Image 2)
 };
 
-// Selectable home screen elements
+#if ENABLE_LOST_CROWN
+// Selectable home screen elements (Lost Crown enabled)
 enum FocusedElement {
   // Page 1 Elements
   FOCUS_QUOTE_CARD = 0,
@@ -53,6 +57,24 @@ enum FocusedElement {
   FOCUS_PAGE2_HACKING_GO = 9,
   FOCUS_PAGE2_RETRO_ARCADE = 10
 };
+#else
+// Selectable home screen elements (Lost Crown disabled - 6 apps seamless layout)
+enum FocusedElement {
+  // Page 1 Elements
+  FOCUS_QUOTE_CARD = 0,
+  FOCUS_PIXEL_WARS = 1,
+  FOCUS_AI         = 2,
+  FOCUS_SPOTIFY    = 3,
+
+  // Page 2 Elements (3x2 grid)
+  FOCUS_PAGE2_PIXEL_WARS   = 4,
+  FOCUS_PAGE2_AI           = 5,
+  FOCUS_PAGE2_SPOTIFY      = 6,
+  FOCUS_PAGE2_CALCULATOR   = 7,
+  FOCUS_PAGE2_HACKING_GO   = 8,
+  FOCUS_PAGE2_RETRO_ARCADE = 9
+};
+#endif
 
 // Draws the static home screen elements in landscape orientation (Rotation 1)
 void drawHomeScreen(Adafruit_ST7735 &tft);

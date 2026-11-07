@@ -7,6 +7,9 @@
  * responsive joystick navigation.
  */
 
+#include "config.h"
+#if ENABLE_LOST_CROWN
+
 #include "LostCrownTitle.h"
 #include "LostCrownAssets.h"
 #include "LostCrownConfig.h"
@@ -152,3 +155,5 @@ uint8_t getSelectedItem() {
 }
 
 } // namespace LostCrownTitle
+
+#endif // ENABLE_LOST_CROWN

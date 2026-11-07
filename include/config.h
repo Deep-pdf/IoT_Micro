@@ -32,6 +32,11 @@
 #define TFT_DC    2             // Data/Command
 #define TFT_RST   4             // Reset
 
+// -- Feature Flags ------------------------------------------------------------
+// 0 = Lost Crown temporarily disabled (frees ~496 KB flash, ~11.5 KB DRAM)
+// 1 = Lost Crown fully enabled and restored in launcher grid & lifecycle
+#define ENABLE_LOST_CROWN 0
+
 // -- Retro Game Boy Hardware Test Mode ----------------------------------------
 // (Hardware test mode retired - Pokémon Red integrated into Retro Arcade)
 
