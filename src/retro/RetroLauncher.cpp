@@ -4,8 +4,8 @@
 #include "RetroInput.h"
 #include "nes/NesDisplayAdapter.h"
 
-static RetroLauncherFocus s_focus = FOCUS_GAME_MARIO;
-static RetroGameSelection selectedGame = GAME_MARIO;
+static RetroLauncherFocus s_focus = FOCUS_GAME_RAD_RACER;
+static RetroGameSelection selectedGame = GAME_RAD_RACER;
 static RetroLaunchIntent s_launchIntent = RETRO_LAUNCH_NONE;
 static bool exitRequested = false;
 static bool needsRedraw = true;
@@ -18,8 +18,8 @@ static int s_settingsMenuSelection = 0; // 0: HYBRID, 1: FULL GAME
 void RetroLauncher::init(Adafruit_ST7735 &tft, bool resetSelection) {
     RetroInput::init();
     if (resetSelection) {
-        selectedGame = GAME_MARIO;
-        s_focus = FOCUS_GAME_MARIO;
+        selectedGame = GAME_RAD_RACER;
+        s_focus = FOCUS_GAME_RAD_RACER;
     }
     s_inSettingsMenu = false;
     s_settingsMenuSelection = (int)NesDisplayAdapter::loadSavedDisplayMode();
@@ -97,32 +97,38 @@ void RetroLauncher::update(Adafruit_ST7735 &tft) {
     // 2. Joystick UP/DOWN navigation across games and the Settings section
     RetroNavEvent nav = RetroInput::readNavigation();
     if (nav == RETRO_NAV_DOWN) {
-        if (s_focus == FOCUS_GAME_MARIO) {
-            s_focus = FOCUS_GAME_CONTRA;
-            selectedGame = GAME_CONTRA;
-        } else if (s_focus == FOCUS_GAME_CONTRA) {
+        if (s_focus == FOCUS_GAME_CONTRA) {
             s_focus = FOCUS_GAME_POKEMON;
             selectedGame = GAME_POKEMON;
         } else if (s_focus == FOCUS_GAME_POKEMON) {
+            s_focus = FOCUS_GAME_RAD_RACER;
+            selectedGame = GAME_RAD_RACER;
+        } else if (s_focus == FOCUS_GAME_RAD_RACER) {
             s_focus = FOCUS_SETTINGS;
         } else if (s_focus == FOCUS_SETTINGS) {
-            s_focus = FOCUS_GAME_MARIO;
-            selectedGame = GAME_MARIO;
+            s_focus = FOCUS_GAME_CONTRA;
+            selectedGame = GAME_CONTRA;
+        } else {
+            s_focus = FOCUS_GAME_CONTRA;
+            selectedGame = GAME_CONTRA;
         }
         needsRedraw = true;
         unavailableActive = false;
     } else if (nav == RETRO_NAV_UP) {
-        if (s_focus == FOCUS_GAME_MARIO) {
+        if (s_focus == FOCUS_GAME_CONTRA) {
             s_focus = FOCUS_SETTINGS;
         } else if (s_focus == FOCUS_SETTINGS) {
+            s_focus = FOCUS_GAME_RAD_RACER;
+            selectedGame = GAME_RAD_RACER;
+        } else if (s_focus == FOCUS_GAME_RAD_RACER) {
             s_focus = FOCUS_GAME_POKEMON;
             selectedGame = GAME_POKEMON;
         } else if (s_focus == FOCUS_GAME_POKEMON) {
             s_focus = FOCUS_GAME_CONTRA;
             selectedGame = GAME_CONTRA;
-        } else if (s_focus == FOCUS_GAME_CONTRA) {
-            s_focus = FOCUS_GAME_MARIO;
-            selectedGame = GAME_MARIO;
+        } else {
+            s_focus = FOCUS_GAME_RAD_RACER;
+            selectedGame = GAME_RAD_RACER;
         }
         needsRedraw = true;
         unavailableActive = false;
@@ -134,14 +140,14 @@ void RetroLauncher::update(Adafruit_ST7735 &tft) {
             s_inSettingsMenu = true;
             s_settingsMenuSelection = (int)NesDisplayAdapter::getDisplayMode();
             needsRedraw = true;
-        } else if (s_focus == FOCUS_GAME_MARIO) {
-            s_launchIntent = RETRO_LAUNCH_MARIO;
-            return;
         } else if (s_focus == FOCUS_GAME_CONTRA) {
             s_launchIntent = RETRO_LAUNCH_CONTRA;
             return;
         } else if (s_focus == FOCUS_GAME_POKEMON) {
             s_launchIntent = RETRO_LAUNCH_POKEMON;
+            return;
+        } else if (s_focus == FOCUS_GAME_RAD_RACER) {
+            s_launchIntent = RETRO_LAUNCH_RAD_RACER;
             return;
         }
     }

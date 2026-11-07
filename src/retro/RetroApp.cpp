@@ -1,5 +1,6 @@
 #include "RetroApp.h"
 #include "RetroLauncher.h"
+#include "RetroDisplay.h"
 #include "RetroInput.h"
 #include "nes/NesBridge.h"
 #include "nes/NesDisplayAdapter.h"
@@ -85,7 +86,7 @@ void RetroApp::init(Adafruit_ST7735 &tft) {
     s_startHeld = false;
     s_frameCount = 0;
     s_lastFpsPrint = millis();
-    RetroLauncher::init(tft, true); // true = reset selection to Super Mario Bros. (Arcade#1)
+    RetroLauncher::init(tft, true); // true = reset selection to Rad Racer 2 (Arcade#4)
 }
 
 void RetroApp::update(Adafruit_ST7735 &tft) {
@@ -125,6 +126,12 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
                 Serial.println("[RetroApp] ERROR: Failed to launch Pokémon Red!");
                 RetroLauncher::init(tft, false);
             }
+        } else if (intent == RETRO_LAUNCH_RAD_RACER) {
+            RetroLauncher::clearLaunchIntent();
+            Serial.println("[RetroApp] RAD RACER 2 selected (UI Placeholder - Core not integrated yet)");
+            RetroDisplay::drawUnavailableNotification(tft, "RAD RACER 2");
+            delay(1500);
+            RetroLauncher::init(tft, false);
         }
     } else if (s_state == STATE_GAMEPLAY_NES) {
         uint8_t ctrl = readNesController();
