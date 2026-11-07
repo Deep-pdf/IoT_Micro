@@ -5,19 +5,19 @@
 #include <Adafruit_ST7735.h>
 
 enum RetroGameSelection {
-    GAME_CONTRA = 0,    // Row 1: Contra
-    GAME_POKEMON = 1,   // Row 2: Pokémon Red
-    GAME_RAD_RACER = 2, // Row 3: Rad Racer 2
-    GAME_COUNT = 3,
-    GAME_MARIO = 99     // Preserved for backwards compatibility
+    GAME_MARIO = 0,     // Super Mario Bros. 3 (Arcade#1)
+    GAME_CONTRA = 1,    // Contra (Arcade#2)
+    GAME_POKEMON = 2,   // Pokémon Red (Arcade#3)
+    GAME_RAD_RACER = 3, // Rad Racer 2 (Arcade#4)
+    GAME_COUNT = 4
 };
 
 enum RetroLauncherFocus {
-    FOCUS_GAME_CONTRA = 0,
-    FOCUS_GAME_POKEMON = 1,
-    FOCUS_GAME_RAD_RACER = 2,
-    FOCUS_SETTINGS = 3,
-    FOCUS_GAME_MARIO = 99
+    FOCUS_GAME_MARIO = 0,
+    FOCUS_GAME_CONTRA = 1,
+    FOCUS_GAME_POKEMON = 2,
+    FOCUS_GAME_RAD_RACER = 3,
+    FOCUS_SETTINGS = 4
 };
 
 enum RetroLaunchIntent {

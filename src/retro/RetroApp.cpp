@@ -86,7 +86,7 @@ void RetroApp::init(Adafruit_ST7735 &tft) {
     s_startHeld = false;
     s_frameCount = 0;
     s_lastFpsPrint = millis();
-    RetroLauncher::init(tft, true); // true = reset selection to Rad Racer 2 (Arcade#4)
+    RetroLauncher::init(tft, true); // true = reset selection to Super Mario Bros. (Arcade#1)
 }
 
 void RetroApp::update(Adafruit_ST7735 &tft) {
