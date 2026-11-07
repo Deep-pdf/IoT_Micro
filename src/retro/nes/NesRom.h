@@ -6,7 +6,8 @@
 enum NesGameId {
     NES_GAME_NONE = 0,
     NES_GAME_MARIO,
-    NES_GAME_CONTRA
+    NES_GAME_CONTRA,
+    NES_GAME_RAD_RACER
 };
 
 struct NesRom {

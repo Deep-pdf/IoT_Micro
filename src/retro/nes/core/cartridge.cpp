@@ -38,7 +38,17 @@ Cartridge::Cartridge(const uint8_t* romData, size_t romSize)
     }
 
     mapper_ID = (header->mapper2 & 0xF0) | (header->mapper1 >> 4);
-    hardware_mirror = (header->mapper1 & 0x01) ? MIRROR::VERTICAL : MIRROR::HORIZONTAL;
+    if (header->mapper1 & 0x08)
+    {
+        hardware_mirror = MIRROR::FOUR_SCREEN;
+        mirror = MIRROR::FOUR_SCREEN;
+        extra_vram = (uint8_t*)calloc(1, 2048);
+    }
+    else
+    {
+        hardware_mirror = (header->mapper1 & 0x01) ? MIRROR::VERTICAL : MIRROR::HORIZONTAL;
+        mirror = hardware_mirror;
+    }
 
     uint8_t number_PRG_banks = header->PRG_ROM_chunks;
     uint8_t number_CHR_banks = header->CHR_ROM_chunks;
@@ -64,6 +74,12 @@ Cartridge::Cartridge(const uint8_t* romData, size_t romSize)
 
 Cartridge::~Cartridge()
 {
+    if (extra_vram)
+    {
+        free(extra_vram);
+        extra_vram = nullptr;
+    }
+
     if (mapper.state)
     {
         if (mapper_ID == 4)
@@ -170,6 +186,10 @@ void Cartridge::loadCHRBank(uint8_t* bank, uint16_t size, uint32_t offset)
 
 void Cartridge::setMirrorMode(MIRROR m)
 {
+    if (hardware_mirror == MIRROR::FOUR_SCREEN)
+    {
+        return;
+    }
     mirror = m;
     bus->setPPUMirrorMode(m);
 }

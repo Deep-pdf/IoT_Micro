@@ -13,11 +13,15 @@ extern const uint32_t rom_mario_size;
 extern const uint8_t rom_contra_data[];
 extern const uint32_t rom_contra_size;
 
+extern const uint8_t rom_radracer_data[];
+extern const uint32_t rom_radracer_size;
+
 #ifdef __cplusplus
 }
 #endif
 
 extern const NesRom NES_ROM_MARIO;
 extern const NesRom NES_ROM_CONTRA;
+extern const NesRom NES_ROM_RAD_RACER;
 
 #endif // NES_ROMS_H

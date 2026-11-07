@@ -8,7 +8,8 @@ enum class MIRROR : uint8_t
     VERTICAL,
     ONESCREEN_LOW,
     ONESCREEN_HIGH,
-    HARDWARE
+    HARDWARE,
+    FOUR_SCREEN
 };
 
 #endif

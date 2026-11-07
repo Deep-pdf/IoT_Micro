@@ -563,6 +563,11 @@ void Ppu2C02::reset()
     OAMADDR = 0x00;
     OAMDATA = 0x00;
     PPUDATA_buffer = 0x00;
+    memset(nametable, 0, sizeof(nametable));
+    if (cart && cart->extra_vram)
+    {
+        memset(cart->extra_vram, 0, 2048);
+    }
 }
 
 void Ppu2C02::buildPPUPageTables()
@@ -651,6 +656,23 @@ void Ppu2C02::setMirror(MIRROR mirror)
         ptr_nametable[0] = ptr_nametable[1] = ptr_nametable[2] = ptr_nametable[3] =
             &nametable[0x0400];
         break;
+
+    case MIRROR::FOUR_SCREEN:
+        if (cart && cart->extra_vram)
+        {
+            ptr_nametable[0] = &nametable[0x0000];
+            ptr_nametable[1] = &nametable[0x0400];
+            ptr_nametable[2] = &cart->extra_vram[0x0000];
+            ptr_nametable[3] = &cart->extra_vram[0x0400];
+        }
+        else
+        {
+            ptr_nametable[0] = &nametable[0x0000];
+            ptr_nametable[1] = &nametable[0x0400];
+            ptr_nametable[2] = &nametable[0x0000];
+            ptr_nametable[3] = &nametable[0x0400];
+        }
+        break;
     default: break;
     }
     remapNametablePages();
@@ -658,6 +680,11 @@ void Ppu2C02::setMirror(MIRROR mirror)
 
 MIRROR Ppu2C02::getMirror()
 {
+    if (cart && cart->extra_vram &&
+        ptr_nametable[2] == &cart->extra_vram[0x0000] &&
+        ptr_nametable[3] == &cart->extra_vram[0x0400])
+        return MIRROR::FOUR_SCREEN;
+
     if (ptr_nametable[0] == &nametable[0x0000] && ptr_nametable[1] == &nametable[0x0000] &&
         ptr_nametable[2] == &nametable[0x0400] && ptr_nametable[3] == &nametable[0x0400])
         return MIRROR::HORIZONTAL;

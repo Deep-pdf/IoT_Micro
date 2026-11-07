@@ -93,9 +93,10 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
     if (s_state == STATE_LAUNCHER) {
         RetroLauncher::update(tft);
         RetroLaunchIntent intent = RetroLauncher::getLaunchIntent();
-        if (intent == RETRO_LAUNCH_MARIO || intent == RETRO_LAUNCH_CONTRA) {
+        if (intent == RETRO_LAUNCH_MARIO || intent == RETRO_LAUNCH_CONTRA || intent == RETRO_LAUNCH_RAD_RACER) {
             RetroLauncher::clearLaunchIntent();
-            NesGameId targetGame = (intent == RETRO_LAUNCH_MARIO) ? NES_GAME_MARIO : NES_GAME_CONTRA;
+            NesGameId targetGame = (intent == RETRO_LAUNCH_MARIO) ? NES_GAME_MARIO :
+                                   (intent == RETRO_LAUNCH_CONTRA) ? NES_GAME_CONTRA : NES_GAME_RAD_RACER;
             NesBridge::init(&tft);
             NesDisplayAdapter::loadSavedDisplayMode();
             NesDisplayAdapter::clearBorders();
@@ -109,8 +110,10 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
                 s_totalEmuTimeUs = 0;
                 s_totalRendTimeUs = 0;
                 s_totalTftTimeUs = 0;
+                const char* gameTitle = (targetGame == NES_GAME_MARIO) ? "Super Mario Bros. 3" :
+                                        (targetGame == NES_GAME_CONTRA) ? "Contra" : "Rad Racer 2";
                 Serial.printf("[RetroApp] Launched NES Game: %s | Display Mode: %s\n",
-                              (targetGame == NES_GAME_MARIO) ? "Super Mario Bros. 3" : "Contra",
+                              gameTitle,
                               (NesDisplayAdapter::getDisplayMode() == NES_DISPLAY_HYBRID) ? "HYBRID" : "FULL");
             }
         } else if (intent == RETRO_LAUNCH_POKEMON) {
@@ -126,12 +129,6 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
                 Serial.println("[RetroApp] ERROR: Failed to launch Pokémon Red!");
                 RetroLauncher::init(tft, false);
             }
-        } else if (intent == RETRO_LAUNCH_RAD_RACER) {
-            RetroLauncher::clearLaunchIntent();
-            Serial.println("[RetroApp] RAD RACER 2 selected (UI Placeholder - Core not integrated yet)");
-            RetroDisplay::drawUnavailableNotification(tft, "RAD RACER 2");
-            delay(1500);
-            RetroLauncher::init(tft, false);
         }
     } else if (s_state == STATE_GAMEPLAY_NES) {
         uint8_t ctrl = readNesController();
@@ -193,8 +190,10 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
             float avgRendMs  = (s_frameCount > 0) ? ((float)s_totalRendTimeUs  / (float)s_frameCount / 1000.0f) : 0.0f;
             float avgTftMs   = (s_frameCount > 0) ? ((float)s_totalTftTimeUs   / (float)s_frameCount / 1000.0f) : 0.0f;
 
+            const char* gameName = (s_activeGame == NES_GAME_MARIO) ? "Mario 3" :
+                                   (s_activeGame == NES_GAME_CONTRA) ? "Contra" : "Rad Racer 2";
             Serial.printf("[RetroApp] Game: %s | Mode: %s | FPS: %.1f | Frame: %.1fms | Emu: %.1fms | Render: %.1fms | TFT: %.1fms\n",
-                          (s_activeGame == NES_GAME_MARIO) ? "Mario 3" : "Contra",
+                          gameName,
                           (NesDisplayAdapter::getDisplayMode() == NES_DISPLAY_HYBRID) ? "HYBRID" : "FULL",
                           fps, avgFrameMs, avgEmuMs, avgRendMs, avgTftMs);
 

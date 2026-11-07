@@ -98,6 +98,7 @@ static void mapper004_bankWrite(Bus* bus, uint16_t addr, uint8_t data)
 static void mapper004_mirrorWrite(Bus* bus, uint16_t addr, uint8_t data)
 {
     Mapper004_state* state = (Mapper004_state*)bus->cart->mapper.state;
+    if (state->cart->hardware_mirror == MIRROR::FOUR_SCREEN) return;
     if (!(addr & 0x01)) state->cart->setMirrorMode(mapper004_mirror[data & 0x01]);
 }
 
@@ -177,7 +178,10 @@ void mapper004_reset(Mapper* mapper)
     state->CHR_ROM_bank_mode = 0;
     state->PRG_mask = (state->number_PRG_banks * 2) - 1;
     state->CHR_mask = (state->number_CHR_banks * 8) - 1;
-    state->cart->setMirrorMode(MIRROR::HORIZONTAL);
+    if (state->cart->hardware_mirror != MIRROR::FOUR_SCREEN)
+    {
+        state->cart->setMirrorMode(MIRROR::HORIZONTAL);
+    }
 }
 
 void mapper004_mapPages(Mapper* mapper, Bus* bus)

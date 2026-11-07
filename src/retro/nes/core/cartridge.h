@@ -41,6 +41,7 @@ public:
 
     MIRROR hardware_mirror;
     MIRROR mirror = MIRROR::HORIZONTAL;
+    uint8_t* extra_vram = nullptr;
     uint32_t CRC32 = ~0U;
     MappedROM mROM;
     Mapper mapper;

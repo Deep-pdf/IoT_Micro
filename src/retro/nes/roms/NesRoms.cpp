@@ -14,10 +14,18 @@ const NesRom NES_ROM_CONTRA = {
     .mapper = 2
 };
 
+const NesRom NES_ROM_RAD_RACER = {
+    .title  = "Rad Racer 2",
+    .data   = rom_radracer_data,
+    .size   = rom_radracer_size,
+    .mapper = 4
+};
+
 const NesRom* NesGetRom(NesGameId game) {
     switch (game) {
-        case NES_GAME_MARIO:  return &NES_ROM_MARIO;
-        case NES_GAME_CONTRA: return &NES_ROM_CONTRA;
-        default:              return nullptr;
+        case NES_GAME_MARIO:     return &NES_ROM_MARIO;
+        case NES_GAME_CONTRA:    return &NES_ROM_CONTRA;
+        case NES_GAME_RAD_RACER: return &NES_ROM_RAD_RACER;
+        default:                 return nullptr;
     }
 }
