@@ -6,6 +6,12 @@
 #include "quote_library.h"
 #include "config.h"
 
+// Reserved Media Panel Layout (Right Column)
+#define MEDIA_PANEL_X  62
+#define MEDIA_PANEL_Y  10
+#define MEDIA_PANEL_W  66
+#define MEDIA_PANEL_H  112
+
 // Selects a new random quote from the database
 void selectRandomQuote();
 

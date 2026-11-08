@@ -1,5 +1,6 @@
 #include "home_screen.h"
 #include "Dream_Orphans_Bd6pt7b.h"
+#include "monosmall.h"
 #include "icons.h"
 #include <time.h>
 #include <vector>
@@ -10,17 +11,24 @@
 // Changing these values updates both the static placeholder and live NTP rendering
 // ==========================================
 
-// Date / Day text settings (e.g. "16/08 sunday" or "thrusday")
-#define DATE_Y        26
-#define DATE_SIZE     1
-#define DATE_CLEAR_Y  12
-#define DATE_CLEAR_H  18
+// Date / Day text settings (e.g. "05/11 thursday")
+#define DATE_X        4
+#define DATE_Y        24
 
-// Large Clock settings (e.g. "12:40" or SNTP live time)
-#define CLOCK_Y        58
-#define CLOCK_SIZE     3
-#define CLOCK_CLEAR_Y  30
-#define CLOCK_CLEAR_H  42
+// Stacked Large Clock settings (Mikodacs20pt7b: "HH:" on row 1, "MM" on row 2)
+#define CLOCK_X       4
+#define CLOCK_HOURS_Y 60
+#define CLOCK_MINS_Y  96
+#define CLOCK_CLEAR_Y 30
+#define CLOCK_CLEAR_H 70
+
+// Reserved Media Panel settings (Right Column)
+#ifndef MEDIA_PANEL_X
+#define MEDIA_PANEL_X 62
+#define MEDIA_PANEL_Y 10
+#define MEDIA_PANEL_W 66
+#define MEDIA_PANEL_H 112
+#endif
 
 // ==========================================
 
@@ -119,7 +127,7 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   tft.drawFastVLine(122, 3, 4, ST77XX_WHITE); // Tip
   tft.fillRect(114, 4, 2, 2, ST77XX_WHITE);   // 18% charge indicator (low battery)
 
-  // 3. Draw Day/Date Text & Clock if synced (blank otherwise)
+  // 3. Draw Day/Date Text & Stacked Clock if synced (blank otherwise)
   struct tm timeinfo;
   bool isSynced = false;
   // Use a timeout of 0ms so this call doesn't block execution if NTP is unsynced
@@ -132,11 +140,27 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   if (isSynced) {
     char dateBuf[32];
     snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
-    drawCenteredText(tft, dateBuf, DATE_Y, myOrange, DATE_SIZE);
+    tft.setFont(&Dream_Orphans_Bd6pt7b);
+    tft.setTextColor(myOrange);
+    tft.setTextSize(1);
+    tft.setCursor(DATE_X, DATE_Y);
+    tft.print(dateBuf);
 
-    char timeBuf[16];
-    snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
-    drawCenteredText(tft, timeBuf, CLOCK_Y, myOrange, CLOCK_SIZE);
+    char hourBuf[8];
+    snprintf(hourBuf, sizeof(hourBuf), "%02d:", timeinfo.tm_hour);
+    tft.setFont(&Mikodacs20pt7b);
+    tft.setTextColor(myOrange);
+    tft.setTextSize(1);
+    tft.setCursor(CLOCK_X, CLOCK_HOURS_Y);
+    tft.print(hourBuf);
+
+    char minBuf[8];
+    snprintf(minBuf, sizeof(minBuf), "%02d", timeinfo.tm_min);
+    tft.setFont(&Mikodacs20pt7b);
+    tft.setTextColor(myOrange);
+    tft.setTextSize(1);
+    tft.setCursor(CLOCK_X, CLOCK_MINS_Y);
+    tft.print(minBuf);
 
     // Sync cache so updateTimeAndDate knows the screen matches current time
     lastHour = timeinfo.tm_hour;
@@ -155,18 +179,8 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
     wasTimeSynced = false;
   }
 
-  // 5. Draw Quote Card
-  // White rounded rectangle card (width 96, height 28, centered horizontally)
-  tft.fillRoundRect(16, 78, 96, 28, 4, ST77XX_WHITE);
-  
-  // Display the selected quote (truncated) inside the white quote card.
-  // Falls back to "Maan ki Baat" if no quote is selected.
-  if (selectedQuote != nullptr) {
-    String disp = getTruncatedQuote(selectedQuote->text, 88, tft);
-    drawCenteredText(tft, disp.c_str(), 96, ST77XX_BLACK, 1);
-  } else {
-    drawCenteredText(tft, "Maan ki Baat", 96, ST77XX_BLACK, 1);
-  }
+  // 4. Reserved Media Panel (Solid Black, ready for future media/GIF player)
+  tft.fillRect(MEDIA_PANEL_X, MEDIA_PANEL_Y, MEDIA_PANEL_W, MEDIA_PANEL_H, ST77XX_BLACK);
 
   // 6. Draw Bottom Application/Game Area (Orange background, starts at Y = 122, height 38)
   tft.fillRect(0, 122, 128, 38, myOrange);
@@ -209,14 +223,24 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
 
     // Update Clock if hour or minute changed (or on first sync)
     if (!wasTimeSynced || timeinfo.tm_min != lastMin || timeinfo.tm_hour != lastHour) {
-      // Clear clock bounding box area using macros
-      tft.fillRect(0, CLOCK_CLEAR_Y, 128, CLOCK_CLEAR_H, ST77XX_BLACK);
+      // Clear clock bounding box area on the left column
+      tft.fillRect(0, CLOCK_CLEAR_Y, MEDIA_PANEL_X, CLOCK_CLEAR_H, ST77XX_BLACK);
 
-      char timeBuf[16];
-      snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+      char hourBuf[8];
+      snprintf(hourBuf, sizeof(hourBuf), "%02d:", timeinfo.tm_hour);
+      tft.setFont(&Mikodacs20pt7b);
+      tft.setTextColor(myOrange);
+      tft.setTextSize(1);
+      tft.setCursor(CLOCK_X, CLOCK_HOURS_Y);
+      tft.print(hourBuf);
 
-      // Draw clock using macros
-      drawCenteredText(tft, timeBuf, CLOCK_Y, myOrange, CLOCK_SIZE);
+      char minBuf[8];
+      snprintf(minBuf, sizeof(minBuf), "%02d", timeinfo.tm_min);
+      tft.setFont(&Mikodacs20pt7b);
+      tft.setTextColor(myOrange);
+      tft.setTextSize(1);
+      tft.setCursor(CLOCK_X, CLOCK_MINS_Y);
+      tft.print(minBuf);
 
       lastHour = timeinfo.tm_hour;
       lastMin = timeinfo.tm_min;
@@ -224,14 +248,17 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
 
     // Update Date/Day if day, month, or weekday changed (or on first sync)
     if (!wasTimeSynced || timeinfo.tm_mday != lastMday || timeinfo.tm_mon != lastMon || timeinfo.tm_wday != lastWday) {
-      // Clear old day/date area using macros
-      tft.fillRect(0, DATE_CLEAR_Y, 128, DATE_CLEAR_H, ST77XX_BLACK);
+      // Clear old day/date area (Y: 10..29)
+      tft.fillRect(0, 10, 128, 20, ST77XX_BLACK);
 
       char dateBuf[32];
       snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
 
-      // Draw date/day using macros
-      drawCenteredText(tft, dateBuf, DATE_Y, myOrange, DATE_SIZE);
+      tft.setFont(&Dream_Orphans_Bd6pt7b);
+      tft.setTextColor(myOrange);
+      tft.setTextSize(1);
+      tft.setCursor(DATE_X, DATE_Y);
+      tft.print(dateBuf);
 
       lastMday = timeinfo.tm_mday;
       lastMon = timeinfo.tm_mon;
@@ -304,9 +331,8 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
   uint16_t myOrange = tft.color565(255, 122, 0);
 
   if (element == FOCUS_QUOTE_CARD) {
-    // Quote card highlight: draw/clear border slightly outside the card
-    uint16_t color = highlighted ? myOrange : ST77XX_BLACK;
-    tft.drawRoundRect(14, 76, 100, 32, 5, color);
+    // Quote card removed from Home Screen - no border to draw
+    return;
 #if ENABLE_LOST_CROWN
   } else if (element == FOCUS_PIXEL_WARS || element == FOCUS_AI || element == FOCUS_LOST_CROWN) {
     // Page 1 Bottom icons highlight (Y = 125, border at Y = 123)

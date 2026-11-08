@@ -35,7 +35,7 @@ Adafruit_ST7735 tft(TFT_CS, TFT_DC, TFT_RST);
 // Global States
 ScreenState currentScreen = STATE_HOME;
 AppsPage currentAppsPage = APPS_PAGE_1;
-FocusedElement currentFocus = FOCUS_QUOTE_CARD;
+FocusedElement currentFocus = FOCUS_PIXEL_WARS;
 
 bool lastWiFiConnected = false;
 unsigned long lastUpdateTick = 0;
@@ -76,21 +76,10 @@ void handleNavigation(JoyDirection dir) {
 
   if (currentAppsPage == APPS_PAGE_1) {
     // -------------------------------------------------------------
-    // PAGE 1 NAVIGATION (Existing Home Screen - Image 1)
+    // PAGE 1 NAVIGATION (Home Screen: Clock + Media Panel + Bottom Dock)
     // -------------------------------------------------------------
-    if (currentFocus == FOCUS_QUOTE_CARD) {
-      if (dir == DIR_DOWN) {
-        // Move from quote card down to first icon in last row
-        drawFocusHighlight(tft, currentFocus, false);
-        currentFocus = FOCUS_PIXEL_WARS;
-        drawFocusHighlight(tft, currentFocus, true);
-      }
-    } else if (currentFocus == FOCUS_PIXEL_WARS) {
-      if (dir == DIR_UP) {
-        drawFocusHighlight(tft, currentFocus, false);
-        currentFocus = FOCUS_QUOTE_CARD;
-        drawFocusHighlight(tft, currentFocus, true);
-      } else if (dir == DIR_RIGHT) {
+    if (currentFocus == FOCUS_PIXEL_WARS) {
+      if (dir == DIR_RIGHT) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_AI;
         drawFocusHighlight(tft, currentFocus, true);
@@ -104,11 +93,7 @@ void handleNavigation(JoyDirection dir) {
         updateWiFiIconPage2(tft, currentWiFiConnected);
       }
     } else if (currentFocus == FOCUS_AI) {
-      if (dir == DIR_UP) {
-        drawFocusHighlight(tft, currentFocus, false);
-        currentFocus = FOCUS_QUOTE_CARD;
-        drawFocusHighlight(tft, currentFocus, true);
-      } else if (dir == DIR_LEFT) {
+      if (dir == DIR_LEFT) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_PIXEL_WARS;
         drawFocusHighlight(tft, currentFocus, true);
@@ -132,11 +117,7 @@ void handleNavigation(JoyDirection dir) {
     }
 #if ENABLE_LOST_CROWN
     else if (currentFocus == FOCUS_LOST_CROWN) {
-      if (dir == DIR_UP) {
-        drawFocusHighlight(tft, currentFocus, false);
-        currentFocus = FOCUS_QUOTE_CARD;
-        drawFocusHighlight(tft, currentFocus, true);
-      } else if (dir == DIR_LEFT) {
+      if (dir == DIR_LEFT) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_AI;
         drawFocusHighlight(tft, currentFocus, true);
@@ -152,11 +133,7 @@ void handleNavigation(JoyDirection dir) {
     }
 #else
     else if (currentFocus == FOCUS_SPOTIFY) {
-      if (dir == DIR_UP) {
-        drawFocusHighlight(tft, currentFocus, false);
-        currentFocus = FOCUS_QUOTE_CARD;
-        drawFocusHighlight(tft, currentFocus, true);
-      } else if (dir == DIR_LEFT) {
+      if (dir == DIR_LEFT) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_AI;
         drawFocusHighlight(tft, currentFocus, true);
@@ -593,7 +570,6 @@ void handleCurrentSelection() {
   if (currentScreen == STATE_HOME) {
     switch (currentFocus) {
       case FOCUS_QUOTE_CARD:
-        enterMaanKiBaat();
         break;
       case FOCUS_PIXEL_WARS:
       case FOCUS_PAGE2_PIXEL_WARS:
@@ -737,7 +713,7 @@ void setup() {
   // Draw the Initial Home Screen UI (Wi-Fi icon begins as White)
   drawHomeScreen(tft);
   
-  // Draw initial highlight around "Maan ki Baat" card
+  // Draw initial highlight around focused icon (Pixel Wars)
   drawFocusHighlight(tft, currentFocus, true);
 
   // Cache initial connection status
@@ -856,20 +832,9 @@ void loop() {
         }
       }
 
-      // Process clock and auto-quote updates (Only visible in HOME state on Page 1)
+      // Process clock updates (Only visible in HOME state on Page 1)
       if (currentScreen == STATE_HOME && currentAppsPage == APPS_PAGE_1) {
         updateTimeAndDate(tft);
-
-        // Auto-change quote every 1 hour (3600000 ms)
-        if (now - lastQuoteChangeTime >= 3600000ULL) {
-          lastQuoteChangeTime = now;
-          selectRandomQuote();
-          
-          // Redraw Home Screen to show the new quote
-          drawHomeScreen(tft);
-          drawFocusHighlight(tft, currentFocus, true);
-          updateWiFiIcon(tft, WiFi.status() == WL_CONNECTED);
-        }
       }
     }
   }
