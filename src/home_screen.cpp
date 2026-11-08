@@ -1,4 +1,5 @@
 #include "home_screen.h"
+#include "home_animation.h"
 #include "Dream_Orphans_Bd6pt7b.h"
 #include "DateFontCondensed.h"
 #include "Mikodacs24pt7b.h"
@@ -199,6 +200,51 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
 #else
   tft.drawRGBBitmap(88, 125, icon_spotify, 32, 32);
 #endif
+
+  // 7. Start/reset animation (displays frame 1 immediately and redraws text on top)
+  startHomeAnimation(tft);
+}
+
+void redrawHomeScreenText(Adafruit_ST7735 &tft) {
+  struct tm timeinfo;
+  bool isSynced = false;
+  // Use a timeout of 0ms so this call doesn't block execution if NTP is unsynced
+  if (getLocalTime(&timeinfo, 0)) {
+    if (timeinfo.tm_year > 100) {
+      isSynced = true;
+    }
+  }
+
+  if (isSynced) {
+    uint16_t myOrange = tft.color565(255, 122, 0);
+
+    // 1. Draw Date/Day
+    char dateBuf[32];
+    snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
+    tft.setFont(&Dream_Orphans_Bd6pt7b);
+    tft.setTextColor(myOrange);
+    tft.setTextSize(1);
+    tft.setCursor(DATE_X, DATE_Y);
+    tft.print(dateBuf);
+
+    // 2. Draw Hours
+    char hourBuf[8];
+    snprintf(hourBuf, sizeof(hourBuf), "%02d:", timeinfo.tm_hour);
+    tft.setFont(&Mikodacs24pt7b);
+    tft.setTextColor(myOrange);
+    tft.setTextSize(1);
+    tft.setCursor(CLOCK_X, CLOCK_HOURS_Y);
+    tft.print(hourBuf);
+
+    // 3. Draw Minutes
+    char minBuf[8];
+    snprintf(minBuf, sizeof(minBuf), "%02d", timeinfo.tm_min);
+    tft.setFont(&Mikodacs24pt7b);
+    tft.setTextColor(myOrange);
+    tft.setTextSize(1);
+    tft.setCursor(CLOCK_X, CLOCK_MINS_Y);
+    tft.print(minBuf);
+  }
 }
 
 void updateWiFiIcon(Adafruit_ST7735 &tft, bool connected) {

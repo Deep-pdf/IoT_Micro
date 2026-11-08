@@ -2,6 +2,7 @@
 #include <Adafruit_ST7735.h>
 #include <WiFi.h>
 #include "home_screen.h"
+#include "home_animation.h"
 #include "config.h"
 #include "button.h"
 #include "Dream_Orphans_Bd6pt7b.h"
@@ -364,6 +365,7 @@ void handleNavigation(JoyDirection dir) {
 
 // Shows the Shayari/quote screen (using the current quote)
 void enterMaanKiBaat() {
+  stopHomeAnimation();
   clearButtonEvents();
   currentScreen = STATE_QUOTE;
 
@@ -403,6 +405,7 @@ void exitMaanKiBaat() {
 
 // Launches Pixel Wars app cleanly
 void enterPixelWars() {
+  stopHomeAnimation();
   clearButtonEvents();
   currentScreen = STATE_PIXEL_WARS_LOADING;
   pixelWarsLoadStartTime = millis();
@@ -424,6 +427,7 @@ void exitPixelWars() {
 }
 
 void enterAI() {
+  stopHomeAnimation();
   clearButtonEvents();
   currentScreen = STATE_AI;
   AIApp::init(tft);
@@ -443,6 +447,7 @@ void exitAI() {
 
 #if ENABLE_LOST_CROWN
 void enterLostCrownPlaceholder() {
+  stopHomeAnimation();
   clearButtonEvents();
   currentScreen = STATE_LOST_CROWN_LOADING;
   lostCrownLaunchSignalled = false;
@@ -499,6 +504,7 @@ void exitLostCrownLevel1() {
 #endif
 
 void enterSpotify() {
+  stopHomeAnimation();
   clearButtonEvents();
   currentScreen = STATE_SPOTIFY;
   SpotifyApp::init(tft);
@@ -517,6 +523,7 @@ void exitSpotify() {
 }
 
 void enterRetroArcade() {
+  stopHomeAnimation();
   clearButtonEvents();
   currentScreen = STATE_RETRO_ARCADE;
   RetroApp::init(tft);
@@ -539,6 +546,7 @@ void enterCalculatorPlaceholder() {
 }
 
 void enterHackingGo() {
+  stopHomeAnimation();
   clearButtonEvents();
   currentScreen = STATE_HACKING_GO;
 
@@ -836,6 +844,13 @@ void loop() {
       if (currentScreen == STATE_HOME && currentAppsPage == APPS_PAGE_1) {
         updateTimeAndDate(tft);
       }
+    }
+
+    // 4. Step Home Screen Looping JPG Animation (Non-blocking, millis()-timed)
+    if (currentScreen == STATE_HOME && currentAppsPage == APPS_PAGE_1) {
+      stepHomeAnimation(tft);
+    } else {
+      stopHomeAnimation();
     }
   }
 }

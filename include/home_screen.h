@@ -106,4 +106,7 @@ void drawFullscreenQuote(Adafruit_ST7735 &tft, const char *quote, uint16_t bgCol
 // Forces the clock/date updater to redraw on the next frame
 void invalidateTimeCache();
 
+// Redraws the date/day and stacked clock text on top of animation pixels (Z-order)
+void redrawHomeScreenText(Adafruit_ST7735 &tft);
+
 #endif // HOME_SCREEN_H
