@@ -1,6 +1,7 @@
 #include "ppu2C02.h"
 #include "bus.h"
 #include "cartridge.h"
+#include "../NesProfiler.h"
 
 #define READ_PALETTE(x) palette_table[((x) & 0x1F) ^ (((x) & 0x13) == 0x10 ? 0x10 : 0x00)]
 
@@ -202,6 +203,10 @@ inline void Ppu2C02::incrementY()
 inline void Ppu2C02::renderBackground()
 {
     PROFILE_SCOPE(PROF_PPU_RENDER_BG);
+#if NES_PERF_DIAGNOSTICS
+    uint32_t _t_bg = micros();
+    g_nesPerf.frameRenderedLines++;
+#endif
     // Show transparency pixel if not rendering background
     if (!mask.render_background)
     {
@@ -210,6 +215,9 @@ inline void Ppu2C02::renderBackground()
         memset(scanline_metadata, 0x80, BUFFER_SIZE);
         ptr_buffer = scanline_buffer + x;
         ptr_scanline_meta = scanline_metadata + x;
+#if NES_PERF_DIAGNOSTICS
+        g_nesPerf.framePpuBgUs += (micros() - _t_bg);
+#endif
         return;
     }
 
@@ -284,12 +292,18 @@ inline void Ppu2C02::renderBackground()
         }
     }
     ptr_buffer = scanline_buffer + x;
+#if NES_PERF_DIAGNOSTICS
+    g_nesPerf.framePpuBgUs += (micros() - _t_bg);
+#endif
 }
 
 inline void Ppu2C02::renderSprites()
 {
     PROFILE_SCOPE(PROF_PPU_RENDER_SPRITES);
     if (!mask.render_sprite) { return; }
+#if NES_PERF_DIAGNOSTICS
+    uint32_t _t_sp = micros();
+#endif
 
     OAM* ptr_sprite_OAM;
     uint8_t* buffer_offset;
@@ -422,6 +436,9 @@ inline void Ppu2C02::renderSprites()
     }
 
     ptr_buffer = buffer_offset;
+#if NES_PERF_DIAGNOSTICS
+    g_nesPerf.framePpuSpriteUs += (micros() - _t_sp);
+#endif
 }
 
 void Ppu2C02::fakeSpriteHit(uint16_t current_scanline)

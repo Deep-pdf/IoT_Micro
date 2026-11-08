@@ -1,4 +1,11 @@
 #include "cpu6502.h"
+#include "../NesProfiler.h"
+
+#if NES_PERF_DIAGNOSTICS
+#define TIME_CLOCK(cycles) do { uint32_t _t = micros(); clock(cycles); g_nesPerf.frameCpuUs += (micros() - _t); } while(0)
+#else
+#define TIME_CLOCK(cycles) clock(cycles)
+#endif
 
 constexpr uint8_t Cpu6502::instr_cycles[256];
 constexpr uint8_t Cpu6502::zn_table[256];
@@ -361,27 +368,27 @@ IRAM_ATTR void Cpu6502::clockFrame()
 #ifndef FRAMESKIP
     for (int ppu_scanline = 0; ppu_scanline < 240; ppu_scanline += 3)
     {
-        clock(113);
+        TIME_CLOCK(113);
         bus.ppu.renderScanline(ppu_scanline);
 
-        clock(114);
+        TIME_CLOCK(114);
         bus.ppu.renderScanline(ppu_scanline + 1);
 
-        clock(114);
+        TIME_CLOCK(114);
         bus.ppu.renderScanline(ppu_scanline + 2);
     }
 
     // Setup for the next frame
     // Same reason as scanlines 0-239, 2/3 of scanlines will have an extra CPU clock.
     // Scanline 240
-    clock(113);
+    TIME_CLOCK(113);
 
     // Scanline 241-261
     bus.ppu.setVBlank();
-    clock(2501);
+    TIME_CLOCK(2501);
 
     bus.ppu.clearVBlank();
-    clock(114);
+    TIME_CLOCK(114);
 #else
     static bool frame_latch = false;
     for (int ppu_scanline = 0; ppu_scanline < 240; ppu_scanline += 3)

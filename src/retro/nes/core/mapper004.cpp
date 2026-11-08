@@ -2,6 +2,7 @@
 #include "bus.h"
 #include "cartridge.h"
 #include "ppu2C02.h"
+#include "../NesProfiler.h"
 
 static constexpr MIRROR mapper004_mirror[2] = { MIRROR::VERTICAL, MIRROR::HORIZONTAL };
 static inline uint8_t* getPRGBank(Mapper004_state* state, uint8_t index);
@@ -33,12 +34,19 @@ static void mapper004_remapCHRPages(Mapper004_state* state, Ppu2C02* ppu)
 
 static void mapper004_bankWrite(Bus* bus, uint16_t addr, uint8_t data)
 {
+#if NES_PERF_DIAGNOSTICS
+    uint32_t _t_bw = micros();
+    g_nesPerf.frameBankWriteCount++;
+#endif
     Mapper004_state* state = (Mapper004_state*)bus->cart->mapper.state;
     if (!(addr & 0x01))
     {
         state->bank_select = data & 0x07;
         state->PRG_ROM_bank_mode = (data >> 6) & 0x01;
         state->CHR_ROM_bank_mode = (data >> 7) & 0x01;
+#if NES_PERF_DIAGNOSTICS
+        g_nesPerf.frameMapperUs += (micros() - _t_bw);
+#endif
         return;
     }
 
@@ -93,6 +101,9 @@ static void mapper004_bankWrite(Bus* bus, uint16_t addr, uint8_t data)
 
     mapper004_remapWindows(state, bus);
     mapper004_remapCHRPages(state, &bus->ppu);
+#if NES_PERF_DIAGNOSTICS
+    g_nesPerf.frameMapperUs += (micros() - _t_bw);
+#endif
 }
 
 static void mapper004_mirrorWrite(Bus* bus, uint16_t addr, uint8_t data)
@@ -117,13 +128,25 @@ static void mapper004_irqEnableWrite(Bus* bus, uint16_t addr, uint8_t data)
 
 void mapper004_scanline(Mapper* mapper)
 {
+#if NES_PERF_DIAGNOSTICS
+    uint32_t _t_m = micros();
+#endif
     Mapper004_state* state = (Mapper004_state*)mapper->state;
     if (state->IRQ_counter == 0) state->IRQ_counter = state->IRQ_latch;
     else
     {
         state->IRQ_counter--;
-        if ((state->IRQ_counter == 0) && state->IRQ_enable) state->cart->IRQ();
+        if ((state->IRQ_counter == 0) && state->IRQ_enable)
+        {
+#if NES_PERF_DIAGNOSTICS
+            g_nesPerf.frameMmc3IrqCount++;
+#endif
+            state->cart->IRQ();
+        }
     }
+#if NES_PERF_DIAGNOSTICS
+    g_nesPerf.frameMapperUs += (micros() - _t_m);
+#endif
 }
 
 void mapper004_reset(Mapper* mapper)

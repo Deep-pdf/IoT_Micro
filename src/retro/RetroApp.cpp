@@ -5,6 +5,7 @@
 #include "nes/NesBridge.h"
 #include "nes/NesDisplayAdapter.h"
 #include "nes/NesRom.h"
+#include "nes/NesProfiler.h"
 #include "gb/GbBridge.h"
 #include "joystick.h"
 #include "button.h"
@@ -164,6 +165,9 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
 
         // Run one NES frame with microsecond stage profiling
         NesDisplayAdapter::resetFrameMetrics();
+#if NES_PERF_DIAGNOSTICS
+        NesPerf_startFrame();
+#endif
 
         unsigned long t0 = micros();
         NesBridge::runFrame();
@@ -173,6 +177,10 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
         unsigned long rendTimeUs  = NesDisplayAdapter::getRenderTimeUs();
         unsigned long tftTimeUs   = NesDisplayAdapter::getTftTimeUs();
         unsigned long emuTimeUs   = (frameTimeUs > (rendTimeUs + tftTimeUs)) ? (frameTimeUs - (rendTimeUs + tftTimeUs)) : 0;
+
+#if NES_PERF_DIAGNOSTICS
+        NesPerf_endFrame(frameTimeUs, rendTimeUs, tftTimeUs);
+#endif
 
         s_totalFrameTimeUs += frameTimeUs;
         s_totalRendTimeUs  += rendTimeUs;
@@ -192,10 +200,42 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
 
             const char* gameName = (s_activeGame == NES_GAME_MARIO) ? "Mario 3" :
                                    (s_activeGame == NES_GAME_CONTRA) ? "Contra" : "Rad Racer 2";
+
+#if NES_PERF_DIAGNOSTICS
+            float minFrameMs = (float)g_nesPerf.minFrameUs / 1000.0f;
+            float maxFrameMs = (float)g_nesPerf.maxFrameUs / 1000.0f;
+            float minFps = (maxFrameMs > 0) ? (1000.0f / maxFrameMs) : 0.0f;
+            float maxFps = (minFrameMs > 0) ? (1000.0f / minFrameMs) : 0.0f;
+
+            float avgCpuMs    = (s_frameCount > 0) ? ((float)g_nesPerf.windowCpuUs       / (float)s_frameCount / 1000.0f) : 0.0f;
+            float avgPpuBgMs  = (s_frameCount > 0) ? ((float)g_nesPerf.windowPpuBgUs     / (float)s_frameCount / 1000.0f) : 0.0f;
+            float avgPpuSpMs  = (s_frameCount > 0) ? ((float)g_nesPerf.windowPpuSpriteUs / (float)s_frameCount / 1000.0f) : 0.0f;
+            float avgMapperMs = (s_frameCount > 0) ? ((float)g_nesPerf.windowMapperUs    / (float)s_frameCount / 1000.0f) : 0.0f;
+
+            float irqsPerFrame     = (s_frameCount > 0) ? ((float)g_nesPerf.windowMmc3Irqs      / (float)s_frameCount) : 0.0f;
+            float bankWrPerFrame   = (s_frameCount > 0) ? ((float)g_nesPerf.windowBankWrites    / (float)s_frameCount) : 0.0f;
+            float rendLinesPerFrm  = (s_frameCount > 0) ? ((float)g_nesPerf.windowRenderedLines/ (float)s_frameCount) : 0.0f;
+            float skipLinesPerFrm  = (s_frameCount > 0) ? ((float)g_nesPerf.windowSkippedLines / (float)s_frameCount) : 0.0f;
+
+            Serial.printf("[NES_PERF] Game: %s | FPS: %.1f (Min: %.1f, Max: %.1f) | Frame: %.1fms (Min: %.1f, Max: %.1f)\n",
+                          gameName, fps, minFps, maxFps, avgFrameMs, minFrameMs, maxFrameMs);
+            Serial.printf("[NES_PERF] Subsystems: CPU=%.1fms (%.1f%%) | PPU_BG=%.1fms (%.1f%%) | PPU_SP=%.1fms (%.1f%%) | Mapper=%.1fms (%.1f%%) | DispRend=%.1fms (%.1f%%) | TFT_SPI=%.1fms (%.1f%%)\n",
+                          avgCpuMs, (avgFrameMs > 0 ? (avgCpuMs / avgFrameMs * 100.0f) : 0),
+                          avgPpuBgMs, (avgFrameMs > 0 ? (avgPpuBgMs / avgFrameMs * 100.0f) : 0),
+                          avgPpuSpMs, (avgFrameMs > 0 ? (avgPpuSpMs / avgFrameMs * 100.0f) : 0),
+                          avgMapperMs, (avgFrameMs > 0 ? (avgMapperMs / avgFrameMs * 100.0f) : 0),
+                          avgRendMs, (avgFrameMs > 0 ? (avgRendMs / avgFrameMs * 100.0f) : 0),
+                          avgTftMs, (avgFrameMs > 0 ? (avgTftMs / avgFrameMs * 100.0f) : 0));
+            Serial.printf("[NES_PERF] Events/frame: MMC3_IRQs=%.1f | BankWrites=%.1f | RenderLines=%.0f | SkipLines=%.0f\n",
+                          irqsPerFrame, bankWrPerFrame, rendLinesPerFrm, skipLinesPerFrm);
+
+            NesPerf_resetWindow();
+#else
             Serial.printf("[RetroApp] Game: %s | Mode: %s | FPS: %.1f | Frame: %.1fms | Emu: %.1fms | Render: %.1fms | TFT: %.1fms\n",
                           gameName,
                           (NesDisplayAdapter::getDisplayMode() == NES_DISPLAY_HYBRID) ? "HYBRID" : "FULL",
                           fps, avgFrameMs, avgEmuMs, avgRendMs, avgTftMs);
+#endif
 
             s_frameCount       = 0;
             s_totalFrameTimeUs = 0;
