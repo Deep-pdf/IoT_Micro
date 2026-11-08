@@ -12,17 +12,18 @@
 // Changing these values updates both the static placeholder and live NTP rendering
 // ==========================================
 
-// Date / Day text settings (DateFontCondensed: narrow, tall 3x7 condensed font)
+// Date / Day text settings (Dream_Orphans_Bd6pt7b: wide, elegant typography overflowing naturally into right side)
 #define DATE_X        4
-#define DATE_Y        22
+#define DATE_Y        23
 
-// Stacked Large Clock settings (Mikodacs24pt7b: 38px bold wide display font)
+// Stacked Large Clock settings (Mikodacs24pt7b: wide 38px bold display font)
 // Bottom aligned just a little above the bottom dock / yellow line (Y = 122)
 #define CLOCK_X       4
 #define CLOCK_HOURS_Y 70
 #define CLOCK_MINS_Y  114
-#define CLOCK_CLEAR_Y 35
-#define CLOCK_CLEAR_H 85
+#define CLOCK_CLEAR_Y 32
+#define CLOCK_CLEAR_W 84
+#define CLOCK_CLEAR_H 88
 
 // Reserved Media Panel settings (Right Column)
 #ifndef MEDIA_PANEL_X
@@ -142,7 +143,7 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   if (isSynced) {
     char dateBuf[32];
     snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
-    tft.setFont(&DateFontCondensed);
+    tft.setFont(&Dream_Orphans_Bd6pt7b);
     tft.setTextColor(myOrange);
     tft.setTextSize(1);
     tft.setCursor(DATE_X, DATE_Y);
@@ -182,7 +183,8 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   }
 
   // 4. Reserved Media Panel (Solid Black, ready for future media/GIF player)
-  tft.fillRect(MEDIA_PANEL_X, MEDIA_PANEL_Y, MEDIA_PANEL_W, MEDIA_PANEL_H, ST77XX_BLACK);
+  // Middle background was cleared at line 119; keep media area below Y=32 clear
+  tft.fillRect(MEDIA_PANEL_X, 32, MEDIA_PANEL_W, 90, ST77XX_BLACK);
 
   // 6. Draw Bottom Application/Game Area (Orange background, starts at Y = 122, height 38)
   tft.fillRect(0, 122, 128, 38, myOrange);
@@ -225,8 +227,8 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
 
     // Update Clock if hour or minute changed (or on first sync)
     if (!wasTimeSynced || timeinfo.tm_min != lastMin || timeinfo.tm_hour != lastHour) {
-      // Clear clock bounding box area on the left column
-      tft.fillRect(0, CLOCK_CLEAR_Y, MEDIA_PANEL_X, CLOCK_CLEAR_H, ST77XX_BLACK);
+      // Clear clock bounding box area on the left column (covers wide digits up to X=84)
+      tft.fillRect(0, CLOCK_CLEAR_Y, CLOCK_CLEAR_W, CLOCK_CLEAR_H, ST77XX_BLACK);
 
       char hourBuf[8];
       snprintf(hourBuf, sizeof(hourBuf), "%02d:", timeinfo.tm_hour);
@@ -250,13 +252,13 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
 
     // Update Date/Day if day, month, or weekday changed (or on first sync)
     if (!wasTimeSynced || timeinfo.tm_mday != lastMday || timeinfo.tm_mon != lastMon || timeinfo.tm_wday != lastWday) {
-      // Clear old day/date area (Y: 10..34)
-      tft.fillRect(0, 10, MEDIA_PANEL_X, 24, ST77XX_BLACK);
+      // Clear old day/date area across full width (Y: 10..31)
+      tft.fillRect(0, 10, 128, 22, ST77XX_BLACK);
 
       char dateBuf[32];
       snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
 
-      tft.setFont(&DateFontCondensed);
+      tft.setFont(&Dream_Orphans_Bd6pt7b);
       tft.setTextColor(myOrange);
       tft.setTextSize(1);
       tft.setCursor(DATE_X, DATE_Y);
