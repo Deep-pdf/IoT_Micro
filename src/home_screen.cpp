@@ -22,9 +22,10 @@
 #define CLOCK_X       4
 #define CLOCK_HOURS_Y 70
 #define CLOCK_MINS_Y  114
+#define CLOCK_CLEAR_X 0
 #define CLOCK_CLEAR_Y 32
 #define CLOCK_CLEAR_W 84
-#define CLOCK_CLEAR_H 88
+#define CLOCK_CLEAR_H 90
 
 // Reserved Media Panel settings (Right Column)
 #ifndef MEDIA_PANEL_X
@@ -43,6 +44,12 @@ static int lastMday = -1;
 static int lastMon = -1;
 static int lastWday = -1;
 static bool wasTimeSynced = false;
+
+// Persistent text buffers for zero-latency, zero-flicker foreground redrawing
+static char s_cachedDateStr[32] = "";
+static char s_cachedHourStr[8] = "";
+static char s_cachedMinStr[8] = "";
+static bool s_hasCachedText = false;
 
 // Days of the week for display
 static const char* const daysOfWeek[] = {
@@ -144,27 +151,16 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
   if (isSynced) {
     char dateBuf[32];
     snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
-    tft.setFont(&Dream_Orphans_Bd6pt7b);
-    tft.setTextColor(myOrange);
-    tft.setTextSize(1);
-    tft.setCursor(DATE_X, DATE_Y);
-    tft.print(dateBuf);
-
     char hourBuf[8];
     snprintf(hourBuf, sizeof(hourBuf), "%02d:", timeinfo.tm_hour);
-    tft.setFont(&Mikodacs24pt7b);
-    tft.setTextColor(myOrange);
-    tft.setTextSize(1);
-    tft.setCursor(CLOCK_X, CLOCK_HOURS_Y);
-    tft.print(hourBuf);
-
     char minBuf[8];
     snprintf(minBuf, sizeof(minBuf), "%02d", timeinfo.tm_min);
-    tft.setFont(&Mikodacs24pt7b);
-    tft.setTextColor(myOrange);
-    tft.setTextSize(1);
-    tft.setCursor(CLOCK_X, CLOCK_MINS_Y);
-    tft.print(minBuf);
+
+    // Save formatted strings to persistent cache for Layer 3 text redrawing over animation
+    strncpy(s_cachedDateStr, dateBuf, sizeof(s_cachedDateStr));
+    strncpy(s_cachedHourStr, hourBuf, sizeof(s_cachedHourStr));
+    strncpy(s_cachedMinStr, minBuf, sizeof(s_cachedMinStr));
+    s_hasCachedText = true;
 
     // Sync cache so updateTimeAndDate knows the screen matches current time
     lastHour = timeinfo.tm_hour;
@@ -182,10 +178,6 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
     lastWday = -1;
     wasTimeSynced = false;
   }
-
-  // 4. Reserved Media Panel (Solid Black, ready for future media/GIF player)
-  // Middle background was cleared at line 119; keep media area below Y=32 clear
-  tft.fillRect(MEDIA_PANEL_X, 32, MEDIA_PANEL_W, 90, ST77XX_BLACK);
 
   // 6. Draw Bottom Application/Game Area (Orange background, starts at Y = 122, height 38)
   tft.fillRect(0, 122, 128, 38, myOrange);
@@ -206,44 +198,43 @@ void drawHomeScreen(Adafruit_ST7735 &tft) {
 }
 
 void redrawHomeScreenText(Adafruit_ST7735 &tft) {
-  struct tm timeinfo;
-  bool isSynced = false;
-  // Use a timeout of 0ms so this call doesn't block execution if NTP is unsynced
-  if (getLocalTime(&timeinfo, 0)) {
+  if (!s_hasCachedText) {
+    // If not cached yet via NTP callback, read direct system time (no delay/blocking)
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
     if (timeinfo.tm_year > 100) {
-      isSynced = true;
+      snprintf(s_cachedDateStr, sizeof(s_cachedDateStr), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
+      snprintf(s_cachedHourStr, sizeof(s_cachedHourStr), "%02d:", timeinfo.tm_hour);
+      snprintf(s_cachedMinStr, sizeof(s_cachedMinStr), "%02d", timeinfo.tm_min);
+      s_hasCachedText = true;
     }
   }
 
-  if (isSynced) {
+  if (s_hasCachedText) {
     uint16_t myOrange = tft.color565(255, 122, 0);
 
     // 1. Draw Date/Day
-    char dateBuf[32];
-    snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
     tft.setFont(&Dream_Orphans_Bd6pt7b);
     tft.setTextColor(myOrange);
     tft.setTextSize(1);
     tft.setCursor(DATE_X, DATE_Y);
-    tft.print(dateBuf);
+    tft.print(s_cachedDateStr);
 
     // 2. Draw Hours
-    char hourBuf[8];
-    snprintf(hourBuf, sizeof(hourBuf), "%02d:", timeinfo.tm_hour);
     tft.setFont(&Mikodacs24pt7b);
     tft.setTextColor(myOrange);
     tft.setTextSize(1);
     tft.setCursor(CLOCK_X, CLOCK_HOURS_Y);
-    tft.print(hourBuf);
+    tft.print(s_cachedHourStr);
 
     // 3. Draw Minutes
-    char minBuf[8];
-    snprintf(minBuf, sizeof(minBuf), "%02d", timeinfo.tm_min);
     tft.setFont(&Mikodacs24pt7b);
     tft.setTextColor(myOrange);
     tft.setTextSize(1);
     tft.setCursor(CLOCK_X, CLOCK_MINS_Y);
-    tft.print(minBuf);
+    tft.print(s_cachedMinStr);
   }
 }
 
@@ -273,33 +264,40 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
 
     // Update Clock if hour or minute changed (or on first sync)
     if (!wasTimeSynced || timeinfo.tm_min != lastMin || timeinfo.tm_hour != lastHour) {
-      // Clear clock bounding box area on the left column (covers wide digits up to X=84)
-      tft.fillRect(0, CLOCK_CLEAR_Y, CLOCK_CLEAR_W, CLOCK_CLEAR_H, ST77XX_BLACK);
+      // Clear full clock bounding box (covering wide digits and colon up to X=84)
+      tft.fillRect(CLOCK_CLEAR_X, CLOCK_CLEAR_Y, CLOCK_CLEAR_W, CLOCK_CLEAR_H, ST77XX_BLACK);
 
       char hourBuf[8];
       snprintf(hourBuf, sizeof(hourBuf), "%02d:", timeinfo.tm_hour);
-      tft.setFont(&Mikodacs24pt7b);
-      tft.setTextColor(myOrange);
-      tft.setTextSize(1);
-      tft.setCursor(CLOCK_X, CLOCK_HOURS_Y);
-      tft.print(hourBuf);
-
       char minBuf[8];
       snprintf(minBuf, sizeof(minBuf), "%02d", timeinfo.tm_min);
-      tft.setFont(&Mikodacs24pt7b);
-      tft.setTextColor(myOrange);
-      tft.setTextSize(1);
-      tft.setCursor(CLOCK_X, CLOCK_MINS_Y);
-      tft.print(minBuf);
+
+      strncpy(s_cachedHourStr, hourBuf, sizeof(s_cachedHourStr));
+      strncpy(s_cachedMinStr, minBuf, sizeof(s_cachedMinStr));
+      s_hasCachedText = true;
 
       lastHour = timeinfo.tm_hour;
       lastMin = timeinfo.tm_min;
+
+      if (isHomeAnimationActive()) {
+        // Redraw current animation frame (Layer 2) which cleanly restores the right panel
+        // and stamps the updated Date and Clock (Layer 3) on top without flickering or ghosting!
+        renderJoeFrame(tft, getHomeAnimationFrame());
+      } else {
+        tft.setFont(&Mikodacs24pt7b);
+        tft.setTextColor(myOrange);
+        tft.setTextSize(1);
+        tft.setCursor(CLOCK_X, CLOCK_HOURS_Y);
+        tft.print(hourBuf);
+        tft.setCursor(CLOCK_X, CLOCK_MINS_Y);
+        tft.print(minBuf);
+      }
     }
 
     // Update Date/Day if day, month, or weekday changed (or on first sync)
     if (!wasTimeSynced || timeinfo.tm_mday != lastMday || timeinfo.tm_mon != lastMon || timeinfo.tm_wday != lastWday) {
-      // Clear old day/date area across full width (Y: 10..31)
-      tft.fillRect(0, 10, 128, 22, ST77XX_BLACK);
+      // Clear old day/date area across full width (Y: 10..25, above animation at Y=26)
+      tft.fillRect(0, 10, 128, 16, ST77XX_BLACK);
 
       char dateBuf[32];
       snprintf(dateBuf, sizeof(dateBuf), "%02d/%02d %s", timeinfo.tm_mday, timeinfo.tm_mon + 1, daysOfWeek[timeinfo.tm_wday]);
@@ -309,6 +307,9 @@ void updateTimeAndDate(Adafruit_ST7735 &tft) {
       tft.setTextSize(1);
       tft.setCursor(DATE_X, DATE_Y);
       tft.print(dateBuf);
+
+      strncpy(s_cachedDateStr, dateBuf, sizeof(s_cachedDateStr));
+      s_hasCachedText = true;
 
       lastMday = timeinfo.tm_mday;
       lastMon = timeinfo.tm_mon;
@@ -504,4 +505,5 @@ void invalidateTimeCache() {
   lastMon = -1;
   lastWday = -1;
   wasTimeSynced = false;
+  s_hasCachedText = false;
 }

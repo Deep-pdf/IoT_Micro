@@ -123,13 +123,13 @@ void renderJoeFrame(Adafruit_ST7735 &tft, int frameIndex) {
     s_renderCtx.clip_y1  = 121;  // Middle ends at Y=121
     uint8_t scale = 0;           // 1:1 scale
 #else
-    // 1:2 hardware scale (64x96), placed inside right-side media panel
-    s_renderCtx.x_offset = 63;
-    s_renderCtx.y_offset = 18;
-    s_renderCtx.clip_x0  = MEDIA_PANEL_X; // 62
+    // 1:2 hardware scale (64x96), placed inside right-side media panel flush to side and bottom bar
+    s_renderCtx.x_offset = 64;
+    s_renderCtx.y_offset = 26;
+    s_renderCtx.clip_x0  = 64;   // Strictly protect left column (X < 64) from animation overwrites
     s_renderCtx.clip_x1  = 127;
-    s_renderCtx.clip_y0  = 10;
-    s_renderCtx.clip_y1  = 121;
+    s_renderCtx.clip_y0  = 26;   // Strictly protect date region (Y < 26) from animation overwrites
+    s_renderCtx.clip_y1  = 121;  // Strictly protect bottom dock (Y >= 122) from animation overwrites
     uint8_t scale = 1;           // 1:2 scale
 #endif
 
@@ -186,4 +186,8 @@ void stopHomeAnimation() {
 
 bool isHomeAnimationActive() {
     return s_animActive;
+}
+
+int getHomeAnimationFrame() {
+    return s_animFrame;
 }
