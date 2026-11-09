@@ -4,6 +4,7 @@
 #include "nes/NesRom.h"
 #include "nes/NesPalette.h"
 #include "joystick.h"
+#include "RetroSelectCombo.h"
 
 #include <Arduino.h>
 #include <Adafruit_ST7735.h>
@@ -34,6 +35,8 @@ static unsigned long s_totalEmuTimeUs   = 0;
 static unsigned long s_totalRendTimeUs  = 0;
 static unsigned long s_totalTftTimeUs   = 0;
 
+static RetroSelectCombo s_nesCombo;
+
 // Build the NES controller byte from global fast joystick state
 static uint8_t readNesController() {
     Joystick.update();
@@ -45,9 +48,20 @@ static uint8_t readNesController() {
     if (Joystick.isLeft())  ctrl |= NES_LEFT;
     if (Joystick.isRight()) ctrl |= NES_RIGHT;
 
-    // Buttons: INPUT_PULLUP → active LOW
-    if (digitalRead(NESTEST_BTN_A)     == LOW) ctrl |= NES_A;
-    if (Joystick.isPressed())                 ctrl |= NES_B; // GPIO 32 click
+    // Buttons with simultaneous A+B combo -> SELECT
+    uint32_t now = millis();
+    bool rawA = (digitalRead(NESTEST_BTN_A) == LOW);
+    bool rawB = (digitalRead(HW_JOY_SW) == LOW);
+
+    bool actA = false;
+    bool actB = false;
+    bool actSelect = false;
+    s_nesCombo.update(rawA, rawB, now, actA, actB, actSelect);
+
+    if (actA)      ctrl |= NES_A;
+    if (actB)      ctrl |= NES_B;
+    if (actSelect) ctrl |= NES_SELECT;
+
     if (digitalRead(NESTEST_BTN_START) == LOW) ctrl |= NES_START;
 
     return ctrl;
@@ -153,6 +167,7 @@ void NesTest::init(Adafruit_ST7735& tft) {
     s_totalEmuTimeUs   = 0;
     s_totalRendTimeUs  = 0;
     s_totalTftTimeUs   = 0;
+    s_nesCombo.reset();
 
     // Initialize global joystick system
     Joystick.begin();

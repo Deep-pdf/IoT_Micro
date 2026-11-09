@@ -2,6 +2,7 @@
 #include "RetroLauncher.h"
 #include "RetroDisplay.h"
 #include "RetroInput.h"
+#include "RetroSelectCombo.h"
 #include "nes/NesBridge.h"
 #include "nes/NesDisplayAdapter.h"
 #include "nes/NesRom.h"
@@ -63,6 +64,8 @@ static unsigned long s_totalTftTimeUs   = 0;
 #define NES_LEFT   0x40
 #define NES_RIGHT  0x80
 
+static RetroSelectCombo s_nesCombo;
+
 static uint8_t readNesController() {
     Joystick.update();
     uint8_t ctrl = 0x00;
@@ -73,9 +76,20 @@ static uint8_t readNesController() {
     if (Joystick.isLeft())  ctrl |= NES_LEFT;
     if (Joystick.isRight()) ctrl |= NES_RIGHT;
 
-    // Push buttons (INPUT_PULLUP -> active LOW)
-    if (digitalRead(NES_BTN_A)     == LOW) ctrl |= NES_A;
-    if (Joystick.isPressed())             ctrl |= NES_B; // GPIO 32 joystick click -> NES Button B
+    // Push buttons with simultaneous A+B combo -> SELECT
+    uint32_t now = millis();
+    bool rawA = (digitalRead(NES_BTN_A) == LOW);
+    bool rawB = (digitalRead(HW_JOY_SW) == LOW);
+
+    bool actA = false;
+    bool actB = false;
+    bool actSelect = false;
+    s_nesCombo.update(rawA, rawB, now, actA, actB, actSelect);
+
+    if (actA)      ctrl |= NES_A;
+    if (actB)      ctrl |= NES_B;
+    if (actSelect) ctrl |= NES_SELECT;
+
     if (digitalRead(NES_BTN_START) == LOW) ctrl |= NES_START;
 
     return ctrl;
@@ -87,6 +101,7 @@ void RetroApp::init(Adafruit_ST7735 &tft) {
     s_startHeld = false;
     s_frameCount = 0;
     s_lastFpsPrint = millis();
+    s_nesCombo.reset();
     RetroLauncher::init(tft, true); // true = reset selection to Super Mario Bros. (Arcade#1)
 }
 
@@ -111,6 +126,7 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
                 s_totalEmuTimeUs = 0;
                 s_totalRendTimeUs = 0;
                 s_totalTftTimeUs = 0;
+                s_nesCombo.reset();
                 const char* gameTitle = (targetGame == NES_GAME_MARIO) ? "Super Mario Bros. 3" :
                                         (targetGame == NES_GAME_CONTRA) ? "Contra" : "Rad Racer 2";
                 Serial.printf("[RetroApp] Launched NES Game: %s | Display Mode: %s\n",
@@ -156,6 +172,7 @@ void RetroApp::update(Adafruit_ST7735 &tft) {
                 s_state = STATE_LAUNCHER;
                 s_activeGame = NES_GAME_NONE;
                 s_startHeld = false;
+                s_nesCombo.reset();
 
                 // Return to launcher preserving the selected game screen
                 RetroLauncher::init(tft, false);

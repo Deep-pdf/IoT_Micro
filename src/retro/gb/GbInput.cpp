@@ -3,6 +3,7 @@
 #include "config.h"
 #include "joystick.h"
 #include "button.h"
+#include "retro/RetroSelectCombo.h"
 
 #define GB_EXIT_HOLD_MS  2000UL // Continuous hold of BTN_BACK to trigger safe exit
 #define GB_DEBOUNCE_MS     20UL // Release debounce filter to prevent mechanical chatter
@@ -22,6 +23,7 @@ static uint8_t  s_padState        = 0;
 static bool     s_exitRequested   = false;
 static uint32_t s_backHoldStartMs = 0;
 static bool     s_backHeld        = false;
+static RetroSelectCombo s_gbCombo;
 
 static void updateButtonState(DebouncedBtn& btn, uint32_t now) {
     bool rawPressed = (digitalRead(btn.pin) == LOW);
@@ -57,7 +59,7 @@ void GbInput::init() {
     Serial.println("          B:     Joystick Click (GPIO 32, Active LOW)");
     Serial.println("          START: BACK Button (GPIO 25, Active LOW, Short Press)");
     Serial.println("          EXIT:  BACK Button (GPIO 25, Hold >= 2.0s)");
-    Serial.println("          SELECT: Unmapped (Awaiting hardware assignment)");
+    Serial.println("          SELECT: GPIO 13 + GPIO 32 (Simultaneous Combo)");
     Serial.printf("[GbInput] Joystick Calibrated Center: (%d, %d) | Active: +/- %d, Release: +/- %d\n",
                   Joystick.getCenterX(), Joystick.getCenterY(),
                   Joystick.getActiveThreshold(), Joystick.getReleaseThreshold());
@@ -103,17 +105,21 @@ void GbInput::update() {
     if (left && !right) pad |= GB_PAD_LEFT;
     if (right && !left) pad |= GB_PAD_RIGHT;
 
-    // Action buttons
-    if (s_btnA.stable) pad |= GB_PAD_A; // BTN_ENTER (GPIO 13)
-    if (s_btnB.stable) pad |= GB_PAD_B; // Joystick click (GPIO 32)
+    // Action buttons & SELECT combination (GPIO 13 + GPIO 32)
+    bool actA = false;
+    bool actB = false;
+    bool actSelect = false;
+    s_gbCombo.update(s_btnA.raw, s_btnB.raw, now, actA, actB, actSelect);
+
+    if (actA)      pad |= GB_PAD_A;      // BTN_ENTER (GPIO 13)
+    if (actB)      pad |= GB_PAD_B;      // Joystick click (GPIO 32)
+    if (actSelect) pad |= GB_PAD_SELECT; // GPIO 13 + GPIO 32 simultaneous combo
 
     // START button (BTN_BACK / GPIO 25)
     // Send START while held prior to triggering the 2.0s exit threshold
     if (s_btnStart.stable && !s_exitRequested) {
         pad |= GB_PAD_START;
     }
-
-    // SELECT button (GB_PAD_SELECT = 0x40) remains unmapped
 
     s_padState = pad;
 }
@@ -143,6 +149,8 @@ void GbInput::reset() {
     s_backHoldStartMs = 0;
     s_exitRequested = false;
     s_padState = 0;
+
+    s_gbCombo.reset();
 
     gnuboy_set_pad(0);
 }
