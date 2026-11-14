@@ -354,8 +354,9 @@ void drawAppsPage2(Adafruit_ST7735 &tft) {
   tft.drawRGBBitmap(48, 74, icon_calculator, 32, 32);
   tft.drawRGBBitmap(88, 74, icon_hackinggo, 32, 32);
 
-  // Row 2 (Y = 114): Retro Arcade under Spotify (X=8)
+  // Row 2 (Y = 114): Retro Arcade under Spotify (X=8), Focus Timer under Calculator (X=48)
   tft.drawRGBBitmap(8, 114, icon_arcade, 32, 32);
+  tft.drawRGBBitmap(48, 114, icon_focustimer, 32, 32);
 #else
   // Row 0 (Y = 34): Pixel Wars (X=8), Gemini AI (X=48), Spotify (X=88)
   tft.drawRGBBitmap(8, 34, icon_pixelwars, 32, 32);
@@ -366,6 +367,9 @@ void drawAppsPage2(Adafruit_ST7735 &tft) {
   tft.drawRGBBitmap(8, 74, icon_calculator, 32, 32);
   tft.drawRGBBitmap(48, 74, icon_hackinggo, 32, 32);
   tft.drawRGBBitmap(88, 74, icon_arcade, 32, 32);
+
+  // Row 2 (Y = 114): Focus Timer directly under Calculator (X=8)
+  tft.drawRGBBitmap(8, 114, icon_focustimer, 32, 32);
 #endif
 }
 
@@ -406,6 +410,7 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
     else if (element == FOCUS_PAGE2_CALCULATOR) { x = 48; y = 74; }
     else if (element == FOCUS_PAGE2_HACKING_GO) { x = 88; y = 74; }
     else if (element == FOCUS_PAGE2_RETRO_ARCADE) { x = 8;  y = 114; }
+    else if (element == FOCUS_PAGE2_FOCUS_TIMER)  { x = 48; y = 114; }
 
     uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
     tft.drawRect(x - 2, y - 2, 36, 36, color);
@@ -421,7 +426,7 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
     uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
     tft.drawRect(x - 2, 123, 36, 36, color);
   } else {
-    // Page 2 Grid icons highlight (Row 0 at Y = 34 / border 32, Row 1 at Y = 74 / border 72)
+    // Page 2 Grid icons highlight (Row 0 at Y = 34 / border 32, Row 1 at Y = 74 / border 72, Row 2 at Y = 114 / border 112)
     int16_t x = 0;
     int16_t y = 0;
 
@@ -431,6 +436,7 @@ void drawFocusHighlight(Adafruit_ST7735 &tft, FocusedElement element, bool highl
     else if (element == FOCUS_PAGE2_CALCULATOR)   { x = 8;  y = 74; }
     else if (element == FOCUS_PAGE2_HACKING_GO)   { x = 48; y = 74; }
     else if (element == FOCUS_PAGE2_RETRO_ARCADE) { x = 88; y = 74; }
+    else if (element == FOCUS_PAGE2_FOCUS_TIMER)  { x = 8;  y = 114; }
 
     uint16_t color = highlighted ? ST77XX_WHITE : myOrange;
     tft.drawRect(x - 2, y - 2, 36, 36, color);

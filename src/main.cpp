@@ -234,7 +234,7 @@ void handleNavigation(JoyDirection dir) {
         drawFocusHighlight(tft, currentFocus, true);
       } else if (dir == DIR_RIGHT) {
         drawFocusHighlight(tft, currentFocus, false);
-        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        currentFocus = FOCUS_PAGE2_FOCUS_TIMER;
         drawFocusHighlight(tft, currentFocus, true);
       }
     } else if (currentFocus == FOCUS_PAGE2_CALCULATOR) {
@@ -250,6 +250,10 @@ void handleNavigation(JoyDirection dir) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_PAGE2_HACKING_GO;
         drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_FOCUS_TIMER;
+        drawFocusHighlight(tft, currentFocus, true);
       }
     } else if (currentFocus == FOCUS_PAGE2_HACKING_GO) {
       if (dir == DIR_UP) {
@@ -260,12 +264,31 @@ void handleNavigation(JoyDirection dir) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_PAGE2_CALCULATOR;
         drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_FOCUS_TIMER;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_FOCUS_TIMER) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_RETRO_ARCADE;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_HACKING_GO;
+        drawFocusHighlight(tft, currentFocus, true);
       }
     }
 #else
-    // 6-app 3x2 Grid Navigation:
+    // Grid Navigation:
     // Row 0 (Y=34): PIXEL_WARS (col 0), AI (col 1), SPOTIFY (col 2)
     // Row 1 (Y=74): CALCULATOR (col 0), HACKING_GO (col 1), RETRO_ARCADE (col 2)
+    // Row 2 (Y=114): FOCUS_TIMER (col 0, directly under CALCULATOR)
     if (currentFocus == FOCUS_PAGE2_PIXEL_WARS) {
       if (dir == DIR_UP) {
         // UP FROM PAGE 2 ROW 0 -> RETURN TO PAGE 1!
@@ -333,6 +356,10 @@ void handleNavigation(JoyDirection dir) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_PAGE2_HACKING_GO;
         drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_FOCUS_TIMER;
+        drawFocusHighlight(tft, currentFocus, true);
       }
     } else if (currentFocus == FOCUS_PAGE2_HACKING_GO) {
       if (dir == DIR_UP) {
@@ -347,6 +374,10 @@ void handleNavigation(JoyDirection dir) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_PAGE2_RETRO_ARCADE;
         drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_DOWN) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_FOCUS_TIMER;
+        drawFocusHighlight(tft, currentFocus, true);
       }
     } else if (currentFocus == FOCUS_PAGE2_RETRO_ARCADE) {
       if (dir == DIR_UP) {
@@ -354,6 +385,16 @@ void handleNavigation(JoyDirection dir) {
         currentFocus = FOCUS_PAGE2_SPOTIFY;
         drawFocusHighlight(tft, currentFocus, true);
       } else if (dir == DIR_LEFT) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_HACKING_GO;
+        drawFocusHighlight(tft, currentFocus, true);
+      }
+    } else if (currentFocus == FOCUS_PAGE2_FOCUS_TIMER) {
+      if (dir == DIR_UP) {
+        drawFocusHighlight(tft, currentFocus, false);
+        currentFocus = FOCUS_PAGE2_CALCULATOR;
+        drawFocusHighlight(tft, currentFocus, true);
+      } else if (dir == DIR_RIGHT) {
         drawFocusHighlight(tft, currentFocus, false);
         currentFocus = FOCUS_PAGE2_HACKING_GO;
         drawFocusHighlight(tft, currentFocus, true);
@@ -545,6 +586,10 @@ void enterCalculatorPlaceholder() {
   Serial.println("Placeholder Action: Enter Calculator App");
 }
 
+void enterFocusTimerPlaceholder() {
+  Serial.println("Placeholder Action: Enter Focus Timer App");
+}
+
 void enterHackingGo() {
   stopHomeAnimation();
   clearButtonEvents();
@@ -606,6 +651,9 @@ void handleCurrentSelection() {
         break;
       case FOCUS_PAGE2_CALCULATOR:
         enterCalculatorPlaceholder();
+        break;
+      case FOCUS_PAGE2_FOCUS_TIMER:
+        enterFocusTimerPlaceholder();
         break;
       case FOCUS_PAGE2_HACKING_GO:
         enterHackingGo();

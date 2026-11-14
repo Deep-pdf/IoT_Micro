@@ -55,16 +55,17 @@ enum FocusedElement {
   FOCUS_LOST_CROWN = 3,
 
   // Page 2 Elements
-  FOCUS_PAGE2_PIXEL_WARS = 4,
-  FOCUS_PAGE2_AI         = 5,
-  FOCUS_PAGE2_LOST_CROWN = 6,
-  FOCUS_PAGE2_SPOTIFY    = 7,
-  FOCUS_PAGE2_CALCULATOR = 8,
-  FOCUS_PAGE2_HACKING_GO = 9,
-  FOCUS_PAGE2_RETRO_ARCADE = 10
+  FOCUS_PAGE2_PIXEL_WARS   = 4,
+  FOCUS_PAGE2_AI           = 5,
+  FOCUS_PAGE2_LOST_CROWN   = 6,
+  FOCUS_PAGE2_SPOTIFY      = 7,
+  FOCUS_PAGE2_CALCULATOR   = 8,
+  FOCUS_PAGE2_HACKING_GO   = 9,
+  FOCUS_PAGE2_RETRO_ARCADE = 10,
+  FOCUS_PAGE2_FOCUS_TIMER  = 11
 };
 #else
-// Selectable home screen elements (Lost Crown disabled - 6 apps seamless layout)
+// Selectable home screen elements (Lost Crown disabled - seamless layout)
 enum FocusedElement {
   // Page 1 Elements
   FOCUS_QUOTE_CARD = 0,
@@ -72,13 +73,14 @@ enum FocusedElement {
   FOCUS_AI         = 2,
   FOCUS_SPOTIFY    = 3,
 
-  // Page 2 Elements (3x2 grid)
+  // Page 2 Elements (Grid with Focus Timer under Calculator)
   FOCUS_PAGE2_PIXEL_WARS   = 4,
   FOCUS_PAGE2_AI           = 5,
   FOCUS_PAGE2_SPOTIFY      = 6,
   FOCUS_PAGE2_CALCULATOR   = 7,
   FOCUS_PAGE2_HACKING_GO   = 8,
-  FOCUS_PAGE2_RETRO_ARCADE = 9
+  FOCUS_PAGE2_RETRO_ARCADE = 9,
+  FOCUS_PAGE2_FOCUS_TIMER  = 10
 };
 #endif
 
