@@ -1,11 +1,15 @@
 #include "focus_timer/FocusTimerApp.h"
 #include "focus_timer/shinchan_frames.h"
+#include "focus_timer/TimerFontCondensed.h"
 #include "button.h"
 #include "joystick.h"
 #include "esp32/rom/tjpgd.h"
 
 #define PIN_BTN_A    13   // GPIO 13: Enter / A
 #define PIN_BTN_BACK 25   // GPIO 25: Back
+
+// Vertical position of the floating timer digits (open upper sky above Shinchan)
+#define FLOATING_TIMER_Y 28
 
 // Animation state
 static int s_currentFrame = 0;              // 0 to 29 (frames 1 to 30)
@@ -72,13 +76,13 @@ static UINT jpgOutputFunc(JDEC* jdec, void* bitmap, JRECT* rect) {
     JpgRenderContext* ctx = &s_renderCtx;
     if (!ctx->tft) return 1;
 
-    int16_t w = rect->right - rect->left + 1;
-    int16_t h = rect->bottom - rect->top + 1;
-
-    // Reject block if completely out of bounds (safety guard)
+    // Safety guard
     if (rect->right < 0 || rect->left >= 128 || rect->bottom < 0 || rect->top >= 160) {
         return 1;
     }
+
+    int16_t w = rect->right - rect->left + 1;
+    int16_t h = rect->bottom - rect->top + 1;
 
     // Maximum MCU block size is 16x16 = 256 pixels
     uint16_t block_buf[256];
@@ -104,6 +108,9 @@ static UINT jpgOutputFunc(JDEC* jdec, void* bitmap, JRECT* rect) {
     return 1;
 }
 
+// Forward declaration
+static void drawFloatingTimer(Adafruit_ST7735 &tft);
+
 void FocusTimerApp::renderFrame(Adafruit_ST7735 &tft, int frameIndex) {
     if (frameIndex < 0 || frameIndex >= SHINCHAN_FRAME_COUNT) return;
 
@@ -120,163 +127,152 @@ void FocusTimerApp::renderFrame(Adafruit_ST7735 &tft, int frameIndex) {
     JDEC jdec;
     JRESULT res = jd_prepare(&jdec, jpgInputFunc, s_tjpgd_work, sizeof(s_tjpgd_work), &stream);
     if (res == JDR_OK) {
-        jd_decomp(&jdec, jpgOutputFunc, 0); // 1:1 scale (128x160 full screen)
+        // Fullscreen 128x160 decode (scale 0 = 1:1 direct mapping)
+        jd_decomp(&jdec, jpgOutputFunc, 0);
     }
 
-    // Always redraw the foreground UI overlay on top of animation pixels
-    drawOverlayUI(tft);
+    // Render transparent floating timer digits directly over the newly decoded full-screen frame
+    drawFloatingTimer(tft);
+}
+
+// -----------------------------------------------------------------------------
+// Minimal Floating Timer UI (Digits Only, Transparent Overlay)
+// -----------------------------------------------------------------------------
+
+static void drawFloatingTimer(Adafruit_ST7735 &tft) {
+    uint16_t colOrange = tft.color565(255, 122, 0);
+
+    // Format current time digits
+    uint8_t h, m, s;
+    if (s_timerState == TIMER_STATE_SELECTION) {
+        h = s_selectedHours;
+        m = s_selectedMinutes;
+        s = s_selectedSeconds;
+    } else {
+        h = (uint8_t)(s_remainingSeconds / 3600UL);
+        m = (uint8_t)((s_remainingSeconds % 3600UL) / 60UL);
+        s = (uint8_t)(s_remainingSeconds % 60UL);
+    }
+
+    char str[9];
+    snprintf(str, sizeof(str), "%02u:%02u:%02u", h, m, s);
+
+    // Exact horizontal coordinates (104 px width, symmetrically centered on 128 px screen):
+    // Left margin = 12 px, Right margin = 12 px
+    // H0: 12, H1: 27, Colon 0: 43, M0: 50, M1: 65, Colon 1: 81, S0: 88, S1: 103
+    static const int xPos[8] = {12, 27, 43, 50, 65, 81, 88, 103};
+    const int startY = FLOATING_TIMER_Y;
+
+    // Determine colors per character:
+    uint16_t charColors[8];
+    for (int i = 0; i < 8; i++) {
+        if (s_timerState == TIMER_STATE_SELECTION) {
+            bool isSelected = false;
+            if (s_selectedField == FIELD_HOURS && (i == 0 || i == 1)) isSelected = true;
+            else if (s_selectedField == FIELD_MINUTES && (i == 3 || i == 4)) isSelected = true;
+            else if (s_selectedField == FIELD_SECONDS && (i == 6 || i == 7)) isSelected = true;
+
+            charColors[i] = isSelected ? colOrange : ST77XX_WHITE;
+        } else if (s_timerState == TIMER_STATE_PAUSED) {
+            charColors[i] = ST77XX_YELLOW;
+        } else if (s_timerState == TIMER_STATE_COMPLETED) {
+            charColors[i] = ST77XX_YELLOW;
+        } else {
+            charColors[i] = ST77XX_WHITE;
+        }
+    }
+
+    tft.startWrite();
+
+    // Pass 1: Render 1-pixel dark drop shadow behind all glyphs (Black, offset +1, +1)
+    for (int i = 0; i < 8; i++) {
+        char c = str[i];
+        int x = xPos[i];
+        if (c == ':') {
+            for (int r = 0; r < TIMER_FONT_DIGIT_H; r++) {
+                uint8_t row = pgm_read_byte(&timer_glyph_colon[r]);
+                if (!row) continue;
+                for (int b = 0; b < TIMER_FONT_COLON_W; b++) {
+                    if (row & (1 << (3 - b))) {
+                        tft.writePixel(x + b + 1, startY + r + 1, ST77XX_BLACK);
+                    }
+                }
+            }
+        } else if (c >= '0' && c <= '9') {
+            int idx = c - '0';
+            const uint16_t* glyph = timer_glyphs[idx];
+            for (int r = 0; r < TIMER_FONT_DIGIT_H; r++) {
+                uint16_t row = pgm_read_word(&glyph[r]);
+                if (!row) continue;
+                for (int b = 0; b < TIMER_FONT_DIGIT_W; b++) {
+                    if (row & (1 << (12 - b))) {
+                        tft.writePixel(x + b + 1, startY + r + 1, ST77XX_BLACK);
+                    }
+                }
+            }
+        }
+    }
+
+    // Pass 2: Render crisp foreground glyph pixels
+    for (int i = 0; i < 8; i++) {
+        char c = str[i];
+        int x = xPos[i];
+        uint16_t col = charColors[i];
+        if (c == ':') {
+            for (int r = 0; r < TIMER_FONT_DIGIT_H; r++) {
+                uint8_t row = pgm_read_byte(&timer_glyph_colon[r]);
+                if (!row) continue;
+                for (int b = 0; b < TIMER_FONT_COLON_W; b++) {
+                    if (row & (1 << (3 - b))) {
+                        tft.writePixel(x + b, startY + r, col);
+                    }
+                }
+            }
+        } else if (c >= '0' && c <= '9') {
+            int idx = c - '0';
+            const uint16_t* glyph = timer_glyphs[idx];
+            for (int r = 0; r < TIMER_FONT_DIGIT_H; r++) {
+                uint16_t row = pgm_read_word(&glyph[r]);
+                if (!row) continue;
+                for (int b = 0; b < TIMER_FONT_DIGIT_W; b++) {
+                    if (row & (1 << (12 - b))) {
+                        tft.writePixel(x + b, startY + r, col);
+                    }
+                }
+            }
+        }
+    }
+
+    // In Selection mode: Draw a clean subtle underline beneath the 2 active digits
+    if (s_timerState == TIMER_STATE_SELECTION) {
+        int ulX = 12;
+        if (s_selectedField == FIELD_MINUTES) ulX = 50;
+        else if (s_selectedField == FIELD_SECONDS) ulX = 88;
+
+        // Shadow for underline
+        for (int px = ulX; px < ulX + 28; px++) {
+            tft.writePixel(px + 1, startY + 31, ST77XX_BLACK);
+            tft.writePixel(px + 1, startY + 32, ST77XX_BLACK);
+        }
+        // Foreground underline
+        for (int px = ulX; px < ulX + 28; px++) {
+            tft.writePixel(px, startY + 30, colOrange);
+            tft.writePixel(px, startY + 31, colOrange);
+        }
+    }
+
+    tft.endWrite();
 }
 
 void FocusTimerApp::drawOverlayUI(Adafruit_ST7735 &tft) {
-    tft.setFont(NULL);
-    tft.setTextWrap(false);
-
-    uint16_t colOrange    = tft.color565(255, 122, 0);
-    uint16_t colDarkCard  = tft.color565(16, 18, 24);
-    uint16_t colCardBorder= tft.color565(70, 75, 85);
-    uint16_t colBoxDark   = tft.color565(32, 36, 44);
-    uint16_t colBoxBorder = tft.color565(60, 65, 78);
-
-    if (s_timerState == TIMER_STATE_SELECTION) {
-        // --- Selection Screen UI ---
-        // 1. Dark background HUD card
-        tft.fillRoundRect(4, 6, 120, 58, 4, colDarkCard);
-        tft.drawRoundRect(4, 6, 120, 58, 4, colCardBorder);
-
-        // Header Title
-        tft.setTextSize(1);
-        tft.setTextColor(colOrange);
-        tft.setCursor(31, 10);
-        tft.print("FOCUS TIMER");
-
-        // 2. Three numeric selectable boxes: [HOURS] [MINUTES] [SECONDS]
-        // Order: HOURS -> MINUTES -> SECONDS
-        const int boxW = 34;
-        const int boxH = 30;
-        const int boxY = 22;
-        const int boxX[3] = {8, 47, 86};
-
-        for (int i = 0; i < 3; i++) {
-            int bx = boxX[i];
-            bool isSelected = (s_selectedField == (TimerField)i);
-
-            if (isSelected) {
-                // Highlighted active box with IoT_Micro orange accent
-                tft.fillRoundRect(bx, boxY, boxW, boxH, 3, colOrange);
-                tft.drawRoundRect(bx, boxY, boxW, boxH, 3, ST77XX_WHITE);
-
-                // Small arrow indicators above and below active box
-                tft.fillTriangle(bx + 17, 18, bx + 13, 21, bx + 21, 21, ST77XX_WHITE);
-                tft.fillTriangle(bx + 17, 54, bx + 13, 51, bx + 21, 51, ST77XX_WHITE);
-
-                tft.setTextColor(ST77XX_BLACK);
-            } else {
-                // Unselected box with dark slate styling
-                tft.fillRoundRect(bx, boxY, boxW, boxH, 3, colBoxDark);
-                tft.drawRoundRect(bx, boxY, boxW, boxH, 3, colBoxBorder);
-
-                tft.setTextColor(ST77XX_WHITE);
-            }
-
-            // Value digits (00-99 or 00-59)
-            uint8_t val = (i == 0) ? s_selectedHours : (i == 1) ? s_selectedMinutes : s_selectedSeconds;
-            char valStr[4];
-            snprintf(valStr, sizeof(valStr), "%02d", val);
-
-            tft.setTextSize(2);
-            tft.setCursor(bx + 5, boxY + 2);
-            tft.print(valStr);
-
-            // Unit label: HOUR / MIN / SEC
-            const char* unitStr = (i == 0) ? "HOUR" : (i == 1) ? "MIN" : "SEC";
-            int unitX = (i == 0) ? (bx + 5) : (bx + 8);
-
-            tft.setTextSize(1);
-            tft.setCursor(unitX, boxY + 20);
-            tft.print(unitStr);
-        }
-
-        // 3. Compact helper prompt pill below card
-        tft.fillRoundRect(6, 68, 116, 12, 3, ST77XX_BLACK);
-        tft.drawRoundRect(6, 68, 116, 12, 3, colCardBorder);
-        tft.setTextSize(1);
-        tft.setTextColor(ST77XX_WHITE);
-        tft.setCursor(11, 70);
-        tft.print("A:START   BACK:EXIT");
-
-    } else if (s_timerState == TIMER_STATE_RUNNING || s_timerState == TIMER_STATE_PAUSED) {
-        // --- Countdown Running / Paused UI ---
-        bool isPaused = (s_timerState == TIMER_STATE_PAUSED);
-        uint16_t borderColor = isPaused ? ST77XX_YELLOW : colOrange;
-
-        tft.fillRoundRect(6, 8, 116, 54, 4, colDarkCard);
-        tft.drawRoundRect(6, 8, 116, 54, 4, borderColor);
-
-        // Header status indicator
-        tft.setTextSize(1);
-        if (isPaused) {
-            tft.setTextColor(ST77XX_YELLOW);
-            tft.setCursor(46, 13);
-            tft.print("PAUSED");
-        } else {
-            tft.setTextColor(colOrange);
-            tft.setCursor(28, 13);
-            tft.print("* FOCUSING *");
-        }
-
-        // Remaining time in HH:MM:SS format
-        uint32_t hrs = s_remainingSeconds / 3600UL;
-        uint32_t mins = (s_remainingSeconds % 3600UL) / 60UL;
-        uint32_t secs = s_remainingSeconds % 60UL;
-
-        char timeStr[12];
-        snprintf(timeStr, sizeof(timeStr), "%02lu:%02lu:%02lu", (unsigned long)hrs, (unsigned long)mins, (unsigned long)secs);
-
-        tft.setTextSize(2);
-        tft.setTextColor(isPaused ? ST77XX_YELLOW : ST77XX_WHITE);
-        tft.setCursor(16, 25);
-        tft.print(timeStr);
-
-        // Bottom status & controls hint
-        tft.setTextSize(1);
-        if (s_btnAHeld) {
-            tft.setTextColor(ST77XX_RED);
-            tft.setCursor(9, 47);
-            tft.print("HOLD A: RESETTING...");
-        } else if (isPaused) {
-            tft.setTextColor(ST77XX_YELLOW);
-            tft.setCursor(4, 47);
-            tft.print("BACK:RESUME HOLD A:RST");
-        } else {
-            tft.setTextColor(tft.color565(170, 175, 185));
-            tft.setCursor(6, 47);
-            tft.print("BACK:PAUSE HOLD A:RST");
-        }
-
-    } else if (s_timerState == TIMER_STATE_COMPLETED) {
-        // --- Timer Completed UI ---
-        uint16_t colCompletedCard = tft.color565(40, 10, 10);
-        tft.fillRoundRect(6, 8, 116, 54, 4, colCompletedCard);
-        tft.drawRoundRect(6, 8, 116, 54, 4, ST77XX_YELLOW);
-
-        tft.setTextSize(1);
-        tft.setTextColor(ST77XX_YELLOW);
-        tft.setCursor(34, 13);
-        tft.print("TIME'S UP!");
-
-        tft.setTextSize(2);
-        tft.setTextColor(ST77XX_WHITE);
-        tft.setCursor(16, 25);
-        tft.print("00:00:00");
-
-        tft.setTextSize(1);
-        tft.setTextColor(ST77XX_WHITE);
-        tft.setCursor(10, 47);
-        tft.print("PRESS BACK: SELECT");
-    }
+    drawFloatingTimer(tft);
 }
 
-static void handleButtonAShort() {
+// -----------------------------------------------------------------------------
+// Button Action Handlers
+// -----------------------------------------------------------------------------
+
+static void handleButtonAShort(Adafruit_ST7735 &tft) {
     if (s_timerState == TIMER_STATE_SELECTION) {
         uint32_t totalSec = (uint32_t)s_selectedHours * 3600UL +
                             (uint32_t)s_selectedMinutes * 60UL +
@@ -285,11 +281,12 @@ static void handleButtonAShort() {
             s_remainingSeconds = totalSec;
             s_timerState = TIMER_STATE_RUNNING;
             s_lastTickMs = millis();
+            FocusTimerApp::renderFrame(tft, s_currentFrame);
         }
     }
 }
 
-static void handleButtonALong() {
+static void handleButtonALong(Adafruit_ST7735 &tft) {
     // Hold A >= 3 seconds: Stop & reset to 00:00:00
     s_timerState = TIMER_STATE_SELECTION;
     s_selectedHours = 0;
@@ -297,28 +294,31 @@ static void handleButtonALong() {
     s_selectedSeconds = 0;
     s_selectedField = FIELD_HOURS;
     s_remainingSeconds = 0;
+    FocusTimerApp::renderFrame(tft, s_currentFrame);
 }
 
-static void handleButtonBackShort() {
+static void handleButtonBackShort(Adafruit_ST7735 &tft) {
     if (s_timerState == TIMER_STATE_SELECTION) {
         s_wantsExit = true;
     } else if (s_timerState == TIMER_STATE_RUNNING) {
         s_timerState = TIMER_STATE_PAUSED;
+        FocusTimerApp::renderFrame(tft, s_currentFrame);
     } else if (s_timerState == TIMER_STATE_PAUSED) {
         s_timerState = TIMER_STATE_RUNNING;
         s_lastTickMs = millis();
+        FocusTimerApp::renderFrame(tft, s_currentFrame);
     } else if (s_timerState == TIMER_STATE_COMPLETED) {
         s_timerState = TIMER_STATE_SELECTION;
         s_selectedHours = 0;
         s_selectedMinutes = 0;
         s_selectedSeconds = 0;
         s_selectedField = FIELD_HOURS;
+        FocusTimerApp::renderFrame(tft, s_currentFrame);
     }
 }
 
 static void handleButtonBackLong() {
     // Hold Back >= 2 seconds: Exit app to Apps Grid
-    // Wait for physical button release before exiting so parent doesn't register ghost click
     while (digitalRead(PIN_BTN_BACK) == LOW) {
         delay(10);
     }
@@ -328,17 +328,17 @@ static void handleButtonBackLong() {
 
 static void updateButtonsAndJoystick(Adafruit_ST7735 &tft) {
     unsigned long now = millis();
-    bool uiNeedsRedraw = false;
 
-    // --- 1. Joystick Controls ---
+    // --- 1. Joystick Controls (Selection Screen Only) ---
     Joystick.update();
     if (s_timerState == TIMER_STATE_SELECTION) {
+        bool changed = false;
         if (Joystick.wasLeftPressed()) {
             s_selectedField = (TimerField)((s_selectedField + 2) % 3);
-            uiNeedsRedraw = true;
+            changed = true;
         } else if (Joystick.wasRightPressed()) {
             s_selectedField = (TimerField)((s_selectedField + 1) % 3);
-            uiNeedsRedraw = true;
+            changed = true;
         } else if (Joystick.wasUpPressed()) {
             if (s_selectedField == FIELD_HOURS) {
                 s_selectedHours = (s_selectedHours + 1) % 100;
@@ -347,7 +347,7 @@ static void updateButtonsAndJoystick(Adafruit_ST7735 &tft) {
             } else if (s_selectedField == FIELD_SECONDS) {
                 s_selectedSeconds = (s_selectedSeconds + 1) % 60;
             }
-            uiNeedsRedraw = true;
+            changed = true;
         } else if (Joystick.wasDownPressed()) {
             if (s_selectedField == FIELD_HOURS) {
                 s_selectedHours = (s_selectedHours + 99) % 100;
@@ -356,7 +356,11 @@ static void updateButtonsAndJoystick(Adafruit_ST7735 &tft) {
             } else if (s_selectedField == FIELD_SECONDS) {
                 s_selectedSeconds = (s_selectedSeconds + 59) % 60;
             }
-            uiNeedsRedraw = true;
+            changed = true;
+        }
+
+        if (changed) {
+            FocusTimerApp::renderFrame(tft, s_currentFrame);
         }
     }
 
@@ -376,8 +380,7 @@ static void updateButtonsAndJoystick(Adafruit_ST7735 &tft) {
             } else {
                 s_btnAHeld = false;
                 if (!s_btnALongHandled) {
-                    handleButtonAShort();
-                    uiNeedsRedraw = true;
+                    handleButtonAShort(tft);
                 }
             }
         }
@@ -385,11 +388,7 @@ static void updateButtonsAndJoystick(Adafruit_ST7735 &tft) {
     if (s_btnAHeld && !s_btnALongHandled) {
         if ((now - s_btnAHoldStart) >= 3000) {
             s_btnALongHandled = true;
-            handleButtonALong();
-            uiNeedsRedraw = true;
-        } else if (s_timerState != TIMER_STATE_SELECTION) {
-            // Update UI while holding so user sees visual feedback
-            uiNeedsRedraw = true;
+            handleButtonALong(tft);
         }
     }
 
@@ -409,8 +408,7 @@ static void updateButtonsAndJoystick(Adafruit_ST7735 &tft) {
             } else {
                 s_btnBackHeld = false;
                 if (!s_btnBackLongHandled) {
-                    handleButtonBackShort();
-                    uiNeedsRedraw = true;
+                    handleButtonBackShort(tft);
                 }
             }
         }
@@ -425,10 +423,6 @@ static void updateButtonsAndJoystick(Adafruit_ST7735 &tft) {
 
     // Clear global button events so other listeners do not receive stale events
     clearButtonEvents();
-
-    if (uiNeedsRedraw) {
-        FocusTimerApp::drawOverlayUI(tft);
-    }
 }
 
 void FocusTimerApp::init(Adafruit_ST7735 &tft) {
@@ -458,9 +452,8 @@ void FocusTimerApp::init(Adafruit_ST7735 &tft) {
     s_btnBackLongHandled = false;
 
     tft.setRotation(0); // 128x160 Portrait
-    tft.fillScreen(ST77XX_BLACK);
 
-    // Render frame 1 immediately upon entering Focus Timer
+    // Render frame 1 immediately with transparent floating timer overlay
     renderFrame(tft, s_currentFrame);
     s_lastFrameMs = millis();
 }
@@ -476,30 +469,26 @@ void FocusTimerApp::update(Adafruit_ST7735 &tft) {
 
     // 2. Step countdown timer (independent of animation frame timing)
     if (s_timerState == TIMER_STATE_RUNNING) {
-        bool secondPassed = false;
         while (now - s_lastTickMs >= 1000UL) {
             s_lastTickMs += 1000UL;
             if (s_remainingSeconds > 0) {
                 s_remainingSeconds--;
-                secondPassed = true;
                 if (s_remainingSeconds == 0) {
                     s_timerState = TIMER_STATE_COMPLETED;
+                    renderFrame(tft, s_currentFrame);
                     break;
                 }
             }
         }
-        if (secondPassed) {
-            drawOverlayUI(tft);
-        }
     }
 
     // 3. Step background Shinchan animation (non-blocking, exactly 100 ms)
+    // Decodes full 128x160 frame and draws transparent floating digits overlay
     if (now - s_lastFrameMs >= FOCUS_TIMER_ANIM_INTERVAL_MS) {
         s_lastFrameMs = now;
         // Strictly forward loop: 0 -> 1 -> 2 -> ... -> 29 -> 0
         s_currentFrame = (s_currentFrame + 1) % SHINCHAN_FRAME_COUNT;
         renderFrame(tft, s_currentFrame);
-        // (renderFrame calls drawOverlayUI at the end of each frame)
     }
 }
 
