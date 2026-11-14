@@ -8,8 +8,16 @@
 #define PIN_BTN_A    13   // GPIO 13: Enter / A
 #define PIN_BTN_BACK 25   // GPIO 25: Back
 
-// Vertical position of the floating timer digits (open upper sky above Shinchan)
+// Vertical anchor position of the floating timer digits (open upper sky above Shinchan)
 #define FLOATING_TIMER_Y 28
+
+// Software-defined protected foreground region for the timer digits, shadows, and underline
+// Digits: X = 12..115, Y = 28..55. Shadow: X=116, Y=56. Underline: Y=58..59, Shadow: Y=60.
+// Protected bounding box encompasses all foreground pixels with a 1-pixel safety margin.
+#define TIMER_REGION_X0  11
+#define TIMER_REGION_X1  117
+#define TIMER_REGION_Y0  27
+#define TIMER_REGION_Y1  61
 
 // Animation state
 static int s_currentFrame = 0;              // 0 to 29 (frames 1 to 30)
@@ -25,6 +33,10 @@ static uint8_t s_selectedMinutes = 0;       // 00 to 59
 static uint8_t s_selectedSeconds = 0;       // 00 to 59
 static uint32_t s_remainingSeconds = 0;     // Remaining countdown seconds
 static unsigned long s_lastTickMs = 0;      // Millis timestamp for 1-second countdown ticks
+
+// Rendering control flags
+static bool s_allowTimerRegionWrites = false; // When false, jpgOutputFunc strictly excludes the protected timer region
+static bool s_onlyTimerRegion        = false; // When true, jpgOutputFunc only processes MCU rows intersecting the timer (Y=16..63)
 
 // Button debouncing & hold detection
 static int s_rawBtnA = HIGH;
@@ -76,18 +88,28 @@ static UINT jpgOutputFunc(JDEC* jdec, void* bitmap, JRECT* rect) {
     JpgRenderContext* ctx = &s_renderCtx;
     if (!ctx->tft) return 1;
 
-    // Safety guard
+    // Reject out-of-bounds blocks
     if (rect->right < 0 || rect->left >= 128 || rect->bottom < 0 || rect->top >= 160) {
         return 1;
     }
 
-    int16_t w = rect->right - rect->left + 1;
-    int16_t h = rect->bottom - rect->top + 1;
+    // Fast-path: When restoring timer background, skip rows completely outside the timer range
+    if (s_onlyTimerRegion) {
+        if (rect->bottom < TIMER_REGION_Y0 || rect->top > TIMER_REGION_Y1) {
+            return 1;
+        }
+    }
 
-    // Maximum MCU block size is 16x16 = 256 pixels
+    int16_t rx0 = rect->left;
+    int16_t rx1 = rect->right;
+    int16_t ry0 = rect->top;
+    int16_t ry1 = rect->bottom;
+    int16_t w   = rx1 - rx0 + 1;
+    int16_t h   = ry1 - ry0 + 1;
+
+    // Convert MCU block RGB888 to RGB565 (256 pixels max)
     uint16_t block_buf[256];
     int count = 0;
-
     uint8_t *src_bytes = (uint8_t*)bitmap;
     for (int16_t by = 0; by < h; by++) {
         int src_row_offset = by * w * 3;
@@ -96,47 +118,73 @@ static UINT jpgOutputFunc(JDEC* jdec, void* bitmap, JRECT* rect) {
             uint8_t r = src_bytes[src_idx];
             uint8_t g = src_bytes[src_idx + 1];
             uint8_t b = src_bytes[src_idx + 2];
-            // Fast RGB888 to RGB565 conversion
             block_buf[count++] = ((uint16_t)(r & 0xF8) << 8) | ((uint16_t)(g & 0xFC) << 3) | (b >> 3);
         }
     }
 
-    if (count > 0) {
-        ctx->tft->drawRGBBitmap(rect->left, rect->top, block_buf, w, h);
+    if (count == 0) return 1;
+
+    // Mode A: Timer region writes ALLOWED (initial full-screen frame or targeted background restoration)
+    if (s_allowTimerRegionWrites) {
+        ctx->tft->drawRGBBitmap(rx0, ry0, block_buf, w, h);
+        return 1;
+    }
+
+    // Mode B: Protected Timer Region Excluded (continuous animation playback)
+    // 1. Block is completely outside protected region -> blit full 16x16 block directly
+    if (rx1 < TIMER_REGION_X0 || rx0 > TIMER_REGION_X1 ||
+        ry1 < TIMER_REGION_Y0 || ry0 > TIMER_REGION_Y1) {
+        ctx->tft->drawRGBBitmap(rx0, ry0, block_buf, w, h);
+        return 1;
+    }
+
+    // 2. Block is completely inside protected region -> EXCLUDE COMPLETELY (0 writes to display)
+    if (rx0 >= TIMER_REGION_X0 && rx1 <= TIMER_REGION_X1 &&
+        ry0 >= TIMER_REGION_Y0 && ry1 <= TIMER_REGION_Y1) {
+        return 1;
+    }
+
+    // 3. Block partially overlaps protected region -> Sliced blits (draw outside pixels only, skip protected region)
+    // Top slice (rows above TIMER_REGION_Y0)
+    if (ry0 < TIMER_REGION_Y0) {
+        int16_t top_h = (int16_t)min((int)ry1, (int)(TIMER_REGION_Y0 - 1)) - ry0 + 1;
+        if (top_h > 0) {
+            ctx->tft->drawRGBBitmap(rx0, ry0, block_buf, w, top_h);
+        }
+    }
+
+    // Bottom slice (rows below TIMER_REGION_Y1)
+    if (ry1 > TIMER_REGION_Y1) {
+        int16_t bot_start = (int16_t)max((int)ry0, (int)(TIMER_REGION_Y1 + 1));
+        int16_t bot_h     = ry1 - bot_start + 1;
+        int16_t buf_row   = bot_start - ry0;
+        if (bot_h > 0) {
+            ctx->tft->drawRGBBitmap(rx0, bot_start, &block_buf[buf_row * w], w, bot_h);
+        }
+    }
+
+    // Middle rows: draw left and right spans outside [TIMER_REGION_X0, TIMER_REGION_X1]
+    int16_t mid_r_start = (int16_t)max((int)ry0, (int)TIMER_REGION_Y0) - ry0;
+    int16_t mid_r_end   = (int16_t)min((int)ry1, (int)TIMER_REGION_Y1) - ry0;
+    int16_t left_w      = (int16_t)min((int)rx1, (int)(TIMER_REGION_X0 - 1)) - rx0 + 1;
+    int16_t right_start = (int16_t)max((int)rx0, (int)(TIMER_REGION_X1 + 1));
+    int16_t right_w     = rx1 - right_start + 1;
+
+    for (int16_t r = mid_r_start; r <= mid_r_end; r++) {
+        int16_t py = ry0 + r;
+        if (left_w > 0) {
+            ctx->tft->drawRGBBitmap(rx0, py, &block_buf[r * w], left_w, 1);
+        }
+        if (right_w > 0) {
+            ctx->tft->drawRGBBitmap(right_start, py, &block_buf[r * w + (right_start - rx0)], right_w, 1);
+        }
     }
 
     return 1;
 }
 
-// Forward declaration
-static void drawFloatingTimer(Adafruit_ST7735 &tft);
-
-void FocusTimerApp::renderFrame(Adafruit_ST7735 &tft, int frameIndex) {
-    if (frameIndex < 0 || frameIndex >= SHINCHAN_FRAME_COUNT) return;
-
-    const uint8_t *jpgData = shinchan_frames[frameIndex];
-    uint16_t jpgLen = shinchan_frame_lens[frameIndex];
-
-    JpgStream stream;
-    stream.data = jpgData;
-    stream.len = jpgLen;
-    stream.offset = 0;
-
-    s_renderCtx.tft = &tft;
-
-    JDEC jdec;
-    JRESULT res = jd_prepare(&jdec, jpgInputFunc, s_tjpgd_work, sizeof(s_tjpgd_work), &stream);
-    if (res == JDR_OK) {
-        // Fullscreen 128x160 decode (scale 0 = 1:1 direct mapping)
-        jd_decomp(&jdec, jpgOutputFunc, 0);
-    }
-
-    // Render transparent floating timer digits directly over the newly decoded full-screen frame
-    drawFloatingTimer(tft);
-}
-
 // -----------------------------------------------------------------------------
-// Minimal Floating Timer UI (Digits Only, Transparent Overlay)
+// Floating Timer Foreground Drawing
 // -----------------------------------------------------------------------------
 
 static void drawFloatingTimer(Adafruit_ST7735 &tft) {
@@ -264,12 +312,58 @@ static void drawFloatingTimer(Adafruit_ST7735 &tft) {
     tft.endWrite();
 }
 
-void FocusTimerApp::drawOverlayUI(Adafruit_ST7735 &tft) {
+// Restores background pixels in the timer region from the current animation frame
+static void restoreTimerBackground(Adafruit_ST7735 &tft) {
+    const uint8_t *jpgData = shinchan_frames[s_currentFrame];
+    uint16_t jpgLen = shinchan_frame_lens[s_currentFrame];
+
+    JpgStream stream = {jpgData, jpgLen, 0};
+    s_renderCtx.tft = &tft;
+
+    // Allow writes to the timer region, and fast-filter only the intersecting rows (Y=16..63)
+    s_allowTimerRegionWrites = true;
+    s_onlyTimerRegion        = true;
+
+    JDEC jdec;
+    if (jd_prepare(&jdec, jpgInputFunc, s_tjpgd_work, sizeof(s_tjpgd_work), &stream) == JDR_OK) {
+        jd_decomp(&jdec, jpgOutputFunc, 0);
+    }
+
+    s_allowTimerRegionWrites = false;
+    s_onlyTimerRegion        = false;
+}
+
+// Coordinated single-owner update: restores background in timer region, then draws updated digits
+static void updateTimerDigitsDisplay(Adafruit_ST7735 &tft) {
+    restoreTimerBackground(tft);
     drawFloatingTimer(tft);
 }
 
+void FocusTimerApp::renderFrame(Adafruit_ST7735 &tft, int frameIndex) {
+    if (frameIndex < 0 || frameIndex >= SHINCHAN_FRAME_COUNT) return;
+
+    const uint8_t *jpgData = shinchan_frames[frameIndex];
+    uint16_t jpgLen = shinchan_frame_lens[frameIndex];
+
+    JpgStream stream = {jpgData, jpgLen, 0};
+    s_renderCtx.tft = &tft;
+
+    // Continuous animation playback: strictly exclude writes to the protected timer region
+    s_allowTimerRegionWrites = false;
+    s_onlyTimerRegion        = false;
+
+    JDEC jdec;
+    if (jd_prepare(&jdec, jpgInputFunc, s_tjpgd_work, sizeof(s_tjpgd_work), &stream) == JDR_OK) {
+        jd_decomp(&jdec, jpgOutputFunc, 0);
+    }
+}
+
+void FocusTimerApp::drawOverlayUI(Adafruit_ST7735 &tft) {
+    updateTimerDigitsDisplay(tft);
+}
+
 // -----------------------------------------------------------------------------
-// Button Action Handlers
+// Button & Input Action Handlers
 // -----------------------------------------------------------------------------
 
 static void handleButtonAShort(Adafruit_ST7735 &tft) {
@@ -281,7 +375,7 @@ static void handleButtonAShort(Adafruit_ST7735 &tft) {
             s_remainingSeconds = totalSec;
             s_timerState = TIMER_STATE_RUNNING;
             s_lastTickMs = millis();
-            FocusTimerApp::renderFrame(tft, s_currentFrame);
+            updateTimerDigitsDisplay(tft);
         }
     }
 }
@@ -294,7 +388,7 @@ static void handleButtonALong(Adafruit_ST7735 &tft) {
     s_selectedSeconds = 0;
     s_selectedField = FIELD_HOURS;
     s_remainingSeconds = 0;
-    FocusTimerApp::renderFrame(tft, s_currentFrame);
+    updateTimerDigitsDisplay(tft);
 }
 
 static void handleButtonBackShort(Adafruit_ST7735 &tft) {
@@ -302,18 +396,18 @@ static void handleButtonBackShort(Adafruit_ST7735 &tft) {
         s_wantsExit = true;
     } else if (s_timerState == TIMER_STATE_RUNNING) {
         s_timerState = TIMER_STATE_PAUSED;
-        FocusTimerApp::renderFrame(tft, s_currentFrame);
+        updateTimerDigitsDisplay(tft);
     } else if (s_timerState == TIMER_STATE_PAUSED) {
         s_timerState = TIMER_STATE_RUNNING;
         s_lastTickMs = millis();
-        FocusTimerApp::renderFrame(tft, s_currentFrame);
+        updateTimerDigitsDisplay(tft);
     } else if (s_timerState == TIMER_STATE_COMPLETED) {
         s_timerState = TIMER_STATE_SELECTION;
         s_selectedHours = 0;
         s_selectedMinutes = 0;
         s_selectedSeconds = 0;
         s_selectedField = FIELD_HOURS;
-        FocusTimerApp::renderFrame(tft, s_currentFrame);
+        updateTimerDigitsDisplay(tft);
     }
 }
 
@@ -360,7 +454,7 @@ static void updateButtonsAndJoystick(Adafruit_ST7735 &tft) {
         }
 
         if (changed) {
-            FocusTimerApp::renderFrame(tft, s_currentFrame);
+            updateTimerDigitsDisplay(tft);
         }
     }
 
@@ -453,8 +547,24 @@ void FocusTimerApp::init(Adafruit_ST7735 &tft) {
 
     tft.setRotation(0); // 128x160 Portrait
 
-    // Render frame 1 immediately with transparent floating timer overlay
-    renderFrame(tft, s_currentFrame);
+    // Initial full-screen frame render with timer region allowed so complete initial scene is drawn
+    s_allowTimerRegionWrites = true;
+    s_onlyTimerRegion        = false;
+
+    const uint8_t *jpgData = shinchan_frames[s_currentFrame];
+    uint16_t jpgLen = shinchan_frame_lens[s_currentFrame];
+    JpgStream stream = {jpgData, jpgLen, 0};
+    s_renderCtx.tft = &tft;
+
+    JDEC jdec;
+    if (jd_prepare(&jdec, jpgInputFunc, s_tjpgd_work, sizeof(s_tjpgd_work), &stream) == JDR_OK) {
+        jd_decomp(&jdec, jpgOutputFunc, 0);
+    }
+    s_allowTimerRegionWrites = false;
+
+    // Draw the initial floating timer digits on top
+    drawFloatingTimer(tft);
+
     s_lastFrameMs = millis();
 }
 
@@ -469,24 +579,28 @@ void FocusTimerApp::update(Adafruit_ST7735 &tft) {
 
     // 2. Step countdown timer (independent of animation frame timing)
     if (s_timerState == TIMER_STATE_RUNNING) {
+        bool secondPassed = false;
         while (now - s_lastTickMs >= 1000UL) {
             s_lastTickMs += 1000UL;
             if (s_remainingSeconds > 0) {
                 s_remainingSeconds--;
+                secondPassed = true;
                 if (s_remainingSeconds == 0) {
                     s_timerState = TIMER_STATE_COMPLETED;
-                    renderFrame(tft, s_currentFrame);
                     break;
                 }
             }
         }
+        if (secondPassed) {
+            // Restore background in timer region and draw updated digits once per second
+            updateTimerDigitsDisplay(tft);
+        }
     }
 
     // 3. Step background Shinchan animation (non-blocking, exactly 100 ms)
-    // Decodes full 128x160 frame and draws transparent floating digits overlay
+    // Animation frame strictly excludes protected timer region -> NEVER overwrites timer digits!
     if (now - s_lastFrameMs >= FOCUS_TIMER_ANIM_INTERVAL_MS) {
         s_lastFrameMs = now;
-        // Strictly forward loop: 0 -> 1 -> 2 -> ... -> 29 -> 0
         s_currentFrame = (s_currentFrame + 1) % SHINCHAN_FRAME_COUNT;
         renderFrame(tft, s_currentFrame);
     }
