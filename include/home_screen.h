@@ -36,7 +36,8 @@ enum ScreenState {
   STATE_LOST_CROWN_LEVEL1,
 #endif
   STATE_HACKING_GO,
-  STATE_RETRO_ARCADE
+  STATE_RETRO_ARCADE,
+  STATE_FOCUS_TIMER
 };
 
 // Sub-pages for Apps / Home Screen

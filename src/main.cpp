@@ -20,6 +20,7 @@
 #include "hackk/HackkApp.h"
 #include "status_led.h"
 #include "retro/RetroApp.h"
+#include "focus_timer/FocusTimerApp.h"
 // (Game Boy now launched from Retro Arcade)
 
 #define TFT_CS   5
@@ -586,8 +587,24 @@ void enterCalculatorPlaceholder() {
   Serial.println("Placeholder Action: Enter Calculator App");
 }
 
-void enterFocusTimerPlaceholder() {
-  Serial.println("Placeholder Action: Enter Focus Timer App");
+void enterFocusTimer() {
+  stopHomeAnimation();
+  clearButtonEvents();
+  currentScreen = STATE_FOCUS_TIMER;
+  FocusTimerApp::init(tft);
+}
+
+void exitFocusTimer() {
+  FocusTimerApp::stop();
+  clearButtonEvents();
+  currentScreen = STATE_HOME;
+
+  // Select a new random quote!
+  selectRandomQuote();
+  lastQuoteChangeTime = millis();
+
+  // Restore active page layout
+  redrawCurrentAppsPage();
 }
 
 void enterHackingGo() {
@@ -653,7 +670,7 @@ void handleCurrentSelection() {
         enterCalculatorPlaceholder();
         break;
       case FOCUS_PAGE2_FOCUS_TIMER:
-        enterFocusTimerPlaceholder();
+        enterFocusTimer();
         break;
       case FOCUS_PAGE2_HACKING_GO:
         enterHackingGo();
@@ -807,6 +824,11 @@ void loop() {
     HackkApp::update(tft);
     if (HackkApp::shouldExit()) {
       exitHackingGo();
+    }
+  } else if (currentScreen == STATE_FOCUS_TIMER) {
+    FocusTimerApp::update(tft);
+    if (FocusTimerApp::shouldExit()) {
+      exitFocusTimer();
     }
 #if ENABLE_LOST_CROWN
   } else if (currentScreen == STATE_LOST_CROWN_LOADING) {
